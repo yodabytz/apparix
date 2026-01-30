@@ -1,0 +1,64 @@
+{
+    "slug": "stripe",
+    "name": "Stripe Payments",
+    "version": "1.0.0",
+    "type": "payment",
+    "description": "Accept credit and debit card payments with Stripe. Supports all major card brands, Apple Pay, and Google Pay.",
+    "author": "Apparix",
+    "author_url": "https://apparix.com",
+    "main_class": "StripePlugin",
+    "icon": "stripe-logo.svg",
+    "requires": {
+        "apparix": ">=1.0.0",
+        "php": ">=8.1"
+    },
+    "settings": [
+        {
+            "key": "mode",
+            "label": "Mode",
+            "type": "select",
+            "options": ["test", "live"],
+            "default": "test",
+            "help": "Use test mode for development, live mode for production"
+        },
+        {
+            "key": "test_public_key",
+            "label": "Test Publishable Key",
+            "type": "text",
+            "required": false,
+            "help": "Your Stripe test publishable key (pk_test_...)"
+        },
+        {
+            "key": "test_secret_key",
+            "label": "Test Secret Key",
+            "type": "password",
+            "required": false,
+            "help": "Your Stripe test secret key (sk_test_...)"
+        },
+        {
+            "key": "live_public_key",
+            "label": "Live Publishable Key",
+            "type": "text",
+            "required": false,
+            "help": "Your Stripe live publishable key (pk_live_...)"
+        },
+        {
+            "key": "live_secret_key",
+            "label": "Live Secret Key",
+            "type": "password",
+            "required": false,
+            "help": "Your Stripe live secret key (sk_live_...)"
+        },
+        {
+            "key": "webhook_secret",
+            "label": "Webhook Secret",
+            "type": "password",
+            "required": false,
+            "help": "Webhook signing secret for verifying webhook events"
+        }
+    ],
+    "default_settings": {
+        "mode": "test"
+    },
+    "hooks": ["payment_methods", "process_payment", "webhook_handler"]
+}

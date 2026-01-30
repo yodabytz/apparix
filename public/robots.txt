@@ -1,0 +1,22 @@
+# Robots.txt for Lily's Pad Studio
+# https://apparix.vibrixmedia.com
+
+User-agent: *
+Allow: /
+
+# Disallow sensitive areas
+Disallow: /admin/
+Disallow: /cart/
+Disallow: /checkout/
+Disallow: /account/
+Disallow: /login
+Disallow: /register
+Disallow: /logout
+Disallow: /webhook/
+Disallow: /api/
+
+# Disallow search result pages (duplicate content)
+Disallow: /search?
+
+# Sitemap location
+Sitemap: https://apparix.vibrixmedia.com/sitemap.xml

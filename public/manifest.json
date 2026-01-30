@@ -1,0 +1,57 @@
+{
+  "name": "Apparix",
+  "short_name": "Apparix",
+  "description": "Unique handmade gifts and custom creations. Shop our collection of personalized items crafted with love.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fdf2f8",
+  "theme_color": "#FF68C5",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ],
+  "categories": ["shopping", "lifestyle"],
+  "lang": "en-US",
+  "dir": "ltr",
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Shop All Products",
+      "short_name": "Shop",
+      "description": "Browse our full collection",
+      "url": "/products",
+      "icons": [{"src": "/android-chrome-192x192.png", "sizes": "192x192"}]
+    },
+    {
+      "name": "My Cart",
+      "short_name": "Cart",
+      "description": "View your shopping cart",
+      "url": "/cart",
+      "icons": [{"src": "/android-chrome-192x192.png", "sizes": "192x192"}]
+    },
+    {
+      "name": "Track Order",
+      "short_name": "Track",
+      "description": "Track your order status",
+      "url": "/track",
+      "icons": [{"src": "/android-chrome-192x192.png", "sizes": "192x192"}]
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+# Dependencies
+/vendor/
+/node_modules/
+
+# Environment files (contains secrets)
+.env
+
+# Storage (logs, cache, sessions, updates)
+/storage/logs/*
+/storage/cache/*
+/storage/sessions/*
+/storage/updates/*
+!/storage/logs/.gitkeep
+!/storage/cache/.gitkeep
+!/storage/sessions/.gitkeep
+!/storage/updates/.gitkeep
+
+# Product images (too large for git - backed up separately)
+/public/assets/images/products/
+
+# Uploaded files
+/public/uploads/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.bak
+*.zip
+*.csv
+
+# Development notes (contains sensitive info)
+CLAUDE.md
+instructions.txt
+
+# Claude config
+.claude/

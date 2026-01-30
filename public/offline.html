@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline | Apparix</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #fdf2f8 0%, #fff5f9 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+        .offline-container {
+            text-align: center;
+            max-width: 400px;
+        }
+        .offline-icon {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+        }
+        h1 {
+            font-family: 'Playfair Display', Georgia, serif;
+            color: #1f2937;
+            font-size: 1.75rem;
+            margin-bottom: 1rem;
+        }
+        p {
+            color: #6b7280;
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+        .btn {
+            display: inline-block;
+            padding: 0.875rem 2rem;
+            background: #FF68C5;
+            color: white;
+            text-decoration: none;
+            border-radius: 9999px;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn:hover {
+            background: #e85bb3;
+        }
+        .logo {
+            margin-top: 2rem;
+            opacity: 0.6;
+        }
+        .logo img {
+            max-width: 150px;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="offline-container">
+        <div class="offline-icon">📶</div>
+        <h1>You're Offline</h1>
+        <p>It looks like you've lost your internet connection. Please check your connection and try again.</p>
+        <button class="btn" onclick="location.reload()">Try Again</button>
+        <div class="logo">
+            <img src="/assets/images/placeholder.png" alt="Apparix">
+        </div>
+    </div>
+    <script>
+        // Auto-reload when back online
+        window.addEventListener('online', () => location.reload());
+    </script>
+</body>
+</html>

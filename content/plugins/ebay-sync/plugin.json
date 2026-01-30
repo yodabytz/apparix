@@ -1,0 +1,153 @@
+{
+    "slug": "ebay-sync",
+    "name": "eBay Sync",
+    "version": "1.1.0",
+    "type": "marketplace",
+    "description": "Sync your products and orders with eBay via modern RESTful APIs (Inventory & Fulfillment)",
+    "author": "Apparix",
+    "author_url": "https://apparix.vibrixmedia.com",
+    "icon": "ebay-logo.svg",
+    "requires": {
+        "apparix": ">=1.0.0",
+        "php": ">=8.1"
+    },
+    "settings": [
+        {
+            "key": "environment",
+            "label": "Environment",
+            "type": "select",
+            "required": true,
+            "options": {
+                "sandbox": "Sandbox (Testing)",
+                "production": "Production (Live)"
+            },
+            "default": "sandbox"
+        },
+        {
+            "key": "client_id",
+            "label": "Client ID (App ID)",
+            "type": "text",
+            "required": true,
+            "description": "Your eBay Developer App ID from the Developer Portal"
+        },
+        {
+            "key": "client_secret",
+            "label": "Client Secret (Cert ID)",
+            "type": "password",
+            "required": true,
+            "description": "Your eBay Developer Cert ID from the Developer Portal"
+        },
+        {
+            "key": "refresh_token",
+            "label": "User Refresh Token",
+            "type": "password",
+            "required": true,
+            "description": "OAuth refresh token obtained from user consent flow"
+        },
+        {
+            "key": "site_id",
+            "label": "eBay Marketplace",
+            "type": "select",
+            "required": true,
+            "options": {
+                "EBAY_US": "United States (ebay.com)",
+                "EBAY_CA": "Canada (ebay.ca)",
+                "EBAY_GB": "United Kingdom (ebay.co.uk)",
+                "EBAY_DE": "Germany (ebay.de)",
+                "EBAY_FR": "France (ebay.fr)",
+                "EBAY_IT": "Italy (ebay.it)",
+                "EBAY_ES": "Spain (ebay.es)",
+                "EBAY_AU": "Australia (ebay.com.au)",
+                "EBAY_AT": "Austria (ebay.at)",
+                "EBAY_BE": "Belgium (ebay.be)",
+                "EBAY_CH": "Switzerland (ebay.ch)",
+                "EBAY_NL": "Netherlands (ebay.nl)",
+                "EBAY_IE": "Ireland (ebay.ie)",
+                "EBAY_PL": "Poland (ebay.pl)",
+                "EBAY_SG": "Singapore (ebay.com.sg)",
+                "EBAY_MY": "Malaysia (ebay.com.my)",
+                "EBAY_PH": "Philippines (ebay.ph)",
+                "EBAY_HK": "Hong Kong",
+                "EBAY_TW": "Taiwan (ebay.com.tw)",
+                "EBAY_JP": "Japan (ebay.co.jp)",
+                "EBAY_MOTORS_US": "eBay Motors (ebay.com/motors)"
+            },
+            "default": "EBAY_US"
+        },
+        {
+            "key": "listing_format",
+            "label": "Default Listing Format",
+            "type": "select",
+            "options": {
+                "FIXED_PRICE": "Fixed Price (Buy It Now)",
+                "AUCTION": "Auction"
+            },
+            "default": "FIXED_PRICE"
+        },
+        {
+            "key": "listing_duration",
+            "label": "Listing Duration",
+            "type": "select",
+            "options": {
+                "GTC": "Good 'Til Cancelled",
+                "DAYS_30": "30 Days",
+                "DAYS_7": "7 Days",
+                "DAYS_3": "3 Days"
+            },
+            "default": "GTC"
+        },
+        {
+            "key": "default_category_id",
+            "label": "Default eBay Category ID",
+            "type": "text",
+            "description": "eBay category ID for listings (find at eBay Category Tree)"
+        },
+        {
+            "key": "fulfillment_policy_id",
+            "label": "Fulfillment Policy ID",
+            "type": "text",
+            "description": "Business policy ID for shipping (from eBay Seller Hub)"
+        },
+        {
+            "key": "payment_policy_id",
+            "label": "Payment Policy ID",
+            "type": "text",
+            "description": "Business policy ID for payment (from eBay Seller Hub)"
+        },
+        {
+            "key": "return_policy_id",
+            "label": "Return Policy ID",
+            "type": "text",
+            "description": "Business policy ID for returns (from eBay Seller Hub)"
+        },
+        {
+            "key": "sync_inventory",
+            "label": "Sync Inventory",
+            "type": "checkbox",
+            "default": true,
+            "description": "Automatically sync inventory levels when stock changes"
+        },
+        {
+            "key": "sync_orders",
+            "label": "Import Orders",
+            "type": "checkbox",
+            "default": true,
+            "description": "Import eBay orders into Apparix"
+        },
+        {
+            "key": "sync_interval",
+            "label": "Sync Interval (minutes)",
+            "type": "number",
+            "default": 15,
+            "min": 5,
+            "max": 1440,
+            "description": "How often to sync with eBay (minimum 5 minutes)"
+        }
+    ],
+    "hooks": [
+        "product_updated",
+        "inventory_changed",
+        "order_created",
+        "cron_sync"
+    ]
+}

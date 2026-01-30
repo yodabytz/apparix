@@ -1,0 +1,96 @@
+{
+    "slug": "backup",
+    "name": "Apparix Backup",
+    "version": "1.0.0",
+    "type": "utility",
+    "description": "Lightweight backup solution for your Apparix store. Backs up database, code, and settings without impacting server performance.",
+    "author": "Apparix",
+    "author_url": "https://apparix.com",
+    "main_class": "BackupPlugin",
+    "icon": "backup-icon.svg",
+    "requires": {
+        "apparix": ">=1.0.0",
+        "php": ">=8.1"
+    },
+    "settings": [
+        {
+            "key": "retention_count",
+            "label": "Backup Retention",
+            "type": "number",
+            "default": 5,
+            "min": 1,
+            "max": 30,
+            "description": "Number of backups to keep (older backups are automatically deleted)"
+        },
+        {
+            "key": "include_database",
+            "label": "Include Database",
+            "type": "checkbox",
+            "default": true,
+            "description": "Backup all database tables and data"
+        },
+        {
+            "key": "include_code",
+            "label": "Include Code Files",
+            "type": "checkbox",
+            "default": true,
+            "description": "Backup PHP, JS, CSS files (excludes images and uploads)"
+        },
+        {
+            "key": "include_config",
+            "label": "Include Configuration",
+            "type": "checkbox",
+            "default": true,
+            "description": "Backup settings, themes, and plugin configurations"
+        },
+        {
+            "key": "auto_backup",
+            "label": "Enable Scheduled Backups",
+            "type": "checkbox",
+            "default": false,
+            "description": "Automatically create backups on a schedule (requires cron job)"
+        },
+        {
+            "key": "backup_schedule",
+            "label": "Backup Schedule",
+            "type": "select",
+            "options": {
+                "hourly": "Hourly",
+                "daily": "Daily",
+                "weekly": "Weekly"
+            },
+            "default": "daily",
+            "description": "How often to create automatic backups"
+        }
+    ],
+    "features": [
+        "Database backup with streaming export (low memory usage)",
+        "Code and configuration backup",
+        "Automatic backup rotation",
+        "One-click manual backup from admin panel",
+        "Download backups directly",
+        "Excludes images and large files to save space",
+        "Resource-friendly with yield control",
+        "Protected backup storage"
+    ],
+    "excluded_from_backup": [
+        "Product images",
+        "Uploaded files",
+        "node_modules",
+        "vendor directory",
+        "Session files",
+        "Log files",
+        "Cache files"
+    ],
+    "hooks": ["admin_menu", "cron_backup"],
+    "changelog": {
+        "1.0.0": [
+            "Initial release",
+            "Database streaming export",
+            "Code and config backup",
+            "Automatic retention policy",
+            "Admin panel integration",
+            "Scheduled backup support"
+        ]
+    }
+}

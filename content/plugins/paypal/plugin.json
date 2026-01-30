@@ -1,0 +1,113 @@
+{
+    "slug": "paypal",
+    "name": "PayPal Payments",
+    "version": "1.1.0",
+    "type": "payment",
+    "description": "Accept PayPal payments, Pay Later, Venmo, and credit/debit cards through PayPal Commerce Platform with webhook signature verification.",
+    "author": "Apparix",
+    "author_url": "https://apparix.com",
+    "main_class": "PayPalPlugin",
+    "icon": "paypal-logo.svg",
+    "requires": {
+        "apparix": ">=1.0.0",
+        "php": ">=8.1"
+    },
+    "settings": [
+        {
+            "key": "mode",
+            "label": "Mode",
+            "type": "select",
+            "options": {
+                "sandbox": "Sandbox (Testing)",
+                "live": "Live (Production)"
+            },
+            "default": "sandbox",
+            "help": "Use sandbox mode for testing, live mode for production"
+        },
+        {
+            "key": "client_id",
+            "label": "Client ID",
+            "type": "text",
+            "required": true,
+            "help": "Your PayPal REST API Client ID from developer.paypal.com"
+        },
+        {
+            "key": "client_secret",
+            "label": "Client Secret",
+            "type": "password",
+            "required": true,
+            "help": "Your PayPal REST API Client Secret"
+        },
+        {
+            "key": "webhook_id",
+            "label": "Webhook ID",
+            "type": "text",
+            "required": false,
+            "help": "Your PayPal Webhook ID for signature verification (from PayPal Developer Dashboard)"
+        },
+        {
+            "key": "currency",
+            "label": "Currency",
+            "type": "select",
+            "options": {
+                "USD": "US Dollar (USD)",
+                "EUR": "Euro (EUR)",
+                "GBP": "British Pound (GBP)",
+                "CAD": "Canadian Dollar (CAD)",
+                "AUD": "Australian Dollar (AUD)",
+                "JPY": "Japanese Yen (JPY)",
+                "CHF": "Swiss Franc (CHF)",
+                "NZD": "New Zealand Dollar (NZD)",
+                "MXN": "Mexican Peso (MXN)",
+                "BRL": "Brazilian Real (BRL)",
+                "SEK": "Swedish Krona (SEK)",
+                "NOK": "Norwegian Krone (NOK)"
+            },
+            "default": "USD",
+            "help": "Currency for PayPal transactions"
+        },
+        {
+            "key": "enable_venmo",
+            "label": "Enable Venmo",
+            "type": "checkbox",
+            "default": false,
+            "help": "Allow customers to pay with Venmo (US only)"
+        },
+        {
+            "key": "enable_pay_later",
+            "label": "Enable Pay Later",
+            "type": "checkbox",
+            "default": true,
+            "help": "Show Pay Later options at checkout (Pay in 4, PayPal Credit)"
+        },
+        {
+            "key": "disable_funding",
+            "label": "Disable Funding Sources",
+            "type": "text",
+            "required": false,
+            "help": "Comma-separated list of funding sources to disable (e.g., credit,card,bancontact)"
+        }
+    ],
+    "default_settings": {
+        "mode": "sandbox",
+        "currency": "USD",
+        "enable_venmo": false,
+        "enable_pay_later": true
+    },
+    "hooks": ["payment_methods", "process_payment", "webhook_handler"],
+    "changelog": {
+        "1.1.0": [
+            "Added webhook signature verification for security",
+            "Added multi-currency support (12 currencies)",
+            "Added testConnection() method for configuration validation",
+            "Added retry logic with exponential backoff",
+            "Added proper curl error handling",
+            "Added disable_funding option for customization",
+            "Enhanced order creation with item breakdown, shipping, and tax",
+            "Improved error handling and logging throughout"
+        ],
+        "1.0.0": [
+            "Initial release with PayPal Commerce Platform integration"
+        ]
+    }
+}

@@ -1,0 +1,74 @@
+{
+    "slug": "square",
+    "name": "Square Payments",
+    "version": "1.0.0",
+    "type": "payment",
+    "description": "Accept credit cards, Apple Pay, Google Pay, and Cash App Pay through Square.",
+    "author": "Apparix",
+    "author_url": "https://apparix.com",
+    "main_class": "SquarePlugin",
+    "icon": "square-logo.svg",
+    "requires": {
+        "apparix": ">=1.0.0",
+        "php": ">=8.1"
+    },
+    "settings": [
+        {
+            "key": "mode",
+            "label": "Mode",
+            "type": "select",
+            "options": ["sandbox", "production"],
+            "default": "sandbox",
+            "help": "Use sandbox mode for testing, production mode for live payments"
+        },
+        {
+            "key": "application_id",
+            "label": "Application ID",
+            "type": "text",
+            "required": true,
+            "help": "Your Square Application ID"
+        },
+        {
+            "key": "access_token",
+            "label": "Access Token",
+            "type": "password",
+            "required": true,
+            "help": "Your Square Access Token"
+        },
+        {
+            "key": "location_id",
+            "label": "Location ID",
+            "type": "text",
+            "required": true,
+            "help": "Your Square Location ID for processing payments"
+        },
+        {
+            "key": "enable_apple_pay",
+            "label": "Enable Apple Pay",
+            "type": "checkbox",
+            "default": false,
+            "help": "Allow customers to pay with Apple Pay (requires domain verification)"
+        },
+        {
+            "key": "enable_google_pay",
+            "label": "Enable Google Pay",
+            "type": "checkbox",
+            "default": false,
+            "help": "Allow customers to pay with Google Pay"
+        },
+        {
+            "key": "enable_cash_app",
+            "label": "Enable Cash App Pay",
+            "type": "checkbox",
+            "default": false,
+            "help": "Allow customers to pay with Cash App Pay (US only)"
+        }
+    ],
+    "default_settings": {
+        "mode": "sandbox",
+        "enable_apple_pay": false,
+        "enable_google_pay": false,
+        "enable_cash_app": false
+    },
+    "hooks": ["payment_methods", "process_payment", "webhook_handler"]
+}

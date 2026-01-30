@@ -1,0 +1,259 @@
+# ADDED FEATURES - Apparix
+
+This file documents features and fixes added to the Apparix site.
+
+---
+
+## Social Proof Popup - Recent Purchases
+
+### Overview
+A popup that displays recent purchases to create social proof and encourage conversions.
+
+### Features
+- Shows buyer's first name, last initial, city, state, product name, and time ago
+- Only displays if there's a real purchase within the last 5 hours
+- Test mode available with `?test=socialproof2024` URL parameter
+- Slides in from bottom-left on desktop, bottom on mobile
+
+### Files Modified
+- `/app/Controllers/HomeController.php` - Added `recentPurchases()` API endpoint
+- `/public/index.php` - Added route `/api/recent-purchases`
+- `/app/Views/layouts/main.php` - Added popup HTML, CSS, and JavaScript
+
+### Mobile Fix (Important)
+The popup had issues on mobile where it was static and the close button didn't work.
+
+**CSS Fix:**
+- Use `display: none` / `display: flex` with CSS animations instead of `transform: translateX(-120%)`
+- Mobile uses `@keyframes socialProofSlideUp` (from bottom)
+- Desktop uses `@keyframes socialProofSlideIn` (from left)
+
+**Close Button Fix:**
+- Must use both `click` AND `touchend` event listeners for mobile compatibility
+- Close button needs visible styling (gray background `#f3f4f6`)
+- Larger size on mobile (36px vs 28px desktop)
+- Add `touch-action: manipulation` and `-webkit-tap-highlight-color: transparent`
+
+**Key JavaScript for close button:**
+```javascript
+const closeBtn = document.getElementById('socialProofClose');
+if (closeBtn) {
+    closeBtn.addEventListener('click', closeSocialProof);
+    closeBtn.addEventListener('touchend', function(e) {
+        e.preventDefault();
+        closeSocialProof();
+    });
+}
+```
+
+---
+
+## Free Shipping Fix (US Orders)
+
+### Issue
+Products set as free shipping (ships_free_us) were still being charged shipping.
+
+### Fix
+In `/app/Core/Shipping/ShippingCalculator.php`, the `getRate()` method now accepts a `$countryCode` parameter and checks both `ships_free` (global) AND `ships_free_us` (for US orders).
+
+---
+
+## Version Cache Busting
+
+When updating CSS or JS, update the version numbers in:
+- CSS version: `/app/Views/layouts/main.php` (look for `.css?v=`)
+- JS version: `/app/Views/layouts/main.php` (look for `.js?v=`)
+
+---
+
+## Google Merchant Feed Generator
+
+### Overview
+Auto-generates Google Shopping feed XML with proper color, size, gender, and age_group attributes.
+
+### Why Needed
+Google Merchant Center requires:
+- `g:color` attribute for products with color variants
+- `g:size` attribute for products with size variants
+- `g:gender` (male/female/unisex) for apparel
+- `g:age_group` (adult/kids/etc) for apparel
+
+### Script Location
+`/scripts/generate-google-feed.php`
+
+### Output
+`/public/google-merchant-feed.xml`
+
+### Features
+- Creates separate items for each color variant (Google best practice)
+- Groups variants with `g:item_group_id`
+- Auto-detects gender from product name (women's, men's, ladies, etc.)
+- Defaults to "unisex" for apparel when gender not detected
+- Always sets `g:age_group` to "adult" for apparel
+- Skips products with zero inventory
+- Includes shipping dimensions and free shipping info
+
+### Database Tables Used
+- `products` - main product data
+- `product_options` - option names (Color, Size)
+- `product_option_values` - option values (Blue, Medium)
+- `product_variants` - for inventory counts
+- `product_categories` / `categories` - for google product category mapping
+- `product_images` - for primary image
+
+### Key Code Logic
+
+**Gender Detection:**
+```php
+$femaleKeywords = ['women', 'womens', "women's", 'ladies', 'lady', 'female', 'her', 'girl'];
+$maleKeywords = ['men', 'mens', "men's", 'male', 'him', 'boy', 'gentleman'];
+
+function detectGender($name, $description) {
+    // Search name and description for keywords
+    // Return 'female', 'male', or null
+}
+```
+
+**Color/Size Extraction:**
+```php
+$options = $db->select("
+    SELECT po.option_name, pov.value_name
+    FROM product_options po
+    JOIN product_option_values pov ON po.id = pov.option_id
+    WHERE po.product_id = ?
+", [$productId]);
+
+foreach ($options as $opt) {
+    $optName = strtolower($opt['option_name']);
+    if ($optName === 'color' || $optName === 'colour' || strpos($optName, 'tartan') !== false) {
+        $colors[] = $opt['value_name'];
+    } elseif ($optName === 'size') {
+        $sizes[] = $opt['value_name'];
+    }
+}
+```
+
+**Apparel Detection (for gender/age_group):**
+```php
+$isApparel = (strpos($googleCategory, 'Apparel') !== false || strpos($googleCategory, 'Clothing') !== false);
+if ($isApparel) {
+    $genderValue = $gender ?: 'unisex';
+    $xml .= "<g:gender>{$genderValue}</g:gender>\n";
+    $xml .= "<g:age_group>adult</g:age_group>\n";
+}
+```
+
+**Google Category Mapping:**
+```php
+$categoryMappings = [
+    'clothing' => 'Apparel & Accessories > Clothing',
+    'sweaters' => 'Apparel & Accessories > Clothing > Shirts & Tops > Sweaters',
+    'bags' => 'Apparel & Accessories > Handbags, Wallets & Cases > Handbags',
+    'blankets' => 'Home & Garden > Linens & Bedding > Bedding > Blankets & Throws',
+    // etc.
+];
+```
+
+### Cron Job
+Run daily at 3 AM:
+```
+0 3 * * * php /var/www/SITEPATH/scripts/generate-google-feed.php >> /var/log/google-feed.log 2>&1
+```
+
+### Important Notes
+- Script needs to load .env for database credentials
+- Use `define('BASE_PATH', dirname(__DIR__));` at top of script
+- Feed creates separate `<item>` for each color variant
+- Non-apparel items (home goods) don't get gender/age_group tags
+
+---
+
+## Cron Jobs Setup
+
+### Overview
+Apparix requires several cron jobs for full functionality. The installer generates a setup script.
+
+### Auto Setup
+After installation, run:
+```bash
+sudo bash /var/www/SITEPATH/setup-cron.sh
+```
+
+### Manual Setup
+Add these to crontab (`crontab -e`):
+
+```
+# Apparix E-Commerce Cron Jobs
+
+# Abandoned cart emails - Every hour
+0 * * * * php /var/www/SITEPATH/cron/abandoned-carts.php >> /var/log/apparix-cron.log 2>&1
+
+# Review request emails - Daily at 10 AM
+0 10 * * * php /var/www/SITEPATH/cron/send-review-requests.php >> /var/log/apparix-cron.log 2>&1
+
+# Wishlist reminders - Daily at 9 AM
+0 9 * * * php /var/www/SITEPATH/cron/wishlist-reminders.php >> /var/log/apparix-cron.log 2>&1
+
+# Check delivery status - Every 4 hours
+0 */4 * * * php /var/www/SITEPATH/cron/check-delivery-status.php >> /var/log/apparix-cron.log 2>&1
+
+# Google Merchant Feed - Daily at 3 AM
+0 3 * * * php /var/www/SITEPATH/scripts/generate-google-feed.php >> /var/log/google-feed.log 2>&1
+
+# Cleanup orphaned favorites - Weekly on Sunday at 2 AM
+0 2 * * 0 php /var/www/SITEPATH/scripts/cleanup-orphaned-favorites.php >> /var/log/apparix-cron.log 2>&1
+
+# Image optimization - Daily at 4 AM
+0 4 * * * php /var/www/SITEPATH/scripts/optimize-images.php >> /var/log/apparix-cron.log 2>&1
+```
+
+### Cron Job Descriptions
+| Job | Schedule | Description |
+|-----|----------|-------------|
+| abandoned-carts.php | Hourly | Sends reminder emails for abandoned carts (2-72 hours old) |
+| send-review-requests.php | Daily 10 AM | Sends review request emails after order delivery |
+| wishlist-reminders.php | Daily 9 AM | Reminds customers about items in their wishlist |
+| check-delivery-status.php | Every 4 hours | Updates order delivery status via AfterShip |
+| generate-google-feed.php | Daily 3 AM | Generates Google Merchant XML feed |
+| cleanup-orphaned-favorites.php | Weekly Sunday 2 AM | Removes favorites for deleted products |
+| optimize-images.php | Daily 4 AM | Optimizes product images for web |
+
+---
+
+## Digital Products - No Shipping
+
+### Overview
+Digital products (plugins, software, downloadables) skip shipping in cart and checkout.
+
+### How It Works
+- Products with `is_digital = 1` are detected as digital
+- Cart page hides free shipping progress and shipping row
+- Checkout page hides shipping address and shipping method sections
+- Shows "Digital Delivery - Instant download after purchase" notice instead
+- Order processed without shipping validation
+- Shipping method saved as "Digital Delivery"
+
+### Files Modified
+- `/app/Models/Cart.php` - Added `is_digital` to getItems() query
+- `/app/Views/cart/index.php` - Hide shipping UI for digital-only carts
+- `/app/Views/checkout/index.php` - Hide shipping sections, show digital delivery notice
+- `/app/Controllers/CheckoutController.php` - Skip shipping validation for digital orders
+- `/app/Views/products/show.php` - Hide shipping details, show "Instant Digital Download" badge
+- `/public/assets/css/main.css` - Added `.digital-delivery-*` styles
+
+### Detection Logic
+```php
+// Check if cart is digital-only
+$isDigitalOnly = true;
+foreach ($items as $item) {
+    if (empty($item['is_digital'])) {
+        $isDigitalOnly = false;
+        break;
+    }
+}
+```
+
+### CSS Classes Added
+- `.digital-delivery-notice` - Green notice box in cart summary
+- `.digital-delivery-badge` - Badge on product page
+- `.digital-delivery-checkout` - Checkout section notice

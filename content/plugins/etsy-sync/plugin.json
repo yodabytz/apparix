@@ -1,0 +1,161 @@
+{
+    "slug": "etsy-sync",
+    "name": "Etsy Sync",
+    "version": "1.1.0",
+    "type": "marketplace",
+    "description": "Sync your products and orders with your Etsy shop via Open API v3",
+    "author": "Apparix",
+    "author_url": "https://apparix.vibrixmedia.com",
+    "icon": "etsy-logo.svg",
+    "requires": {
+        "apparix": ">=1.0.0",
+        "php": ">=8.1"
+    },
+    "settings": [
+        {
+            "key": "keystring",
+            "label": "API Keystring",
+            "type": "text",
+            "required": true,
+            "description": "Your Etsy App API Key (from etsy.com/developers)"
+        },
+        {
+            "key": "shared_secret",
+            "label": "Shared Secret",
+            "type": "password",
+            "required": true,
+            "description": "Your Etsy App Shared Secret"
+        },
+        {
+            "key": "access_token",
+            "label": "Access Token",
+            "type": "password",
+            "required": true,
+            "description": "OAuth Access Token from authorization flow"
+        },
+        {
+            "key": "refresh_token",
+            "label": "Refresh Token",
+            "type": "password",
+            "required": true,
+            "description": "OAuth Refresh Token (auto-refreshes when expired)"
+        },
+        {
+            "key": "shop_id",
+            "label": "Shop ID",
+            "type": "text",
+            "required": true,
+            "description": "Your Etsy Shop ID (numeric, found in shop settings)"
+        },
+        {
+            "key": "shipping_profile_id",
+            "label": "Default Shipping Profile ID",
+            "type": "text",
+            "required": false,
+            "description": "Shipping profile to use for new listings (from Shop Manager)"
+        },
+        {
+            "key": "return_policy_id",
+            "label": "Return Policy ID",
+            "type": "text",
+            "required": false,
+            "description": "Return policy to use for new listings (from Shop Manager)"
+        },
+        {
+            "key": "taxonomy_id",
+            "label": "Default Category (Taxonomy ID)",
+            "type": "text",
+            "required": false,
+            "description": "Etsy category ID for new listings (use Etsy taxonomy browser)"
+        },
+        {
+            "key": "shop_section_id",
+            "label": "Shop Section ID",
+            "type": "text",
+            "required": false,
+            "description": "Optional shop section for organizing listings"
+        },
+        {
+            "key": "who_made",
+            "label": "Who Made",
+            "type": "select",
+            "options": {
+                "i_did": "I did",
+                "someone_else": "Someone else",
+                "collective": "A member of my shop"
+            },
+            "default": "i_did"
+        },
+        {
+            "key": "when_made",
+            "label": "When Made",
+            "type": "select",
+            "options": {
+                "made_to_order": "Made to order",
+                "2020_2025": "2020-2025",
+                "2010_2019": "2010-2019",
+                "2004_2009": "2004-2009",
+                "before_2004": "Before 2004",
+                "2000_2003": "2000-2003",
+                "1990s": "1990s",
+                "1980s": "1980s",
+                "1970s": "1970s",
+                "1960s": "1960s",
+                "1950s": "1950s",
+                "1940s": "1940s",
+                "1930s": "1930s",
+                "1920s": "1920s",
+                "1910s": "1910s",
+                "1900s": "1900s",
+                "1800s": "1800s",
+                "1700s": "1700s",
+                "before_1700": "Before 1700"
+            },
+            "default": "made_to_order"
+        },
+        {
+            "key": "is_supply",
+            "label": "Is Supply",
+            "type": "checkbox",
+            "default": false,
+            "description": "Is this a supply or tool for crafting?"
+        },
+        {
+            "key": "sync_inventory",
+            "label": "Sync Inventory",
+            "type": "checkbox",
+            "default": true,
+            "description": "Automatically sync inventory levels when stock changes"
+        },
+        {
+            "key": "sync_orders",
+            "label": "Import Orders",
+            "type": "checkbox",
+            "default": true,
+            "description": "Import Etsy orders into Apparix"
+        },
+        {
+            "key": "sync_interval",
+            "label": "Sync Interval (minutes)",
+            "type": "number",
+            "default": 15,
+            "min": 5,
+            "max": 1440,
+            "description": "How often to sync with Etsy (minimum 5 minutes)"
+        }
+    ],
+    "hooks": [
+        "product_updated",
+        "inventory_changed",
+        "order_created",
+        "cron_sync"
+    ],
+    "oauth_scopes": [
+        "listings_r",
+        "listings_w",
+        "listings_d",
+        "transactions_r",
+        "shops_r",
+        "profile_r"
+    ]
+}

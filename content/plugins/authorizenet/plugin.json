@@ -1,0 +1,57 @@
+{
+    "slug": "authorizenet",
+    "name": "Authorize.net",
+    "version": "1.0.0",
+    "type": "payment",
+    "description": "Accept credit cards and eChecks through Authorize.net payment gateway.",
+    "author": "Apparix",
+    "author_url": "https://apparix.com",
+    "main_class": "AuthorizeNetPlugin",
+    "icon": "authorizenet-logo.svg",
+    "requires": {
+        "apparix": ">=1.0.0",
+        "php": ">=8.1"
+    },
+    "settings": [
+        {
+            "key": "mode",
+            "label": "Mode",
+            "type": "select",
+            "options": ["sandbox", "production"],
+            "default": "sandbox",
+            "help": "Use sandbox mode for testing, production mode for live payments"
+        },
+        {
+            "key": "api_login_id",
+            "label": "API Login ID",
+            "type": "text",
+            "required": true,
+            "help": "Your Authorize.net API Login ID"
+        },
+        {
+            "key": "transaction_key",
+            "label": "Transaction Key",
+            "type": "password",
+            "required": true,
+            "help": "Your Authorize.net Transaction Key"
+        },
+        {
+            "key": "public_client_key",
+            "label": "Public Client Key",
+            "type": "text",
+            "required": true,
+            "help": "Your Authorize.net Public Client Key for Accept.js"
+        },
+        {
+            "key": "signature_key",
+            "label": "Signature Key",
+            "type": "password",
+            "required": false,
+            "help": "Optional: For webhook signature verification"
+        }
+    ],
+    "default_settings": {
+        "mode": "sandbox"
+    },
+    "hooks": ["payment_methods", "process_payment", "webhook_handler"]
+}

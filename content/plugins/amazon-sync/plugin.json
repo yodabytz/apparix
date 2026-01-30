@@ -1,0 +1,102 @@
+{
+    "slug": "amazon-sync",
+    "name": "Amazon Sync",
+    "version": "1.1.0",
+    "type": "marketplace",
+    "description": "Sync your products and orders with Amazon Seller Central via SP-API",
+    "author": "Apparix",
+    "author_url": "https://apparix.vibrixmedia.com",
+    "icon": "amazon-logo.svg",
+    "requires": {
+        "apparix": ">=1.0.0",
+        "php": ">=8.1"
+    },
+    "settings": [
+        {
+            "key": "seller_id",
+            "label": "Seller ID",
+            "type": "text",
+            "required": true,
+            "description": "Your Amazon Seller ID (found in Seller Central under Settings > Account Info)"
+        },
+        {
+            "key": "marketplace_id",
+            "label": "Marketplace",
+            "type": "select",
+            "required": true,
+            "options": {
+                "ATVPDKIKX0DER": "United States (amazon.com)",
+                "A2EUQ1WTGCTBG2": "Canada (amazon.ca)",
+                "A1AM78C64UM0Y8": "Mexico (amazon.com.mx)",
+                "A2Q3Y263D00KWC": "Brazil (amazon.com.br)",
+                "A1F83G8C2ARO7P": "United Kingdom (amazon.co.uk)",
+                "A1PA6795UKMFR9": "Germany (amazon.de)",
+                "A13V1IB3VIYBER": "France (amazon.fr)",
+                "APJ6JRA9NG5V4": "Italy (amazon.it)",
+                "A1RKKUPIHCS9HS": "Spain (amazon.es)",
+                "A1805IZSGTT6HS": "Netherlands (amazon.nl)",
+                "A2NODRKZP88ZB9": "Sweden (amazon.se)",
+                "A1C3SOZRARQ6R3": "Poland (amazon.pl)",
+                "AE08WJ6YKNBMC": "Belgium (amazon.com.be)",
+                "A33AVAJ2PDY3EV": "Turkey (amazon.com.tr)",
+                "A17E79C6D8DWNP": "Saudi Arabia (amazon.sa)",
+                "A2VIGQ35RCS4UG": "United Arab Emirates (amazon.ae)",
+                "ARBP9OOSHTCHU": "Egypt (amazon.eg)",
+                "A21TJRUUN4KGV": "India (amazon.in)",
+                "A1VC38T7YXB528": "Japan (amazon.co.jp)",
+                "A39IBJ37TRP1C6": "Australia (amazon.com.au)",
+                "A19VAU5U5O7RUS": "Singapore (amazon.sg)"
+            }
+        },
+        {
+            "key": "lwa_client_id",
+            "label": "LWA Client ID",
+            "type": "text",
+            "required": true,
+            "description": "Login with Amazon Client ID from your SP-API application"
+        },
+        {
+            "key": "lwa_client_secret",
+            "label": "LWA Client Secret",
+            "type": "password",
+            "required": true,
+            "description": "Login with Amazon Client Secret from your SP-API application"
+        },
+        {
+            "key": "refresh_token",
+            "label": "Refresh Token",
+            "type": "password",
+            "required": true,
+            "description": "SP-API Refresh Token obtained during app authorization"
+        },
+        {
+            "key": "sync_inventory",
+            "label": "Sync Inventory",
+            "type": "checkbox",
+            "default": true,
+            "description": "Automatically sync inventory levels to Amazon when stock changes"
+        },
+        {
+            "key": "sync_orders",
+            "label": "Import Orders",
+            "type": "checkbox",
+            "default": true,
+            "description": "Import Amazon orders into Apparix"
+        },
+        {
+            "key": "sync_interval",
+            "label": "Sync Interval (minutes)",
+            "type": "number",
+            "default": 15,
+            "min": 5,
+            "max": 1440,
+            "description": "How often to sync with Amazon (minimum 5 minutes)"
+        }
+    ],
+    "hooks": [
+        "product_updated",
+        "inventory_changed",
+        "order_created",
+        "cron_sync"
+    ]
+}
