@@ -5,16 +5,20 @@
 # Environment files (contains secrets)
 .env
 
-# Storage (logs, cache, sessions, updates)
+# Storage (logs, cache, sessions, updates, downloads, uploads)
 /storage/logs/*
 /storage/cache/*
 /storage/sessions/*
 /storage/updates/*
+/storage/downloads/*
+/storage/uploads/*
 /storage/.installed
 !/storage/logs/.gitkeep
 !/storage/cache/.gitkeep
 !/storage/sessions/.gitkeep
 !/storage/updates/.gitkeep
+!/storage/downloads/.gitkeep
+!/storage/uploads/.gitkeep
 
 # Product images (too large for git - backed up separately)
 /public/assets/images/products/

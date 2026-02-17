@@ -15,6 +15,7 @@ class RequirementsChecker
     {
         $this->checkPhpVersion();
         $this->checkExtensions();
+        $this->checkComposerDependencies();
         $this->checkWritableDirectories();
 
         return [
@@ -28,7 +29,7 @@ class RequirementsChecker
      */
     private function checkPhpVersion(): void
     {
-        $required = '8.1.0';
+        $required = '8.3.0';
         $current = PHP_VERSION;
         $passed = version_compare($current, $required, '>=');
 
@@ -77,6 +78,25 @@ class RequirementsChecker
     }
 
     /**
+     * Check if Composer dependencies are installed
+     */
+    private function checkComposerDependencies(): void
+    {
+        $autoloadExists = file_exists(BASE_PATH . '/vendor/autoload.php');
+
+        $this->requirements['composer'] = [
+            'name' => 'Composer Dependencies',
+            'required' => 'Installed',
+            'current' => $autoloadExists ? 'Installed' : 'Not installed — run: composer install',
+            'passed' => $autoloadExists
+        ];
+
+        if (!$autoloadExists) {
+            $this->allPassed = false;
+        }
+    }
+
+    /**
      * Check writable directories
      */
     private function checkWritableDirectories(): void
@@ -84,6 +104,7 @@ class RequirementsChecker
         $directories = [
             BASE_PATH . '/storage' => 'storage/',
             BASE_PATH . '/storage/logs' => 'storage/logs/',
+            BASE_PATH . '/storage/cache' => 'storage/cache/',
             BASE_PATH . '/storage/sessions' => 'storage/sessions/',
             PUBLIC_PATH . '/assets/images' => 'public/assets/images/',
             BASE_PATH => '.env file location'
