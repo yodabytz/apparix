@@ -17,8 +17,13 @@ $basePath = dirname(__DIR__);
 $lockFile = $basePath . '/storage/.installed';
 
 if (file_exists($lockFile)) {
-    header('Location: /');
-    exit;
+    // Allow the completion page to render even after install
+    if (isset($_GET['step']) && $_GET['step'] === 'complete') {
+        // Fall through to render the complete view
+    } else {
+        header('Location: /');
+        exit;
+    }
 }
 
 // Start session for multi-step data storage

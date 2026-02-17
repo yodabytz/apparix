@@ -84,7 +84,7 @@ if ($template === 'newsletter') {
                                 <tr>
                                     <td align="center" style="padding: 40px 40px 20px 40px;">
                                         <a href="https://apparix.vibrixmedia.com" style="text-decoration: none;">
-                                            <img src="https://apparix.vibrixmedia.com/assets/images/placeholder.png" alt="Lily\'s Pad Studio" width="280" style="max-width: 280px; width: 100%; height: auto; display: block;">
+                                            <img src="https://apparix.vibrixmedia.com/assets/images/placeholder.png" alt="Store Logo" width="280" style="max-width: 280px; width: 100%; height: auto; display: block;">
                                         </a>
                                     </td>
                                 </tr>

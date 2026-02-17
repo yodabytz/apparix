@@ -15,7 +15,7 @@
         <form method="POST" action="/track">
             <div style="margin-bottom: 1.5rem;">
                 <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Order Number</label>
-                <input type="text" name="order_number" value="<?php echo escape($orderNumber ?? ''); ?>" placeholder="e.g., LPS-12345678"
+                <input type="text" name="order_number" value="<?php echo escape($orderNumber ?? ''); ?>" placeholder="e.g., APX-12345678"
                        style="width: 100%; padding: 0.875rem 1rem; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 1rem;" required>
             </div>
             <div style="margin-bottom: 1.5rem;">

@@ -1,6 +1,6 @@
 -- Add digital product and license fields
 ALTER TABLE products
-ADD COLUMN is_digital TINYINT(1) DEFAULT 0 AFTER origin_id,
+ADD COLUMN is_digital TINYINT(1) DEFAULT 0 AFTER sku,
 ADD COLUMN download_file VARCHAR(500) DEFAULT NULL AFTER is_digital,
 ADD COLUMN download_limit INT DEFAULT NULL AFTER download_file,
 ADD COLUMN is_license_product TINYINT(1) DEFAULT 0 AFTER download_limit;
@@ -42,6 +42,23 @@ CREATE TABLE IF NOT EXISTS order_downloads (
     INDEX idx_order_id (order_id)
 );
 
--- Add edition code to product variants for license products
-ALTER TABLE product_variants
-ADD COLUMN license_edition CHAR(1) DEFAULT NULL AFTER cost;
+-- Create product variants table
+CREATE TABLE IF NOT EXISTS product_variants (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    product_id INT NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    sku VARCHAR(100) DEFAULT NULL,
+    price DECIMAL(10,2) DEFAULT NULL,
+    price_adjustment DECIMAL(10,2) DEFAULT 0.00,
+    cost DECIMAL(10,2) DEFAULT NULL,
+    license_edition CHAR(1) DEFAULT NULL,
+    inventory_count INT DEFAULT 0,
+    sort_order INT DEFAULT 0,
+    is_active TINYINT(1) DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+    INDEX idx_product (product_id),
+    INDEX idx_sku (sku),
+    INDEX idx_active (is_active)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

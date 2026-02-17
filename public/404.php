@@ -63,7 +63,7 @@ header('Content-Type: text/html; charset=UTF-8');
             margin-bottom: 1rem;
         }
 
-        .lily-pad {
+        .error-icon {
             font-size: 4rem;
             margin-bottom: 1.5rem;
             animation: float 3s ease-in-out infinite;
@@ -176,7 +176,7 @@ header('Content-Type: text/html; charset=UTF-8');
                 font-size: 5rem;
             }
 
-            .lily-pad {
+            .error-icon {
                 font-size: 3rem;
             }
 
@@ -197,8 +197,8 @@ header('Content-Type: text/html; charset=UTF-8');
 <body>
     <div class="container">
         <div class="error-code">404</div>
-        <div class="lily-pad">🪷</div>
-        <h1>Oops! This page hopped away</h1>
+        <div class="error-icon">&#x1F50D;</div>
+        <h1>Oops! This page doesn't exist</h1>
         <p>The page you're looking for doesn't exist or has been moved. Don't worry, let's help you find your way back!</p>
 
         <div class="buttons">

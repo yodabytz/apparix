@@ -10,6 +10,7 @@
 /storage/cache/*
 /storage/sessions/*
 /storage/updates/*
+/storage/.installed
 !/storage/logs/.gitkeep
 !/storage/cache/.gitkeep
 !/storage/sessions/.gitkeep

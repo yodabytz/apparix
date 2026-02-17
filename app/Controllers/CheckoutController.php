@@ -163,6 +163,7 @@ class CheckoutController extends Controller
                 'coupon_code' => $appliedCoupon['code'] ?? null,
                 'coupon_id' => $appliedCoupon['id'] ?? null,
                 'is_popup_coupon' => !empty($appliedCoupon['is_popup']),
+                'cart_fingerprint' => $this->buildCartFingerprint($items),
                 'created_at' => time()
             ];
 
@@ -320,6 +321,22 @@ class CheckoutController extends Controller
                 $this->redirect('/checkout');
             }
             return;
+        }
+
+        // Verify cart fingerprint (items, variants, quantities, prices)
+        if ($paymentIntentData && !empty($paymentIntentData['cart_fingerprint'])) {
+            $currentFingerprint = $this->buildCartFingerprint($items);
+            if ($currentFingerprint !== $paymentIntentData['cart_fingerprint']) {
+                unset($_SESSION['payment_intent_data']);
+                $errorMsg = 'Your cart has changed. Please review your order and try again.';
+                if ($this->isAjaxRequest()) {
+                    $this->json(['error' => $errorMsg, 'cart_changed' => true], 400);
+                } else {
+                    setFlash('error', $errorMsg);
+                    $this->redirect('/checkout');
+                }
+                return;
+            }
         }
 
         // Get shipping method and calculate cost (skip for digital-only orders)
@@ -535,7 +552,7 @@ class CheckoutController extends Controller
             }
 
             // Generate order number
-            $orderNumber = 'LPS-' . strtoupper(substr(md5(uniqid()), 0, 8));
+            $orderNumber = 'APX-' . strtoupper(substr(md5(uniqid()), 0, 8));
 
             // Set payment method based on order type
             $paymentMethod = $isFreeOrder ? 'free' : 'stripe';
@@ -568,14 +585,16 @@ class CheckoutController extends Controller
                 $itemTotal = $itemPrice * $item['quantity'];
 
                 $productName = $item['name'];
+                $variantName = null;
                 if (!empty($item['variant_name'])) {
+                    $variantName = $item['variant_name'];
                     $productName .= ' - ' . $item['variant_name'];
                 }
 
                 $db->insert(
-                    "INSERT INTO order_items (order_id, product_id, variant_id, product_name, product_sku, quantity, price, total)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                    [$orderId, $item['product_id'], $item['variant_id'] ?? null, $productName, $item['sku'], $item['quantity'], $itemPrice, $itemTotal]
+                    "INSERT INTO order_items (order_id, product_id, variant_id, product_name, variant_name, product_sku, quantity, price, cost, total)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    [$orderId, $item['product_id'], $item['variant_id'] ?? null, $productName, $variantName, $item['sku'], $item['quantity'], $itemPrice, $item['unit_cost'] ?? null, $itemTotal]
                 );
 
                 // Decrement inventory (skip for digital products, rows are already locked by FOR UPDATE above)
@@ -709,6 +728,32 @@ class CheckoutController extends Controller
 
         } catch (\Exception $e) {
             $db->rollback();
+
+            // Auto-refund if Stripe payment succeeded but DB failed
+            $refundStatus = 'not_attempted';
+            $refundError = null;
+            if (!$isFreeOrder && !empty($paymentIntentId)) {
+                try {
+                    \Stripe\Stripe::setApiKey($_ENV['STRIPE_SECRET_KEY']);
+                    \Stripe\Refund::create(['payment_intent' => $paymentIntentId]);
+                    $refundStatus = 'refunded';
+                } catch (\Exception $refundEx) {
+                    $refundStatus = 'refund_failed';
+                    $refundError = $refundEx->getMessage();
+                    error_log("CRITICAL: Stripe refund failed for {$paymentIntentId}: {$refundError}");
+                }
+            }
+
+            // Log to failed_orders table
+            try {
+                $db->insert(
+                    "INSERT INTO failed_orders (payment_intent_id, customer_email, subtotal, shipping_cost, total, error_message, refund_status, refund_error)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    [$paymentIntentId ?? null, $email, $subtotal, $shippingCost, $total, $e->getMessage(), $refundStatus, $refundError]
+                );
+            } catch (\Exception $logEx) {
+                error_log("CRITICAL: Failed to log failed order: PI={$paymentIntentId}, Email={$email}, Total={$total}, Error={$e->getMessage()}, RefundStatus={$refundStatus}");
+            }
 
             if ($this->isAjaxRequest()) {
                 $this->json(['error' => 'Failed to process order: ' . $e->getMessage()], 500);
@@ -898,6 +943,23 @@ class CheckoutController extends Controller
             'newTotal' => $cartTotal,
             'newTotalFormatted' => '$' . number_format($cartTotal, 2)
         ]);
+    }
+
+    /**
+     * Build a fingerprint of the cart contents for tamper detection
+     */
+    private function buildCartFingerprint(array $items): string
+    {
+        $parts = [];
+        foreach ($items as $item) {
+            $price = $item['sale_price'] ?? $item['price'];
+            if (!empty($item['price_adjustment'])) {
+                $price += $item['price_adjustment'];
+            }
+            $parts[] = $item['product_id'] . ':' . ($item['variant_id'] ?? 0) . ':' . $item['quantity'] . ':' . $price;
+        }
+        sort($parts);
+        return md5(implode('|', $parts));
     }
 
     /**

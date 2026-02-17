@@ -86,6 +86,12 @@
                     <option value="feature">Mark as Featured</option>
                     <option value="unfeature">Remove from Featured</option>
                 </optgroup>
+                <optgroup label="Reorder">
+                    <option value="move_to_top">Move to Top</option>
+                    <option value="move_up_10">Move Up 10 Spots</option>
+                    <option value="move_down_10">Move Down 10 Spots</option>
+                    <option value="move_to_bottom">Move to Bottom</option>
+                </optgroup>
                 <optgroup label="Other">
                     <option value="delete">Delete Products</option>
                 </optgroup>
@@ -333,13 +339,20 @@ function applyBulkAction() {
         }
     }
 
+    var body = '_csrf_token=' + encodeURIComponent(csrfToken) + '&action=' + action + '&ids=' + ids.join(',');
+
+    // Include category_id for reorder actions
+    if (['move_to_top', 'move_up_10', 'move_down_10', 'move_to_bottom'].indexOf(action) !== -1 && currentCategoryId > 0) {
+        body += '&category_id=' + currentCategoryId;
+    }
+
     fetch('/admin/products/bulk-action', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
             'X-Requested-With': 'XMLHttpRequest'
         },
-        body: '_csrf_token=' + encodeURIComponent(csrfToken) + '&action=' + action + '&ids=' + ids.join(',')
+        body: body
     })
     .then(r => r.json())
     .then(data => {

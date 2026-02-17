@@ -66,8 +66,8 @@ class ShippingOrigin
 
         $this->db->insert(
             "INSERT INTO shipping_origins
-             (name, address_line1, address_line2, city, state, postal_code, country, phone, is_default, is_active)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+             (name, address_line1, address_line2, city, state, postal_code, country, phone, is_default, is_active, shipping_cost_usa, shipping_cost_canada, shipping_cost_overseas)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 $data['name'],
                 $data['address_line1'],
@@ -78,7 +78,10 @@ class ShippingOrigin
                 $data['country'] ?? 'US',
                 $data['phone'] ?? null,
                 $data['is_default'] ?? 0,
-                $data['is_active'] ?? 1
+                $data['is_active'] ?? 1,
+                $data['shipping_cost_usa'] ?? null,
+                $data['shipping_cost_canada'] ?? null,
+                $data['shipping_cost_overseas'] ?? null
             ]
         );
 
@@ -99,7 +102,8 @@ class ShippingOrigin
             "UPDATE shipping_origins SET
              name = ?, address_line1 = ?, address_line2 = ?, city = ?,
              state = ?, postal_code = ?, country = ?, phone = ?,
-             is_default = ?, is_active = ?
+             is_default = ?, is_active = ?,
+             shipping_cost_usa = ?, shipping_cost_canada = ?, shipping_cost_overseas = ?
              WHERE id = ?",
             [
                 $data['name'],
@@ -112,6 +116,9 @@ class ShippingOrigin
                 $data['phone'] ?? null,
                 $data['is_default'] ?? 0,
                 $data['is_active'] ?? 1,
+                $data['shipping_cost_usa'] ?? null,
+                $data['shipping_cost_canada'] ?? null,
+                $data['shipping_cost_overseas'] ?? null,
                 $id
             ]
         );

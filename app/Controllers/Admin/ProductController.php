@@ -1571,6 +1571,123 @@ class ProductController extends Controller
                 $this->adminModel->logActivity($this->admin['admin_id'], 'bulk_enable', 'products', 0, "Enabled $count products");
                 break;
 
+            case 'move_to_top':
+            case 'move_up_10':
+            case 'move_down_10':
+            case 'move_to_bottom':
+                $categoryId = $this->post('category_id', null);
+
+                if ($categoryId) {
+                    // Category-specific reorder using product_categories.sort_order
+                    $allProducts = $db->select(
+                        "SELECT product_id FROM product_categories WHERE category_id = ? ORDER BY sort_order ASC",
+                        [(int)$categoryId]
+                    );
+                    $allIds = array_column($allProducts, 'product_id');
+
+                    // Separate selected from remaining, preserving order
+                    $selectedIds = [];
+                    $remainingIds = [];
+                    foreach ($allIds as $pid) {
+                        if (in_array($pid, $ids)) {
+                            $selectedIds[] = $pid;
+                        } else {
+                            $remainingIds[] = $pid;
+                        }
+                    }
+
+                    if (!empty($selectedIds)) {
+                        // Find the earliest position of selected items in the original list
+                        $firstSelectedPos = array_search($selectedIds[0], $allIds);
+                        // Map to position in remaining array
+                        $currentPos = 0;
+                        foreach ($remainingIds as $idx => $rid) {
+                            if ($idx >= $firstSelectedPos) break;
+                            $currentPos++;
+                        }
+
+                        switch ($action) {
+                            case 'move_to_top':
+                                $insertPos = 0;
+                                break;
+                            case 'move_up_10':
+                                $insertPos = max(0, $currentPos - 10);
+                                break;
+                            case 'move_down_10':
+                                $insertPos = min(count($remainingIds), $currentPos + 10);
+                                break;
+                            case 'move_to_bottom':
+                                $insertPos = count($remainingIds);
+                                break;
+                        }
+
+                        array_splice($remainingIds, $insertPos, 0, $selectedIds);
+
+                        foreach ($remainingIds as $order => $pid) {
+                            $db->update(
+                                "UPDATE product_categories SET sort_order = ? WHERE category_id = ? AND product_id = ?",
+                                [$order, (int)$categoryId, (int)$pid]
+                            );
+                        }
+                    }
+
+                    $actionLabel = str_replace('_', ' ', $action);
+                    $this->adminModel->logActivity($this->admin['admin_id'], 'bulk_reorder', 'category', (int)$categoryId, "Bulk $actionLabel: $count products in category");
+                } else {
+                    // Global reorder using products.sort_order
+                    $allProducts = $db->select(
+                        "SELECT id FROM products WHERE is_active = 1 ORDER BY sort_order ASC"
+                    );
+                    $allIds = array_column($allProducts, 'id');
+
+                    $selectedIds = [];
+                    $remainingIds = [];
+                    foreach ($allIds as $pid) {
+                        if (in_array($pid, $ids)) {
+                            $selectedIds[] = $pid;
+                        } else {
+                            $remainingIds[] = $pid;
+                        }
+                    }
+
+                    if (!empty($selectedIds)) {
+                        $firstSelectedPos = array_search($selectedIds[0], $allIds);
+                        $currentPos = 0;
+                        foreach ($remainingIds as $idx => $rid) {
+                            if ($idx >= $firstSelectedPos) break;
+                            $currentPos++;
+                        }
+
+                        switch ($action) {
+                            case 'move_to_top':
+                                $insertPos = 0;
+                                break;
+                            case 'move_up_10':
+                                $insertPos = max(0, $currentPos - 10);
+                                break;
+                            case 'move_down_10':
+                                $insertPos = min(count($remainingIds), $currentPos + 10);
+                                break;
+                            case 'move_to_bottom':
+                                $insertPos = count($remainingIds);
+                                break;
+                        }
+
+                        array_splice($remainingIds, $insertPos, 0, $selectedIds);
+
+                        foreach ($remainingIds as $order => $pid) {
+                            $db->update(
+                                "UPDATE products SET sort_order = ? WHERE id = ?",
+                                [$order, (int)$pid]
+                            );
+                        }
+                    }
+
+                    $actionLabel = str_replace('_', ' ', $action);
+                    $this->adminModel->logActivity($this->admin['admin_id'], 'bulk_reorder', 'products', 0, "Bulk $actionLabel: $count products");
+                }
+                break;
+
             case 'delete':
                 foreach ($ids as $id) {
                     $product = $this->productModel->find((int)$id);

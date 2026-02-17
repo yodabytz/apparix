@@ -1,5 +1,5 @@
-# Robots.txt for Lily's Pad Studio
-# https://apparix.vibrixmedia.com
+# Robots.txt for Apparix
+# https://apparix.app
 
 User-agent: *
 Allow: /
@@ -18,5 +18,12 @@ Disallow: /api/
 # Disallow search result pages (duplicate content)
 Disallow: /search?
 
+# Block unwanted bots
+User-agent: Bytespider
+Disallow: /
+
+User-agent: PetalBot
+Disallow: /
+
 # Sitemap location
-Sitemap: https://apparix.vibrixmedia.com/sitemap.xml
+Sitemap: https://apparix.app/sitemap.xml

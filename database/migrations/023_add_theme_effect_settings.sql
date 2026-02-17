@@ -1,5 +1,5 @@
--- Add effect settings column to themes table
-ALTER TABLE themes ADD COLUMN effect_settings JSON DEFAULT NULL AFTER custom_css;
+-- Add effect settings column to themes table (if not already present from CREATE TABLE)
+ALTER TABLE themes ADD COLUMN IF NOT EXISTS effect_settings JSON DEFAULT NULL AFTER custom_css;
 
 -- Update existing themes with default effect settings
 UPDATE themes SET effect_settings = JSON_OBJECT(

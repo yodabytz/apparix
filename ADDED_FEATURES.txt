@@ -34,18 +34,6 @@ The popup had issues on mobile where it was static and the close button didn't w
 - Larger size on mobile (36px vs 28px desktop)
 - Add `touch-action: manipulation` and `-webkit-tap-highlight-color: transparent`
 
-**Key JavaScript for close button:**
-```javascript
-const closeBtn = document.getElementById('socialProofClose');
-if (closeBtn) {
-    closeBtn.addEventListener('click', closeSocialProof);
-    closeBtn.addEventListener('touchend', function(e) {
-        e.preventDefault();
-        closeSocialProof();
-    });
-}
-```
-
 ---
 
 ## Free Shipping Fix (US Orders)
@@ -71,13 +59,6 @@ When updating CSS or JS, update the version numbers in:
 ### Overview
 Auto-generates Google Shopping feed XML with proper color, size, gender, and age_group attributes.
 
-### Why Needed
-Google Merchant Center requires:
-- `g:color` attribute for products with color variants
-- `g:size` attribute for products with size variants
-- `g:gender` (male/female/unisex) for apparel
-- `g:age_group` (adult/kids/etc) for apparel
-
 ### Script Location
 `/scripts/generate-google-feed.php`
 
@@ -93,85 +74,14 @@ Google Merchant Center requires:
 - Skips products with zero inventory
 - Includes shipping dimensions and free shipping info
 
-### Database Tables Used
-- `products` - main product data
-- `product_options` - option names (Color, Size)
-- `product_option_values` - option values (Blue, Medium)
-- `product_variants` - for inventory counts
-- `product_categories` / `categories` - for google product category mapping
-- `product_images` - for primary image
-
-### Key Code Logic
-
-**Gender Detection:**
-```php
-$femaleKeywords = ['women', 'womens', "women's", 'ladies', 'lady', 'female', 'her', 'girl'];
-$maleKeywords = ['men', 'mens', "men's", 'male', 'him', 'boy', 'gentleman'];
-
-function detectGender($name, $description) {
-    // Search name and description for keywords
-    // Return 'female', 'male', or null
-}
-```
-
-**Color/Size Extraction:**
-```php
-$options = $db->select("
-    SELECT po.option_name, pov.value_name
-    FROM product_options po
-    JOIN product_option_values pov ON po.id = pov.option_id
-    WHERE po.product_id = ?
-", [$productId]);
-
-foreach ($options as $opt) {
-    $optName = strtolower($opt['option_name']);
-    if ($optName === 'color' || $optName === 'colour' || strpos($optName, 'tartan') !== false) {
-        $colors[] = $opt['value_name'];
-    } elseif ($optName === 'size') {
-        $sizes[] = $opt['value_name'];
-    }
-}
-```
-
-**Apparel Detection (for gender/age_group):**
-```php
-$isApparel = (strpos($googleCategory, 'Apparel') !== false || strpos($googleCategory, 'Clothing') !== false);
-if ($isApparel) {
-    $genderValue = $gender ?: 'unisex';
-    $xml .= "<g:gender>{$genderValue}</g:gender>\n";
-    $xml .= "<g:age_group>adult</g:age_group>\n";
-}
-```
-
-**Google Category Mapping:**
-```php
-$categoryMappings = [
-    'clothing' => 'Apparel & Accessories > Clothing',
-    'sweaters' => 'Apparel & Accessories > Clothing > Shirts & Tops > Sweaters',
-    'bags' => 'Apparel & Accessories > Handbags, Wallets & Cases > Handbags',
-    'blankets' => 'Home & Garden > Linens & Bedding > Bedding > Blankets & Throws',
-    // etc.
-];
-```
-
 ### Cron Job
-Run daily at 3 AM:
 ```
 0 3 * * * php /var/www/SITEPATH/scripts/generate-google-feed.php >> /var/log/google-feed.log 2>&1
 ```
 
-### Important Notes
-- Script needs to load .env for database credentials
-- Use `define('BASE_PATH', dirname(__DIR__));` at top of script
-- Feed creates separate `<item>` for each color variant
-- Non-apparel items (home goods) don't get gender/age_group tags
-
 ---
 
 ## Cron Jobs Setup
-
-### Overview
-Apparix requires several cron jobs for full functionality. The installer generates a setup script.
 
 ### Auto Setup
 After installation, run:
@@ -184,39 +94,14 @@ Add these to crontab (`crontab -e`):
 
 ```
 # Apparix E-Commerce Cron Jobs
-
-# Abandoned cart emails - Every hour
 0 * * * * php /var/www/SITEPATH/cron/abandoned-carts.php >> /var/log/apparix-cron.log 2>&1
-
-# Review request emails - Daily at 10 AM
 0 10 * * * php /var/www/SITEPATH/cron/send-review-requests.php >> /var/log/apparix-cron.log 2>&1
-
-# Wishlist reminders - Daily at 9 AM
 0 9 * * * php /var/www/SITEPATH/cron/wishlist-reminders.php >> /var/log/apparix-cron.log 2>&1
-
-# Check delivery status - Every 4 hours
 0 */4 * * * php /var/www/SITEPATH/cron/check-delivery-status.php >> /var/log/apparix-cron.log 2>&1
-
-# Google Merchant Feed - Daily at 3 AM
 0 3 * * * php /var/www/SITEPATH/scripts/generate-google-feed.php >> /var/log/google-feed.log 2>&1
-
-# Cleanup orphaned favorites - Weekly on Sunday at 2 AM
 0 2 * * 0 php /var/www/SITEPATH/scripts/cleanup-orphaned-favorites.php >> /var/log/apparix-cron.log 2>&1
-
-# Image optimization - Daily at 4 AM
 0 4 * * * php /var/www/SITEPATH/scripts/optimize-images.php >> /var/log/apparix-cron.log 2>&1
 ```
-
-### Cron Job Descriptions
-| Job | Schedule | Description |
-|-----|----------|-------------|
-| abandoned-carts.php | Hourly | Sends reminder emails for abandoned carts (2-72 hours old) |
-| send-review-requests.php | Daily 10 AM | Sends review request emails after order delivery |
-| wishlist-reminders.php | Daily 9 AM | Reminds customers about items in their wishlist |
-| check-delivery-status.php | Every 4 hours | Updates order delivery status via AfterShip |
-| generate-google-feed.php | Daily 3 AM | Generates Google Merchant XML feed |
-| cleanup-orphaned-favorites.php | Weekly Sunday 2 AM | Removes favorites for deleted products |
-| optimize-images.php | Daily 4 AM | Optimizes product images for web |
 
 ---
 
@@ -239,21 +124,362 @@ Digital products (plugins, software, downloadables) skip shipping in cart and ch
 - `/app/Views/checkout/index.php` - Hide shipping sections, show digital delivery notice
 - `/app/Controllers/CheckoutController.php` - Skip shipping validation for digital orders
 - `/app/Views/products/show.php` - Hide shipping details, show "Instant Digital Download" badge
-- `/public/assets/css/main.css` - Added `.digital-delivery-*` styles
 
-### Detection Logic
+---
+
+## Category Sidebar - Hover Dropdown with Delayed Close
+
+### Features
+- **Hover to expand**: Subcategories open immediately when hovering over a parent category
+- **5-second delay to close**: After mouse leaves, subcategories stay open for 5 seconds before collapsing
+- **Stylish plus/minus indicator**: Minimal pink plus/minus icons that animate smoothly
+- **Click still works**: Tapping/clicking the indicator toggles for touch devices
+
+### Files Modified
+- `/app/Views/partials/shop-sidebar.php` - NEW shared partial containing sidebar HTML, CSS, and JS
+- `/app/Views/products/index.php` - Now includes the shared partial
+- `/app/Views/products/category.php` - Now includes the shared partial
+
+---
+
+## Video Lazy Loading - Performance Fix
+
+### Issue
+Product listing pages were laggy on initial load because all product videos (5-13MB each) were being fetched with `preload="metadata"`.
+
+### Fix
+Changed videos to lazy-load only when user hovers over a product card.
+
+### Files Modified
+- `/app/Views/products/index.php` - Changed video tag to use `data-src` with `preload="none"`
+- `/app/Views/products/category.php` - Same change
+- `/public/assets/js/main.js` - Updated `initVideoHover()` to set src on first hover
+
+---
+
+## Multi-Item Shipping System
+
+### Overview
+Complete shipping calculation system for multiple items with separate rates for Standard and Express shipping.
+
+### Database Change
+```sql
+ALTER TABLE products ADD COLUMN shipping_price_additional DECIMAL(8,2) DEFAULT NULL AFTER shipping_price;
+UPDATE products SET shipping_price_additional = 2.00 WHERE shipping_price IS NOT NULL AND shipping_price > 0;
+```
+
+### How Standard Shipping Works
+- **First item**: Pays full `shipping_price` (highest among cart items)
+- **Additional items**: Pay `shipping_price_additional` rate (default $2.00)
+- **Free shipping items**: Do not factor into calculation at all
+
+### How Express Shipping Works
+- Uses the same additional-item logic as Standard
+- Adds an **Express premium** = (Express zone flat rate - Standard zone flat rate)
+- Example: If Express flat is $12.99 and Standard flat is $5.99, premium is $7.00
+
+### Example (Zone 1, 3 t-shirts with $6.99 shipping, $2.00 additional)
+| Method | Calculation | Total |
+|--------|-------------|-------|
+| Standard | $6.99 + $2.00 + $2.00 | **$10.99** |
+| Express | $10.99 + ($12.99 - $5.99) | **$17.99** |
+
+### Files Modified
+- `/app/Core/Shipping/ShippingCalculator.php` - Updated `getShippingOptions()` and `getRate()` methods
+- `/app/Models/Cart.php` - Added `shipping_price_additional` to SELECT query
+- `/app/Controllers/ShippingController.php` - Added `shipping_price_additional` to items array
+- `/app/Models/ShippingMethod.php` - Added `getStandardForZone()` method
+
+### Key Code Logic
 ```php
-// Check if cart is digital-only
-$isDigitalOnly = true;
-foreach ($items as $item) {
-    if (empty($item['is_digital'])) {
-        $isDigitalOnly = false;
-        break;
+// Calculate fixed shipping: highest rate for first item, additional rate for rest
+usort($fixedShippingItems, fn($a, $b) => $b['shipping_price'] <=> $a['shipping_price']);
+
+$firstItemProcessed = false;
+foreach ($fixedShippingItems as $fsi) {
+    if (!$firstItemProcessed) {
+        $fixedShippingTotal += $fsi['shipping_price'];
+        if ($fsi['quantity'] > 1) {
+            $fixedShippingTotal += $fsi['shipping_price_additional'] * ($fsi['quantity'] - 1);
+        }
+        $firstItemProcessed = true;
+    } else {
+        $fixedShippingTotal += $fsi['shipping_price_additional'] * $fsi['quantity'];
     }
+}
+
+// For Express, add premium on top
+if ($isExpress) {
+    $expressPremium = max(0, $expressFlatRate - $standardFlatRate);
+    $rateInfo['rate'] = round($fixedShippingTotal + $expressPremium + $handlingFees, 2);
+} else {
+    $rateInfo['rate'] = round($fixedShippingTotal + $handlingFees, 2);
 }
 ```
 
-### CSS Classes Added
-- `.digital-delivery-notice` - Green notice box in cart summary
-- `.digital-delivery-badge` - Badge on product page
-- `.digital-delivery-checkout` - Checkout section notice
+### Admin Notes
+- Set `shipping_price` and `shipping_price_additional` for products to use fixed shipping logic
+- Products with NULL shipping_price use zone-based rates instead
+- T-shirts default to $6.99 shipping + $2.00 additional
+
+---
+
+## Checkout - Preserve Form Data on Coupon Apply/Remove
+
+### Issue
+When a customer entered their shipping address and then applied or removed a coupon code, the page would refresh and they would have to re-enter their address information.
+
+### Solution
+Form data is saved to sessionStorage before the coupon reload and restored automatically after the page loads.
+
+### Files Modified
+- `/app/Views/checkout/index.php` - Added `saveCheckoutFormData()` and `restoreCheckoutFormData()` JavaScript functions
+
+### Fields Preserved
+- Email, Phone, Order notes
+- Shipping: first name, last name, company, address1, address2, city, state, postal, country
+- Billing: first name, last name, company, address1, address2, city, state, postal, country
+- "Same as shipping" checkbox state
+
+---
+
+## Coupon Discount Recalculation on Cart Change
+
+### Issue
+When a coupon was applied and then more items were added to cart, the discount amount stayed the same instead of recalculating based on the new cart total.
+
+### Solution
+The checkout page now recalculates the coupon discount whenever it loads, based on the current cart total.
+
+### Files Modified
+- `/app/Controllers/CheckoutController.php` - Added discount recalculation in `index()` method
+
+### Code Added
+```php
+// Recalculate coupon discount if one is applied (in case cart changed)
+if (!empty($_SESSION['applied_coupon'])) {
+    $coupon = $_SESSION['applied_coupon'];
+    if ($coupon['type'] === 'percentage') {
+        $newDiscount = round($cartTotal * ($coupon['value'] / 100), 2);
+    } elseif ($coupon['type'] === 'fixed') {
+        $newDiscount = min($coupon['value'], $cartTotal);
+    }
+    $_SESSION['applied_coupon']['discount'] = $newDiscount;
+}
+```
+
+---
+
+## Checkout - Stripe Email Variable Fix
+
+### Issue
+The `email` variable used in `stripe.confirmPayment()` was defined locally inside `initializePayment()` but referenced in the form submit handler, causing it to be undefined.
+
+### Fix
+Read the email from the DOM at submit time instead of referencing a variable from another function's scope.
+
+### Files Modified
+- `/app/Views/checkout/index.php` - Fixed email variable in form submit handler
+
+### Code Change
+**Before (broken):**
+```javascript
+// Handle form submission
+document.getElementById('checkoutForm').addEventListener('submit', async function(e) {
+    // ...
+    const { error, paymentIntent } = await stripe.confirmPayment({
+        elements,
+        confirmParams: {
+            return_url: window.location.origin + '/checkout/confirm',
+            receipt_email: email,  // email was undefined here!
+        },
+        redirect: 'if_required'
+    });
+```
+
+**After (fixed):**
+```javascript
+// Handle form submission
+document.getElementById('checkoutForm').addEventListener('submit', async function(e) {
+    // ...
+    // Get email from form at submit time
+    const customerEmail = document.getElementById('email').value.trim();
+
+    const { error, paymentIntent } = await stripe.confirmPayment({
+        elements,
+        confirmParams: {
+            return_url: window.location.origin + '/checkout/confirm',
+            receipt_email: customerEmail,
+        },
+        redirect: 'if_required'
+    });
+```
+
+---
+
+## Login Security Enhancements
+
+### Overview
+Comprehensive security improvements for customer and admin login systems.
+
+### 1. Password Complexity Requirements
+
+Passwords now require:
+- Minimum 8 characters
+- At least one uppercase letter
+- At least one lowercase letter
+- At least one number
+- At least one special character (!@#$%^&* etc.)
+
+**Files Modified:**
+- `/app/Models/User.php` - Added `validatePasswordComplexity()` static method
+- `/app/Controllers/UserController.php` - Uses validation for registration and password change
+- `/app/Controllers/Admin/AdminUserController.php` - Uses validation for admin account creation/update
+
+### 2. Account Lockout Email Notifications
+
+When an account is locked due to failed login attempts, an email is sent to the account owner.
+
+**Files Modified:**
+- `/app/Models/RateLimiter.php` - Sends lockout notification when threshold reached
+- `/app/Core/SecurityEmailService.php` - NEW: Handles all security-related emails
+
+### 3. New Device Login Alerts
+
+Users receive email notifications when logging in from a new device/browser.
+
+**Database Tables Added:**
+```sql
+CREATE TABLE user_devices (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    device_fingerprint VARCHAR(64) NOT NULL,
+    ip_address VARCHAR(45),
+    user_agent TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    last_used_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_user_device (user_id, device_fingerprint),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE admin_devices (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    admin_id INT NOT NULL,
+    device_fingerprint VARCHAR(64) NOT NULL,
+    ip_address VARCHAR(45),
+    user_agent TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    last_used_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_admin_device (admin_id, device_fingerprint),
+    FOREIGN KEY (admin_id) REFERENCES admin_users(id) ON DELETE CASCADE
+);
+```
+
+**Files Modified:**
+- `/app/Models/User.php` - Added device fingerprinting and tracking methods
+- `/app/Models/AdminUser.php` - Same for admin users
+- `/app/Controllers/UserController.php` - Checks for new devices on login
+- `/app/Controllers/Admin/AuthController.php` - Same for admin login
+
+### 4. reCAPTCHA Required in Production
+
+reCAPTCHA verification now fails if not properly configured in production (non-debug) mode.
+
+**Files Modified:**
+- `/app/Core/ReCaptcha.php` - Added `isConfigured()` method, fails in production if not configured
+- `/app/Controllers/UserController.php` - Requires token if reCAPTCHA is configured
+
+### 5. Two-Factor Authentication (2FA) for Admin
+
+Admins can now enable TOTP-based 2FA using Google Authenticator, Authy, etc.
+
+**Database Changes:**
+```sql
+ALTER TABLE admin_users
+ADD COLUMN totp_secret VARCHAR(32) DEFAULT NULL,
+ADD COLUMN totp_enabled TINYINT(1) DEFAULT 0,
+ADD COLUMN backup_codes TEXT DEFAULT NULL;
+```
+
+**New Files:**
+- `/app/Core/TOTP.php` - TOTP implementation (RFC 6238 compliant)
+- `/app/Controllers/Admin/TwoFactorController.php` - 2FA setup and management
+- `/app/Views/admin/two-factor/index.php` - 2FA settings page
+- `/app/Views/admin/two-factor/setup.php` - QR code and setup wizard
+- `/app/Views/admin/two-factor/backup-codes.php` - Display regenerated codes
+
+**Files Modified:**
+- `/app/Models/AdminUser.php` - Added 2FA methods (enable, disable, verify, backup codes)
+- `/app/Controllers/Admin/AuthController.php` - 2FA verification during login
+- `/app/Views/admin/auth/login.php` - Shows 2FA form when required
+- `/public/index.php` - Added 2FA routes
+
+**Routes Added:**
+- `GET /admin/2fa` - 2FA settings page
+- `GET /admin/2fa/setup` - Start 2FA setup
+- `POST /admin/2fa/enable` - Verify and enable 2FA
+- `POST /admin/2fa/disable` - Disable 2FA (requires password)
+- `POST /admin/2fa/regenerate-codes` - Generate new backup codes
+- `GET /admin/2fa/cancel` - Cancel 2FA verification and return to login
+
+**QR Code Generation:**
+Uses qrserver.com API (Google Charts QR API is deprecated):
+```php
+$otpauthUrl = "otpauth://totp/" . rawurlencode("Site Name") . ":" . rawurlencode($admin['email']) . "?secret=" . $secret . "&issuer=" . rawurlencode("Site Name") . "&algorithm=SHA1&digits=6&period=30";
+$qrApiUrl = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" . urlencode($otpauthUrl);
+```
+
+**2FA Login Session Bug Fix (Important!):**
+
+The 2FA login flow stores pending verification in `$_SESSION['pending_2fa_admin']`. A critical bug was discovered where adding a "Cancel" link with inline PHP:
+
+```php
+<!-- WRONG - PHP executes on page load, not on click! -->
+<a href="/admin/login" onclick="<?php unset($_SESSION['pending_2fa_admin']); ?>">Cancel</a>
+```
+
+This caused the session to be cleared immediately when the page loaded, before the user could submit the 2FA code. The login would loop back to the start.
+
+**Fix:** Create a separate route/controller method for cancellation:
+
+```php
+// In AuthController.php
+public function cancel2FA(): void
+{
+    unset($_SESSION['pending_2fa_admin']);
+    $this->redirect('/admin/login');
+}
+
+// In index.php routes
+$router->get('/admin/2fa/cancel', [Admin\AuthController::class, 'cancel2FA']);
+```
+
+Then the view uses a simple link:
+```php
+<a href="/admin/2fa/cancel">Cancel and start over</a>
+```
+
+**Sidebar Link:**
+Added "2FA Security" link in `/app/Views/layouts/admin.php` sidebar footer for easy access to 2FA settings.
+
+### Security Summary Table
+
+| Feature | Customer Login | Admin Login |
+|---------|---------------|-------------|
+| Password Complexity | Yes | Yes |
+| Rate Limiting (5 attempts/15 min lockout) | Yes | Yes |
+| Progressive Delays | Yes | Yes |
+| Lockout Email Notifications | Yes | Yes |
+| New Device Alerts | Yes | Yes |
+| reCAPTCHA v3 | Yes | No |
+| Two-Factor Auth (TOTP) | No | Yes |
+| Session Token Rotation | Yes | Yes |
+| Secure Cookies (HttpOnly, Secure, SameSite) | Yes | Yes (Strict) |
+
+### Email Templates
+
+The SecurityEmailService sends these security emails:
+- Account lockout notification
+- New device login alert
+- 2FA enabled confirmation
+- 2FA disabled warning

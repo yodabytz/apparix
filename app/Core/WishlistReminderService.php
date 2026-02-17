@@ -38,7 +38,7 @@ class WishlistReminderService
             "SELECT DISTINCT u.id, u.email, u.first_name, u.last_name
              FROM users u
              INNER JOIN favorites f ON f.user_id = u.id
-             INNER JOIN products p ON f.product_id = p.id AND p.is_active = 1
+             INNER JOIN products p ON f.product_id = p.id AND p.is_active = 1 AND p.disabled = 0
              WHERE f.created_at < DATE_SUB(NOW(), INTERVAL 7 DAY)
                AND f.reminder_sent_at IS NULL
                AND u.email IS NOT NULL
@@ -63,7 +63,7 @@ class WishlistReminderService
                      WHERE f.user_id = ?
                        AND f.created_at < DATE_SUB(NOW(), INTERVAL 7 DAY)
                        AND f.reminder_sent_at IS NULL
-                       AND p.is_active = 1
+                       AND p.is_active = 1 AND p.disabled = 0
                      ORDER BY f.created_at DESC
                      LIMIT 6",
                     [$user['id']]

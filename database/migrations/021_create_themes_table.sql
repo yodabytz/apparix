@@ -26,6 +26,14 @@ CREATE TABLE IF NOT EXISTS themes (
     category_layout ENUM('grid', 'list', 'masonry') DEFAULT 'grid',
     product_grid_columns INT DEFAULT 4,
 
+    -- Navbar Colors
+    navbar_bg_color VARCHAR(7) DEFAULT '#ffffff',
+    navbar_text_color VARCHAR(7) DEFAULT '#333333',
+    glow_color VARCHAR(7) DEFAULT NULL,
+
+    -- Effect Settings
+    effect_settings JSON DEFAULT NULL,
+
     -- Custom CSS Override
     custom_css TEXT,
 

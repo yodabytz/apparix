@@ -45,28 +45,35 @@ class ShippingController extends Controller
             $sessionId = session_id();
             $userId = auth() ? auth()['id'] : null;
             $cartItems = $this->cartModel->getItems($sessionId, $userId);
+
+            if (empty($cartItems)) {
+                echo json_encode(['success' => false, 'error' => 'Your cart is empty']);
+                return;
+            }
+
             $items = [];
             $subtotal = 0;
 
-            if (!empty($cartItems)) {
-                foreach ($cartItems as $item) {
-                    $itemPrice = $item['sale_price'] ?? $item['price'];
-                    if (!empty($item['price_adjustment'])) {
-                        $itemPrice += $item['price_adjustment'];
-                    }
-                    $lineTotal = $itemPrice * $item['quantity'];
-
-                    $items[] = [
-                        'product_id' => $item['product_id'],
-                        'quantity' => $item['quantity'],
-                        'weight_oz' => $item['weight_oz'] ?? 0,
-                        'ships_free' => $item['ships_free'] ?? 0,
-                        'ships_free_us' => $item['ships_free_us'] ?? 0,
-                        'shipping_price' => $item['shipping_price'] ?? null,
-                        'handling_fee' => $item['handling_fee'] ?? 0
-                    ];
-                    $subtotal += $lineTotal;
+            foreach ($cartItems as $item) {
+                $itemPrice = $item['sale_price'] ?? $item['price'];
+                if (!empty($item['price_adjustment'])) {
+                    $itemPrice += $item['price_adjustment'];
                 }
+                $lineTotal = $itemPrice * $item['quantity'];
+
+                $items[] = [
+                    'product_id' => $item['product_id'],
+                    'quantity' => $item['quantity'],
+                    'weight_oz' => $item['weight_oz'] ?? 0,
+                    'ships_free' => $item['ships_free'] ?? 0,
+                    'ships_free_us' => $item['ships_free_us'] ?? 0,
+                    'shipping_price' => $item['shipping_price'] ?? null,
+                    'handling_fee' => $item['handling_fee'] ?? 0,
+                    'origin_shipping_usa' => $item['origin_shipping_usa'] ?? null,
+                    'origin_shipping_canada' => $item['origin_shipping_canada'] ?? null,
+                    'origin_shipping_overseas' => $item['origin_shipping_overseas'] ?? null
+                ];
+                $subtotal += $lineTotal;
             }
 
             $result = $this->calculator->getShippingOptions(
@@ -107,28 +114,32 @@ class ShippingController extends Controller
         $sessionId = session_id();
         $userId = auth() ? auth()['id'] : null;
         $cartItems = $this->cartModel->getItems($sessionId, $userId);
+
+        if (empty($cartItems)) {
+            echo json_encode(['success' => false, 'error' => 'Your cart is empty']);
+            return;
+        }
+
         $items = [];
         $subtotal = 0;
 
-        if (!empty($cartItems)) {
-            foreach ($cartItems as $item) {
-                $itemPrice = $item['sale_price'] ?? $item['price'];
-                if (!empty($item['price_adjustment'])) {
-                    $itemPrice += $item['price_adjustment'];
-                }
-                $lineTotal = $itemPrice * $item['quantity'];
-
-                $items[] = [
-                    'product_id' => $item['product_id'],
-                    'quantity' => $item['quantity'],
-                    'weight_oz' => $item['weight_oz'] ?? 0,
-                    'ships_free' => $item['ships_free'] ?? 0,
-                    'ships_free_us' => $item['ships_free_us'] ?? 0,
-                    'shipping_price' => $item['shipping_price'] ?? null,
-                    'handling_fee' => $item['handling_fee'] ?? 0
-                ];
-                $subtotal += $lineTotal;
+        foreach ($cartItems as $item) {
+            $itemPrice = $item['sale_price'] ?? $item['price'];
+            if (!empty($item['price_adjustment'])) {
+                $itemPrice += $item['price_adjustment'];
             }
+            $lineTotal = $itemPrice * $item['quantity'];
+
+            $items[] = [
+                'product_id' => $item['product_id'],
+                'quantity' => $item['quantity'],
+                'weight_oz' => $item['weight_oz'] ?? 0,
+                'ships_free' => $item['ships_free'] ?? 0,
+                'ships_free_us' => $item['ships_free_us'] ?? 0,
+                'shipping_price' => $item['shipping_price'] ?? null,
+                'handling_fee' => $item['handling_fee'] ?? 0
+            ];
+            $subtotal += $lineTotal;
         }
 
         $rate = $this->calculator->getRate($methodId, $subtotal, $items);

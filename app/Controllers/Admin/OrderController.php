@@ -545,6 +545,306 @@ class OrderController extends Controller
     }
 
     /**
+     * Profits report page
+     */
+    public function profits(): void
+    {
+        $db = Database::getInstance();
+
+        $period = $this->get('period', 'monthly');
+        $year = (int)$this->get('year', date('Y'));
+
+        if (!in_array($period, ['daily', 'weekly', 'monthly', 'yearly'])) {
+            $period = 'monthly';
+        }
+        if ($year < 2000 || $year > 2099) {
+            $year = (int)date('Y');
+        }
+
+        $excludeStatuses = "'cancelled','refunded'";
+
+        // Build period-based queries
+        $periodData = [];
+
+        if ($period === 'monthly') {
+            // Generate all 12 months for the selected year
+            for ($m = 1; $m <= 12; $m++) {
+                $monthStart = sprintf('%04d-%02d-01', $year, $m);
+                $monthEnd = date('Y-m-t', strtotime($monthStart));
+
+                $row = $db->selectOne(
+                    "SELECT
+                        COALESCE(SUM(o.total), 0) AS revenue,
+                        COALESCE(SUM(o.actual_shipping_cost), 0) AS shipping_cost,
+                        COUNT(o.id) AS order_count
+                     FROM orders o
+                     WHERE o.status NOT IN ({$excludeStatuses})
+                       AND o.created_at >= ? AND o.created_at < DATE_ADD(?, INTERVAL 1 DAY)",
+                    [$monthStart, $monthEnd]
+                );
+
+                $cogs = $db->selectOne(
+                    "SELECT COALESCE(SUM(COALESCE(oi.cost, pv.cost, p.cost, 0) * oi.quantity), 0) AS cogs
+                     FROM order_items oi
+                     JOIN orders o ON o.id = oi.order_id
+                     LEFT JOIN product_variants pv ON pv.id = oi.variant_id
+                     LEFT JOIN products p ON p.id = oi.product_id
+                     WHERE o.status NOT IN ({$excludeStatuses})
+                       AND o.created_at >= ? AND o.created_at < DATE_ADD(?, INTERVAL 1 DAY)",
+                    [$monthStart, $monthEnd]
+                );
+
+                $shippingCostOnly = $db->selectOne(
+                    "SELECT COALESCE(SUM(o.actual_shipping_cost), 0) AS shipping_cost
+                     FROM orders o
+                     WHERE o.status NOT IN ({$excludeStatuses})
+                       AND o.actual_shipping_cost IS NOT NULL
+                       AND o.created_at >= ? AND o.created_at < DATE_ADD(?, INTERVAL 1 DAY)",
+                    [$monthStart, $monthEnd]
+                );
+
+                $revenue = (float)$row['revenue'];
+                $cogsVal = (float)$cogs['cogs'];
+                $shipCost = (float)$shippingCostOnly['shipping_cost'];
+                $profit = $revenue - $cogsVal - $shipCost;
+                $margin = $revenue > 0 ? ($profit / $revenue) * 100 : 0;
+
+                $periodData[] = [
+                    'label' => date('M', strtotime($monthStart)),
+                    'revenue' => $revenue,
+                    'cogs' => $cogsVal,
+                    'shipping_cost' => $shipCost,
+                    'profit' => $profit,
+                    'margin' => $margin,
+                    'order_count' => (int)$row['order_count'],
+                ];
+            }
+        } elseif ($period === 'yearly') {
+            $currentYear = (int)date('Y');
+            for ($y = $currentYear - 4; $y <= $currentYear; $y++) {
+                $yearStart = sprintf('%04d-01-01', $y);
+                $yearEnd = sprintf('%04d-12-31', $y);
+
+                $row = $db->selectOne(
+                    "SELECT
+                        COALESCE(SUM(o.total), 0) AS revenue,
+                        COUNT(o.id) AS order_count
+                     FROM orders o
+                     WHERE o.status NOT IN ({$excludeStatuses})
+                       AND o.created_at >= ? AND o.created_at < DATE_ADD(?, INTERVAL 1 DAY)",
+                    [$yearStart, $yearEnd]
+                );
+
+                $cogs = $db->selectOne(
+                    "SELECT COALESCE(SUM(COALESCE(oi.cost, pv.cost, p.cost, 0) * oi.quantity), 0) AS cogs
+                     FROM order_items oi
+                     JOIN orders o ON o.id = oi.order_id
+                     LEFT JOIN product_variants pv ON pv.id = oi.variant_id
+                     LEFT JOIN products p ON p.id = oi.product_id
+                     WHERE o.status NOT IN ({$excludeStatuses})
+                       AND o.created_at >= ? AND o.created_at < DATE_ADD(?, INTERVAL 1 DAY)",
+                    [$yearStart, $yearEnd]
+                );
+
+                $shippingCostOnly = $db->selectOne(
+                    "SELECT COALESCE(SUM(o.actual_shipping_cost), 0) AS shipping_cost
+                     FROM orders o
+                     WHERE o.status NOT IN ({$excludeStatuses})
+                       AND o.actual_shipping_cost IS NOT NULL
+                       AND o.created_at >= ? AND o.created_at < DATE_ADD(?, INTERVAL 1 DAY)",
+                    [$yearStart, $yearEnd]
+                );
+
+                $revenue = (float)$row['revenue'];
+                $cogsVal = (float)$cogs['cogs'];
+                $shipCost = (float)$shippingCostOnly['shipping_cost'];
+                $profit = $revenue - $cogsVal - $shipCost;
+                $margin = $revenue > 0 ? ($profit / $revenue) * 100 : 0;
+
+                $periodData[] = [
+                    'label' => (string)$y,
+                    'revenue' => $revenue,
+                    'cogs' => $cogsVal,
+                    'shipping_cost' => $shipCost,
+                    'profit' => $profit,
+                    'margin' => $margin,
+                    'order_count' => (int)$row['order_count'],
+                ];
+            }
+        } elseif ($period === 'daily') {
+            // Show last 30 days
+            for ($d = 29; $d >= 0; $d--) {
+                $date = date('Y-m-d', strtotime("-{$d} days"));
+
+                $row = $db->selectOne(
+                    "SELECT
+                        COALESCE(SUM(o.total), 0) AS revenue,
+                        COUNT(o.id) AS order_count
+                     FROM orders o
+                     WHERE o.status NOT IN ({$excludeStatuses})
+                       AND DATE(o.created_at) = ?",
+                    [$date]
+                );
+
+                $cogs = $db->selectOne(
+                    "SELECT COALESCE(SUM(COALESCE(oi.cost, pv.cost, p.cost, 0) * oi.quantity), 0) AS cogs
+                     FROM order_items oi
+                     JOIN orders o ON o.id = oi.order_id
+                     LEFT JOIN product_variants pv ON pv.id = oi.variant_id
+                     LEFT JOIN products p ON p.id = oi.product_id
+                     WHERE o.status NOT IN ({$excludeStatuses})
+                       AND DATE(o.created_at) = ?",
+                    [$date]
+                );
+
+                $shippingCostOnly = $db->selectOne(
+                    "SELECT COALESCE(SUM(o.actual_shipping_cost), 0) AS shipping_cost
+                     FROM orders o
+                     WHERE o.status NOT IN ({$excludeStatuses})
+                       AND o.actual_shipping_cost IS NOT NULL
+                       AND DATE(o.created_at) = ?",
+                    [$date]
+                );
+
+                $revenue = (float)$row['revenue'];
+                $cogsVal = (float)$cogs['cogs'];
+                $shipCost = (float)$shippingCostOnly['shipping_cost'];
+                $profit = $revenue - $cogsVal - $shipCost;
+                $margin = $revenue > 0 ? ($profit / $revenue) * 100 : 0;
+
+                $periodData[] = [
+                    'label' => date('M j', strtotime($date)),
+                    'revenue' => $revenue,
+                    'cogs' => $cogsVal,
+                    'shipping_cost' => $shipCost,
+                    'profit' => $profit,
+                    'margin' => $margin,
+                    'order_count' => (int)$row['order_count'],
+                ];
+            }
+        } elseif ($period === 'weekly') {
+            // Show last 12 weeks
+            for ($w = 11; $w >= 0; $w--) {
+                $weekStart = date('Y-m-d', strtotime("monday -{$w} weeks"));
+                $weekEnd = date('Y-m-d', strtotime($weekStart . ' +6 days'));
+
+                $row = $db->selectOne(
+                    "SELECT
+                        COALESCE(SUM(o.total), 0) AS revenue,
+                        COUNT(o.id) AS order_count
+                     FROM orders o
+                     WHERE o.status NOT IN ({$excludeStatuses})
+                       AND o.created_at >= ? AND o.created_at < DATE_ADD(?, INTERVAL 1 DAY)",
+                    [$weekStart, $weekEnd]
+                );
+
+                $cogs = $db->selectOne(
+                    "SELECT COALESCE(SUM(COALESCE(oi.cost, pv.cost, p.cost, 0) * oi.quantity), 0) AS cogs
+                     FROM order_items oi
+                     JOIN orders o ON o.id = oi.order_id
+                     LEFT JOIN product_variants pv ON pv.id = oi.variant_id
+                     LEFT JOIN products p ON p.id = oi.product_id
+                     WHERE o.status NOT IN ({$excludeStatuses})
+                       AND o.created_at >= ? AND o.created_at < DATE_ADD(?, INTERVAL 1 DAY)",
+                    [$weekStart, $weekEnd]
+                );
+
+                $shippingCostOnly = $db->selectOne(
+                    "SELECT COALESCE(SUM(o.actual_shipping_cost), 0) AS shipping_cost
+                     FROM orders o
+                     WHERE o.status NOT IN ({$excludeStatuses})
+                       AND o.actual_shipping_cost IS NOT NULL
+                       AND o.created_at >= ? AND o.created_at < DATE_ADD(?, INTERVAL 1 DAY)",
+                    [$weekStart, $weekEnd]
+                );
+
+                $revenue = (float)$row['revenue'];
+                $cogsVal = (float)$cogs['cogs'];
+                $shipCost = (float)$shippingCostOnly['shipping_cost'];
+                $profit = $revenue - $cogsVal - $shipCost;
+                $margin = $revenue > 0 ? ($profit / $revenue) * 100 : 0;
+
+                $periodData[] = [
+                    'label' => date('M j', strtotime($weekStart)),
+                    'revenue' => $revenue,
+                    'cogs' => $cogsVal,
+                    'shipping_cost' => $shipCost,
+                    'profit' => $profit,
+                    'margin' => $margin,
+                    'order_count' => (int)$row['order_count'],
+                ];
+            }
+        }
+
+        // Aggregate totals for the summary cards
+        $totalRevenue = array_sum(array_column($periodData, 'revenue'));
+        $totalCogs = array_sum(array_column($periodData, 'cogs'));
+        $totalShippingCost = array_sum(array_column($periodData, 'shipping_cost'));
+        $totalProfit = $totalRevenue - $totalCogs - $totalShippingCost;
+        $totalMargin = $totalRevenue > 0 ? ($totalProfit / $totalRevenue) * 100 : 0;
+        $totalOrders = array_sum(array_column($periodData, 'order_count'));
+
+        // Top 10 products by revenue (all time, excluding cancelled/refunded)
+        $topProducts = $db->select(
+            "SELECT
+                oi.product_name,
+                oi.variant_name,
+                SUM(oi.quantity) AS total_qty,
+                SUM(oi.total) AS total_revenue,
+                SUM(COALESCE(oi.cost, pv.cost, p.cost, 0) * oi.quantity) AS total_cost,
+                SUM(oi.total) - SUM(COALESCE(oi.cost, pv.cost, p.cost, 0) * oi.quantity) AS total_profit
+             FROM order_items oi
+             JOIN orders o ON o.id = oi.order_id
+             LEFT JOIN product_variants pv ON pv.id = oi.variant_id
+             LEFT JOIN products p ON p.id = oi.product_id
+             WHERE o.status NOT IN ({$excludeStatuses})
+             GROUP BY oi.product_id, oi.variant_id, oi.product_name, oi.variant_name
+             ORDER BY total_revenue DESC
+             LIMIT 10"
+        );
+
+        // Cost coverage: how many order items have cost data vs NULL
+        $costCoverage = $db->selectOne(
+            "SELECT
+                COUNT(*) AS total_items,
+                SUM(CASE WHEN COALESCE(oi.cost, pv.cost, p.cost) IS NOT NULL THEN 1 ELSE 0 END) AS items_with_cost,
+                SUM(CASE WHEN COALESCE(oi.cost, pv.cost, p.cost) IS NULL THEN 1 ELSE 0 END) AS items_without_cost
+             FROM order_items oi
+             JOIN orders o ON o.id = oi.order_id
+             LEFT JOIN product_variants pv ON pv.id = oi.variant_id
+             LEFT JOIN products p ON p.id = oi.product_id
+             WHERE o.status NOT IN ({$excludeStatuses})"
+        );
+
+        // Shipping cost coverage
+        $shippingCoverage = $db->selectOne(
+            "SELECT
+                COUNT(*) AS total_orders,
+                SUM(CASE WHEN actual_shipping_cost IS NOT NULL THEN 1 ELSE 0 END) AS orders_with_shipping_cost,
+                SUM(CASE WHEN actual_shipping_cost IS NULL THEN 1 ELSE 0 END) AS orders_without_shipping_cost
+             FROM orders
+             WHERE status NOT IN ({$excludeStatuses})"
+        );
+
+        $this->render('admin.orders.profits', [
+            'title' => 'Profits',
+            'admin' => $this->admin,
+            'period' => $period,
+            'year' => $year,
+            'periodData' => $periodData,
+            'totalRevenue' => $totalRevenue,
+            'totalCogs' => $totalCogs,
+            'totalShippingCost' => $totalShippingCost,
+            'totalProfit' => $totalProfit,
+            'totalMargin' => $totalMargin,
+            'totalOrders' => $totalOrders,
+            'topProducts' => $topProducts,
+            'costCoverage' => $costCoverage,
+            'shippingCoverage' => $shippingCoverage,
+        ], 'admin');
+    }
+
+    /**
      * Check if request is AJAX
      */
     protected function isAjaxRequest(): bool

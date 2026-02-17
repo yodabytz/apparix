@@ -54,21 +54,18 @@ class ProductController extends Controller
         $slug = $_GET['slug'] ?? '';
 
         if (!$slug) {
-            http_response_code(404);
-            die('404 Not Found');
+            $this->show404();
         }
 
         $product = $this->productModel->findBy('slug', $slug);
 
         if (!$product) {
-            http_response_code(404);
-            die('404 Not Found - Product not found');
+            $this->show404();
         }
 
         // Check if product is disabled (completely hidden - 404)
         if (!empty($product['disabled'])) {
-            http_response_code(404);
-            die('404 Not Found - Product not found');
+            $this->show404();
         }
 
         // Get full product data (images, options, variants)
@@ -129,8 +126,7 @@ class ProductController extends Controller
         $perPage = 12;
 
         if (!$slug) {
-            http_response_code(404);
-            die('404 Not Found');
+            $this->show404();
         }
 
         // Get category
@@ -141,8 +137,7 @@ class ProductController extends Controller
         );
 
         if (!$category) {
-            http_response_code(404);
-            die('404 Not Found - Category not found');
+            $this->show404();
         }
 
         // Get subcategories with images if show_subcategory_grid is enabled
@@ -151,7 +146,7 @@ class ProductController extends Controller
             $subcategories = $db->select(
                 "SELECT c.*,
                         (SELECT COUNT(DISTINCT pc.product_id) FROM product_categories pc
-                         JOIN products p ON pc.product_id = p.id AND p.is_active = 1
+                         JOIN products p ON pc.product_id = p.id AND p.is_active = 1 AND p.disabled = 0
                          WHERE pc.category_id = c.id) as product_count
                  FROM categories c
                  WHERE c.parent_id = ?
@@ -177,7 +172,7 @@ class ProductController extends Controller
                     (SELECT image_path FROM product_images WHERE product_id = p.id AND is_video = 1 ORDER BY sort_order LIMIT 1) as video_path
              FROM products p
              JOIN product_categories pc ON p.id = pc.product_id
-             WHERE pc.category_id = ? AND p.is_active = 1
+             WHERE pc.category_id = ? AND p.is_active = 1 AND p.disabled = 0
              ORDER BY {$orderBy} LIMIT ? OFFSET ?",
             [$category['id'], $perPage, ($page - 1) * $perPage]
         );
@@ -186,7 +181,7 @@ class ProductController extends Controller
         $countResult = $db->selectOne(
             "SELECT COUNT(DISTINCT p.id) as count FROM products p
              JOIN product_categories pc ON p.id = pc.product_id
-             WHERE pc.category_id = ? AND p.is_active = 1",
+             WHERE pc.category_id = ? AND p.is_active = 1 AND p.disabled = 0",
             [$category['id']]
         );
         $totalProducts = $countResult['count'];
@@ -264,8 +259,8 @@ class ProductController extends Controller
         $categories = $this->getCategoriesHierarchy($db);
 
         $data = [
-            'title' => 'Search Results - Lily\'s Pad Studio',
-            'meta_description' => 'Search results for "' . escape($query) . '" at Lily\'s Pad Studio',
+            'title' => 'Search Results - Apparix',
+            'meta_description' => 'Search results for "' . escape($query) . '" at Apparix',
             'query' => $query,
             'products' => $products,
             'productCount' => count($products),
@@ -286,7 +281,7 @@ class ProductController extends Controller
             "SELECT c.*, COUNT(DISTINCT pc.product_id) as product_count
              FROM categories c
              LEFT JOIN product_categories pc ON c.id = pc.category_id
-             LEFT JOIN products p ON pc.product_id = p.id AND p.is_active = 1
+             LEFT JOIN products p ON pc.product_id = p.id AND p.is_active = 1 AND p.disabled = 0
              GROUP BY c.id
              ORDER BY c.sort_order ASC, c.name ASC"
         );
@@ -384,7 +379,7 @@ class ProductController extends Controller
                     'url' => $baseUrl . '/products/' . $product['slug'],
                     'brand' => [
                         '@type' => 'Brand',
-                        'name' => 'Lily\'s Pad Studio'
+                        'name' => 'Apparix'
                     ],
                     'offers' => [
                         '@type' => 'Offer',
@@ -396,7 +391,7 @@ class ProductController extends Controller
                             : 'https://schema.org/OutOfStock',
                         'seller' => [
                             '@type' => 'Organization',
-                            'name' => 'Lily\'s Pad Studio'
+                            'name' => 'Apparix'
                         ]
                     ]
                 ],

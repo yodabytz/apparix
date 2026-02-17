@@ -21,7 +21,7 @@ class HomeController extends Controller
             "SELECT c.*, COUNT(pc.product_id) as product_count
              FROM categories c
              LEFT JOIN product_categories pc ON c.id = pc.category_id
-             LEFT JOIN products p ON pc.product_id = p.id AND p.is_active = 1
+             LEFT JOIN products p ON pc.product_id = p.id AND p.is_active = 1 AND p.disabled = 0
              WHERE c.parent_id IS NULL
              GROUP BY c.id
              ORDER BY c.sort_order ASC"

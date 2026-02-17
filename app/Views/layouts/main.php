@@ -231,6 +231,7 @@
             <ul class="navbar-menu" id="navbarMenu">
                 <li><a href="/">Home</a></li>
                 <li><a href="/products">Shop</a></li>
+                <li><a href="/pricing">Pricing</a></li>
                 <li class="nav-search">
                     <form action="/search" method="GET" class="nav-search-form">
                         <input type="text" name="q" placeholder="Search..." class="nav-search-input" autocomplete="off">
@@ -371,7 +372,7 @@
             <?php endif; ?>
 
             <p class="footer-copy">&copy; <?php echo date('Y'); ?> <?php echo appName(); ?>. All rights reserved.</p>
-            <p class="footer-links"><a href="/privacy">Privacy</a> | <a href="/terms">Terms</a> | <a href="/contact">Contact</a></p>
+            <p class="footer-links"><a href="/pricing">Pricing</a> | <a href="/privacy">Privacy</a> | <a href="/terms">Terms</a> | <a href="/contact">Contact</a></p>
             <?php
             // Show "Powered by Apparix" if enabled in settings OR if on free tier (can't disable on free)
             $showPoweredBy = !empty($settings['show_powered_by']) || \App\Core\License::isFree();

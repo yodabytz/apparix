@@ -25,9 +25,9 @@ if (file_exists($envFile)) {
 
 // Set default environment variables
 $_ENV['DB_HOST'] = $_ENV['DB_HOST'] ?? 'localhost';
-$_ENV['DB_NAME'] = $_ENV['DB_NAME'] ?? 'lilyspad_ecommerce';
-$_ENV['DB_USER'] = $_ENV['DB_USER'] ?? 'lilyspad';
-$_ENV['DB_PASS'] = $_ENV['DB_PASS'] ?? 'lilyspad_secure_2024';
+$_ENV['DB_NAME'] = $_ENV['DB_NAME'] ?? 'apparix_ecommerce';
+$_ENV['DB_USER'] = $_ENV['DB_USER'] ?? 'apparix';
+$_ENV['DB_PASS'] = $_ENV['DB_PASS'] ?? '';
 
 // Installer detection - redirect to installer if not yet installed
 $installLockFile = BASE_PATH . '/storage/.installed';
@@ -53,6 +53,13 @@ if (!$isInstalled) {
 
     // If accessing installer, include installer bootstrap and exit
     if (strpos($requestPath, '/install') === 0) {
+        require_once BASE_PATH . '/install/index.php';
+        exit;
+    }
+} else {
+    // Allow the install complete page through even when installed
+    $requestPath = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+    if (strpos($requestPath, '/install') === 0 && isset($_GET['step']) && $_GET['step'] === 'complete') {
         require_once BASE_PATH . '/install/index.php';
         exit;
     }
@@ -268,6 +275,8 @@ $allowedPaths = [
     '/api',             // API endpoints
     '/assets',          // Static assets
     '/cron',            // Cron endpoints
+    '/pricing',         // License pricing page
+    '/license',         // License purchase flow
 ];
 
 // Check if current path should bypass maintenance
@@ -516,6 +525,7 @@ $router->post('/admin/orders/notes', 'Admin\\OrderController', 'updateNotes');
 $router->post('/admin/orders/delete', 'Admin\\OrderController', 'delete');
 $router->post('/admin/orders/update-shipping-cost', 'Admin\\OrderController', 'updateShippingCost');
 $router->post('/admin/orders/update-item-cost', 'Admin\\OrderController', 'updateItemCost');
+$router->get('/admin/orders/profits', 'Admin\\OrderController', 'profits');
 
 // Admin visitors/analytics routes
 $router->get('/admin/visitors', 'Admin\\VisitorController', 'index');
@@ -586,6 +596,12 @@ $router->get('/admin/themes/preview-css', 'Admin\\ThemeController', 'previewCss'
 $router->post('/admin/themes/upload', 'Admin\\ThemeController', 'upload');
 $router->post('/admin/themes/activate-installed', 'Admin\\ThemeController', 'activateInstalled');
 $router->post('/admin/themes/delete-installed', 'Admin\\ThemeController', 'deleteInstalled');
+
+// License store routes (for apparix.app website)
+$router->get('/pricing', 'LicenseStoreController', 'pricing');
+$router->post('/license/checkout', 'LicenseStoreController', 'createCheckout');
+$router->get('/license/success', 'LicenseStoreController', 'success');
+$router->post('/license/resend', 'LicenseStoreController', 'resend');
 
 // Dispatch the route
 $router->dispatch();

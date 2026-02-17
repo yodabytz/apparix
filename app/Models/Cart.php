@@ -80,9 +80,14 @@ class Cart extends Model
                 p.weight_oz,
                 p.ships_free,
                 p.ships_free_us,
-                p.shipping_price,
+                COALESCE(pv.shipping_cost, p.shipping_price) as shipping_price,
                 p.is_digital,
+                p.origin_id,
+                COALESCE(pv.cost, p.cost) as unit_cost,
                 COALESCE(sc.handling_fee, 0) as handling_fee,
+                so.shipping_cost_usa as origin_shipping_usa,
+                so.shipping_cost_canada as origin_shipping_canada,
+                so.shipping_cost_overseas as origin_shipping_overseas,
                 pv.sku as variant_sku,
                 pv.inventory_count as variant_inventory,
                 pv.price_adjustment,
@@ -91,6 +96,7 @@ class Cart extends Model
             JOIN products p ON c.product_id = p.id
             LEFT JOIN product_variants pv ON c.variant_id = pv.id
             LEFT JOIN shipping_classes sc ON p.shipping_class_id = sc.id
+            LEFT JOIN shipping_origins so ON p.origin_id = so.id
             WHERE " . ($userId ? "c.user_id = ?" : "c.session_id = ?") . "
             ORDER BY c.created_at DESC
         ";

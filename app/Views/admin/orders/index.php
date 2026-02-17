@@ -1,5 +1,6 @@
 <div class="page-header">
     <h1>Orders</h1>
+    <a href="/admin/orders/profits" class="btn btn-outline btn-sm">&#128200; Profits</a>
 </div>
 
 <!-- Status Tabs -->

@@ -54,7 +54,7 @@ class SitemapController extends Controller
         }
 
         // Products
-        $products = $db->select("SELECT slug, updated_at FROM products WHERE is_active = 1 ORDER BY name");
+        $products = $db->select("SELECT slug, updated_at FROM products WHERE is_active = 1 AND disabled = 0 ORDER BY name");
         foreach ($products as $product) {
             $lastmod = $product['updated_at'] ? date('Y-m-d', strtotime($product['updated_at'])) : date('Y-m-d');
             $xml .= $this->createUrlEntry(

@@ -87,6 +87,9 @@ class OrderNotificationService
             // Send email notification
             $this->sendEmailNotification($order, $items, $shippingAddress);
 
+            // Send supplier fulfillment notifications
+            $this->sendSupplierNotifications($order, $items, $shippingAddress);
+
         } catch (\Exception $e) {
             // Log but don't throw - notifications shouldn't break orders
             error_log("OrderNotificationService error: " . $e->getMessage());
@@ -272,6 +275,200 @@ class OrderNotificationService
             error_log("Order notification email sent to {$adminEmail} for {$order['order_number']}");
         } else {
             error_log("Failed to send order notification email for {$order['order_number']}");
+        }
+    }
+
+    /**
+     * Send fulfillment notification emails to suppliers
+     *
+     * Groups order items by supplier_email from the products table and sends
+     * each supplier an email with only the items they need to fulfill.
+     * Intentionally excludes order totals, admin links, and customer email.
+     */
+    private function sendSupplierNotifications(array $order, array $items, array $shippingAddress): void
+    {
+        try {
+            // Look up supplier_email for each item and group by supplier
+            $supplierItems = [];
+
+            foreach ($items as $item) {
+                if (empty($item['product_id'])) {
+                    continue;
+                }
+
+                $product = $this->db->selectOne(
+                    "SELECT supplier_email FROM products WHERE id = ?",
+                    [$item['product_id']]
+                );
+
+                if (!$product || empty($product['supplier_email'])) {
+                    continue;
+                }
+
+                // Support comma-separated emails: normalize and group by each email
+                $emails = array_map('trim', explode(',', $product['supplier_email']));
+                $emails = array_filter($emails);
+
+                // Use the full comma-separated string as the grouping key
+                // so each unique supplier configuration gets one email
+                $supplierKey = implode(',', $emails);
+
+                if (!isset($supplierItems[$supplierKey])) {
+                    $supplierItems[$supplierKey] = [
+                        'emails' => $emails,
+                        'items' => []
+                    ];
+                }
+
+                $supplierItems[$supplierKey]['items'][] = $item;
+            }
+
+            if (empty($supplierItems)) {
+                return;
+            }
+
+            // Send an email to each supplier group
+            foreach ($supplierItems as $supplierKey => $supplierData) {
+                $this->sendSupplierEmail(
+                    $supplierData['emails'],
+                    $order,
+                    $supplierData['items'],
+                    $shippingAddress
+                );
+            }
+
+        } catch (\Exception $e) {
+            error_log("Supplier notification error: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Build and send a fulfillment email to one supplier (one or more email addresses)
+     */
+    private function sendSupplierEmail(array $emails, array $order, array $items, array $shippingAddress): void
+    {
+        $siteName = appName();
+        $orderDate = date('M j, Y g:i A', strtotime($order['created_at']));
+
+        // Build address HTML
+        $addressHtml = htmlspecialchars($shippingAddress['first_name'] . ' ' . $shippingAddress['last_name']) . "<br>";
+        $addressHtml .= htmlspecialchars($shippingAddress['address_line1']) . "<br>";
+        if (!empty($shippingAddress['address_line2'])) {
+            $addressHtml .= htmlspecialchars($shippingAddress['address_line2']) . "<br>";
+        }
+        $addressHtml .= htmlspecialchars($shippingAddress['city'] . ', ' . $shippingAddress['state'] . ' ' . $shippingAddress['postal_code']) . "<br>";
+        $addressHtml .= htmlspecialchars($shippingAddress['country']);
+        if (!empty($shippingAddress['phone'])) {
+            $addressHtml .= "<br>Phone: " . htmlspecialchars($shippingAddress['phone']);
+        }
+
+        // Build items HTML
+        $itemsHtml = '';
+        foreach ($items as $item) {
+            $details = '';
+            if (!empty($item['product_sku'])) {
+                $details .= "<span style='color: #666; font-size: 13px;'>SKU: " . htmlspecialchars($item['product_sku']) . "</span><br>";
+            }
+            if (!empty($item['variant_options'])) {
+                $details .= "<span style='color: #666; font-size: 13px;'>" . htmlspecialchars($item['variant_options']) . "</span><br>";
+            }
+            if (!empty($item['personalization_text'])) {
+                $details .= "<span style='color: #b45309; font-size: 13px;'>Personalization: " . htmlspecialchars($item['personalization_text']) . "</span><br>";
+            }
+
+            $itemsHtml .= "<tr>
+                <td style='padding: 12px; border-bottom: 1px solid #f0f0f0;'>
+                    <strong>" . htmlspecialchars($item['product_name']) . "</strong><br>
+                    {$details}
+                </td>
+                <td style='padding: 12px; border-bottom: 1px solid #f0f0f0; text-align: center;'>{$item['quantity']}</td>
+                <td style='padding: 12px; border-bottom: 1px solid #f0f0f0; text-align: right;'>$" . number_format($item['price'], 2) . "</td>
+            </tr>";
+        }
+
+        $subject = "New Order to Fulfill - {$order['order_number']}";
+
+        $html = "<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+</head>
+<body style='margin: 0; padding: 0; background-color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif;'>
+    <table width='100%' cellpadding='0' cellspacing='0' style='background: #f3f4f6; padding: 40px 20px;'>
+        <tr>
+            <td align='center'>
+                <table width='600' cellpadding='0' cellspacing='0' style='background: #ffffff; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); overflow: hidden;'>
+                    <!-- Header -->
+                    <tr>
+                        <td style='background: linear-gradient(135deg, #6366f1 0%, #818cf8 100%); padding: 30px; text-align: center;'>
+                            <h1 style='margin: 0; color: #ffffff; font-size: 24px;'>New Order to Fulfill</h1>
+                            <p style='margin: 10px 0 0; color: rgba(255,255,255,0.9); font-size: 16px;'>{$order['order_number']}</p>
+                        </td>
+                    </tr>
+
+                    <!-- Body -->
+                    <tr>
+                        <td style='padding: 30px;'>
+                            <!-- Order Info -->
+                            <table width='100%' cellpadding='0' cellspacing='0' style='background: #f0f9ff; border-radius: 8px; padding: 15px; margin-bottom: 25px;'>
+                                <tr>
+                                    <td>
+                                        <strong style='color: #1e40af;'>Order: {$order['order_number']}</strong>
+                                    </td>
+                                    <td style='text-align: right;'>
+                                        <span style='color: #666;'>{$orderDate}</span>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- Ship To -->
+                            <h3 style='margin: 0 0 15px; color: #333; border-bottom: 2px solid #6366f1; padding-bottom: 8px;'>Ship To</h3>
+                            <p style='margin: 0 0 25px; color: #333; line-height: 1.6;'>
+                                {$addressHtml}
+                            </p>
+
+                            <!-- Shipping Method -->
+                            <h3 style='margin: 0 0 15px; color: #333; border-bottom: 2px solid #6366f1; padding-bottom: 8px;'>Shipping Method</h3>
+                            <p style='margin: 0 0 25px; color: #333;'>" . htmlspecialchars($order['shipping_method']) . "</p>
+
+                            <!-- Items to Fulfill -->
+                            <h3 style='margin: 0 0 15px; color: #333; border-bottom: 2px solid #6366f1; padding-bottom: 8px;'>Items to Fulfill</h3>
+                            <table width='100%' cellpadding='0' cellspacing='0' style='margin-bottom: 25px;'>
+                                <tr style='background: #f9fafb;'>
+                                    <th style='padding: 10px; text-align: left; font-size: 13px; color: #666;'>Product</th>
+                                    <th style='padding: 10px; text-align: center; font-size: 13px; color: #666;'>Qty</th>
+                                    <th style='padding: 10px; text-align: right; font-size: 13px; color: #666;'>Price</th>
+                                </tr>
+                                {$itemsHtml}
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style='background: #f9fafb; padding: 20px; text-align: center;'>
+                            <p style='margin: 0; color: #666; font-size: 14px;'>{$siteName}</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>";
+
+        // Send to each email address for this supplier
+        foreach ($emails as $email) {
+            $sent = sendEmail($email, $subject, $html, [
+                'html' => true
+            ]);
+
+            if ($sent) {
+                error_log("Supplier notification email sent to {$email} for {$order['order_number']}");
+            } else {
+                error_log("Failed to send supplier notification email to {$email} for {$order['order_number']}");
+            }
         }
     }
 }

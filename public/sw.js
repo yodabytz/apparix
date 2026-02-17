@@ -3,7 +3,7 @@
  * Provides offline support and caching for PWA
  */
 
-const CACHE_NAME = 'lilyspad-v1';
+const CACHE_NAME = 'apparix-v1';
 const OFFLINE_URL = '/offline.html';
 
 // Assets to cache immediately on install
@@ -155,7 +155,7 @@ self.addEventListener('push', event => {
 
     const data = event.data.json();
     const options = {
-        body: data.body || 'New update from Lily\'s Pad Studio',
+        body: data.body || 'New update from your store',
         icon: '/android-chrome-192x192.png',
         badge: '/favicon-32x32.png',
         vibrate: [100, 50, 100],
@@ -166,7 +166,7 @@ self.addEventListener('push', event => {
     };
 
     event.waitUntil(
-        self.registration.showNotification(data.title || 'Lily\'s Pad Studio', options)
+        self.registration.showNotification(data.title || 'Apparix', options)
     );
 });
 

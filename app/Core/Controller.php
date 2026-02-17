@@ -139,4 +139,17 @@ class Controller
             $this->redirect('/admin/login');
         }
     }
+
+    /**
+     * Show 404 page and exit
+     */
+    protected function show404(): void
+    {
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+        http_response_code(404);
+        include __DIR__ . '/../../public/404.php';
+        exit;
+    }
 }

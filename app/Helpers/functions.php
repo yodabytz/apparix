@@ -216,7 +216,7 @@ function appName(): string
  */
 function appUrl(): string
 {
-    return $_ENV['APP_URL'] ?? 'https://apparix.vibrixmedia.com';
+    return $_ENV['APP_URL'] ?? 'https://localhost';
 }
 
 /**

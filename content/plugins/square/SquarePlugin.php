@@ -87,12 +87,14 @@ class SquarePlugin extends AbstractPaymentProvider implements PaymentProviderInt
             CURLOPT_HTTPHEADER => [
                 'Authorization: Bearer ' . $accessToken,
                 'Content-Type: application/json',
-                'Square-Version: 2024-01-18'
+                'Square-Version: 2025-01-23'
             ],
             CURLOPT_TIMEOUT => 30,
         ];
 
-        if ($method === 'POST') {
+        if ($method === 'GET') {
+            $options[CURLOPT_HTTPGET] = true;
+        } elseif ($method === 'POST') {
             $options[CURLOPT_POST] = true;
             if ($data) {
                 $options[CURLOPT_POSTFIELDS] = json_encode($data);
@@ -286,10 +288,40 @@ HTML;
     }
 
     /**
+     * Verify Square webhook signature
+     */
+    private function verifyWebhookSignature(string $payload, array $headers): bool
+    {
+        $webhookSignatureKey = $this->getSetting('webhook_signature_key', '');
+        if (empty($webhookSignatureKey)) {
+            // If no key configured, skip verification (not recommended for production)
+            return true;
+        }
+
+        $signature = $headers['x-square-hmacsha256-signature'] ?? $headers['X-Square-Hmacsha256-Signature'] ?? '';
+        if (empty($signature)) {
+            return false;
+        }
+
+        // Square uses notification URL + payload for signature
+        $notificationUrl = $this->getSetting('webhook_url', '');
+        $stringToSign = $notificationUrl . $payload;
+        $expectedSignature = base64_encode(hash_hmac('sha256', $stringToSign, $webhookSignatureKey, true));
+
+        return hash_equals($expectedSignature, $signature);
+    }
+
+    /**
      * Handle Square webhook
      */
     public function handleWebhook(string $payload, array $headers): array
     {
+        // Verify webhook signature
+        if (!$this->verifyWebhookSignature($payload, $headers)) {
+            $this->log('Webhook signature verification failed');
+            return ['success' => false, 'error' => 'Invalid signature'];
+        }
+
         $data = json_decode($payload, true);
         if (!$data) {
             return ['success' => false, 'error' => 'Invalid payload'];
@@ -348,7 +380,7 @@ HTML;
     /**
      * Process a refund
      */
-    public function processRefund(string $transactionId, ?float $amount = null): array
+    public function processRefund(string $transactionId, ?float $amount = null, string $currency = 'USD'): array
     {
         if (!$this->isConfigured()) {
             return ['success' => false, 'error' => 'Square is not configured'];
@@ -362,7 +394,7 @@ HTML;
         if ($amount !== null) {
             $refundData['amount_money'] = [
                 'amount' => $this->toCents($amount),
-                'currency' => 'USD'
+                'currency' => strtoupper($currency)
             ];
         }
 
@@ -465,6 +497,20 @@ HTML;
                 'type' => 'checkbox',
                 'default' => false,
                 'help' => 'Allow customers to pay with Cash App Pay (US only)'
+            ],
+            [
+                'key' => 'webhook_signature_key',
+                'label' => 'Webhook Signature Key',
+                'type' => 'password',
+                'required' => false,
+                'help' => 'Your Square Webhook Signature Key for verifying webhook authenticity'
+            ],
+            [
+                'key' => 'webhook_url',
+                'label' => 'Webhook URL',
+                'type' => 'text',
+                'required' => false,
+                'help' => 'The URL you configured in Square for webhooks (e.g., https://yoursite.com/webhook/payment/square)'
             ]
         ];
     }

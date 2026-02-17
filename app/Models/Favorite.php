@@ -92,7 +92,7 @@ class Favorite
                         (SELECT pi.image_path FROM product_images pi WHERE pi.product_id = p.id ORDER BY pi.sort_order ASC, pi.id ASC LIMIT 1) as primary_image
                  FROM favorites f
                  JOIN products p ON f.product_id = p.id
-                 WHERE f.user_id = ? AND p.is_active = 1
+                 WHERE f.user_id = ? AND p.is_active = 1 AND p.disabled = 0
                  ORDER BY f.created_at DESC",
                 [$userId]
             );
@@ -102,7 +102,7 @@ class Favorite
                         (SELECT pi.image_path FROM product_images pi WHERE pi.product_id = p.id ORDER BY pi.sort_order ASC, pi.id ASC LIMIT 1) as primary_image
                  FROM favorites f
                  JOIN products p ON f.product_id = p.id
-                 WHERE f.session_id = ? AND p.is_active = 1
+                 WHERE f.session_id = ? AND p.is_active = 1 AND p.disabled = 0
                  ORDER BY f.created_at DESC",
                 [$sessionId]
             );

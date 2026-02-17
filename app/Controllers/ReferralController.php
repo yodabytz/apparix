@@ -37,7 +37,7 @@ class ReferralController extends Controller
 
         $this->render('referrals/index', [
             'title' => 'Referral Program',
-            'metaDescription' => 'Share Lily\'s Pad Studio with friends and earn rewards! Get $10 credit for each friend who makes a purchase.',
+            'metaDescription' => 'Share Apparix with friends and earn rewards! Get $10 credit for each friend who makes a purchase.',
             'userCode' => $userCode,
             'userStats' => $userStats
         ]);

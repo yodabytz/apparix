@@ -22,7 +22,7 @@ class GiftCardController extends Controller
     {
         $this->render('gift-cards/index', [
             'title' => 'Gift Cards',
-            'metaDescription' => 'Give the gift of handmade! Purchase a Lily\'s Pad Studio gift card for someone special.',
+            'metaDescription' => 'Purchase an Apparix gift card for someone special.',
             'denominations' => [25, 50, 75, 100, 150, 200]
         ]);
     }

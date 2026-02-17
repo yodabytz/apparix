@@ -4,7 +4,7 @@
 
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize functionality
-    console.log('Lily\'s Pad Studio loaded');
+    console.log('Apparix loaded');
 
     // Initialize image zoom on product pages
     initImageZoom();

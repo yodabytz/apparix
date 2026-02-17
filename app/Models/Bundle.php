@@ -110,7 +110,7 @@ class Bundle
                     (SELECT image_path FROM product_images WHERE product_id = p.id ORDER BY is_primary DESC, sort_order LIMIT 1) as image
              FROM bundle_products bp
              JOIN products p ON bp.product_id = p.id
-             WHERE bp.bundle_id = ? AND p.is_active = 1",
+             WHERE bp.bundle_id = ? AND p.is_active = 1 AND p.disabled = 0",
             [$bundleId]
         );
     }

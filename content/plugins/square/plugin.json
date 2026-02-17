@@ -62,6 +62,20 @@
             "type": "checkbox",
             "default": false,
             "help": "Allow customers to pay with Cash App Pay (US only)"
+        },
+        {
+            "key": "webhook_signature_key",
+            "label": "Webhook Signature Key",
+            "type": "password",
+            "required": false,
+            "help": "Your Square Webhook Signature Key for verifying webhook authenticity"
+        },
+        {
+            "key": "webhook_url",
+            "label": "Webhook URL",
+            "type": "text",
+            "required": false,
+            "help": "The URL you configured in Square for webhooks"
         }
     ],
     "default_settings": {
