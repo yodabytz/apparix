@@ -49,7 +49,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@400;500;600;700&family=Nunito:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- Main CSS for visual effects -->
-    <link rel="stylesheet" href="/assets/css/main.css?v=93">
+    <link rel="stylesheet" href="/assets/css/main.css?v=94">
 
     <?php
     // Inject full dynamic theme CSS variables

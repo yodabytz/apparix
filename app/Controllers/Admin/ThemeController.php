@@ -5,6 +5,7 @@ namespace App\Controllers\Admin;
 use App\Core\Controller;
 use App\Core\ThemeService;
 use App\Models\AdminUser;
+use App\Models\Setting;
 use App\Models\Theme;
 
 class ThemeController extends Controller
@@ -645,5 +646,130 @@ class ThemeController extends Controller
         }
 
         return rmdir($dir);
+    }
+
+    /**
+     * 404 Error Page customization
+     */
+    public function errorPage(): void
+    {
+        $settingModel = new Setting();
+        $settings = [
+            'error_404_heading' => $settingModel->get('error_404_heading', "Oops! This page doesn't exist"),
+            'error_404_message' => $settingModel->get('error_404_message', "The page you're looking for doesn't exist or has been moved. Don't worry, let's help you find your way back!"),
+            'error_404_image' => $settingModel->get('error_404_image', ''),
+            'error_404_primary_btn_text' => $settingModel->get('error_404_primary_btn_text', 'Back to Home'),
+            'error_404_primary_btn_url' => $settingModel->get('error_404_primary_btn_url', '/'),
+            'error_404_secondary_btn_text' => $settingModel->get('error_404_secondary_btn_text', 'Browse Products'),
+            'error_404_secondary_btn_url' => $settingModel->get('error_404_secondary_btn_url', '/products'),
+            'error_404_show_search' => (bool)$settingModel->get('error_404_show_search', '1'),
+        ];
+
+        $this->render('admin.themes.error-page', [
+            'title' => '404 Error Page',
+            'admin' => $this->admin,
+            'settings' => $settings
+        ], 'admin');
+    }
+
+    /**
+     * Save 404 Error Page settings
+     */
+    public function saveErrorPage(): void
+    {
+        $this->requireValidCSRF();
+        $settingModel = new Setting();
+
+        $heading = mb_substr(trim($this->post('error_404_heading', "Oops! This page doesn't exist")), 0, 100);
+        $message = mb_substr(trim($this->post('error_404_message', '')), 0, 500);
+        $primaryBtnText = mb_substr(trim($this->post('error_404_primary_btn_text', 'Back to Home')), 0, 50);
+        $primaryBtnUrl = mb_substr(trim($this->post('error_404_primary_btn_url', '/')), 0, 255);
+        $secondaryBtnText = mb_substr(trim($this->post('error_404_secondary_btn_text', 'Browse Products')), 0, 50);
+        $secondaryBtnUrl = mb_substr(trim($this->post('error_404_secondary_btn_url', '/products')), 0, 255);
+        $showSearch = $this->post('error_404_show_search') ? '1' : '0';
+
+        $settingModel->set('error_404_heading', $heading, 'string', 'theme', true);
+        $settingModel->set('error_404_message', $message, 'string', 'theme', true);
+        $settingModel->set('error_404_primary_btn_text', $primaryBtnText, 'string', 'theme', true);
+        $settingModel->set('error_404_primary_btn_url', $primaryBtnUrl, 'string', 'theme', true);
+        $settingModel->set('error_404_secondary_btn_text', $secondaryBtnText, 'string', 'theme', true);
+        $settingModel->set('error_404_secondary_btn_url', $secondaryBtnUrl, 'string', 'theme', true);
+        $settingModel->set('error_404_show_search', $showSearch, 'boolean', 'theme', true);
+
+        // Handle image upload
+        if (!empty($_FILES['error_404_image']) && $_FILES['error_404_image']['error'] === UPLOAD_ERR_OK) {
+            $this->handleErrorPageImageUpload($settingModel);
+        }
+
+        // Handle image removal checkbox
+        if ($this->post('remove_image') === '1') {
+            $currentImage = $settingModel->get('error_404_image');
+            if ($currentImage) {
+                $path = dirname(__DIR__, 3) . '/public' . $currentImage;
+                if (file_exists($path) && is_file($path)) {
+                    unlink($path);
+                }
+                $settingModel->set('error_404_image', '', 'file', 'theme', true);
+            }
+        }
+
+        redirectWithFlash('/admin/themes/404', 'success', '404 page settings saved successfully');
+    }
+
+    /**
+     * Handle 404 page image upload
+     */
+    private function handleErrorPageImageUpload(Setting $settingModel): void
+    {
+        $file = $_FILES['error_404_image'];
+
+        $allowedTypes = ['image/png', 'image/jpeg', 'image/svg+xml', 'image/webp', 'image/gif'];
+        $finfo = new \finfo(FILEINFO_MIME_TYPE);
+        $mimeType = $finfo->file($file['tmp_name']);
+
+        if (!in_array($mimeType, $allowedTypes) || $file['size'] > 2 * 1024 * 1024) {
+            return;
+        }
+
+        $uploadDir = dirname(__DIR__, 3) . '/public/assets/images/branding/';
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+
+        // Delete old image
+        $oldImage = $settingModel->get('error_404_image');
+        if ($oldImage) {
+            $oldPath = dirname(__DIR__, 3) . '/public' . $oldImage;
+            if (file_exists($oldPath) && is_file($oldPath)) {
+                unlink($oldPath);
+            }
+        }
+
+        $ext = pathinfo($file['name'], PATHINFO_EXTENSION) ?: 'png';
+        $filename = 'error-404-' . time() . '.' . strtolower($ext);
+
+        if (move_uploaded_file($file['tmp_name'], $uploadDir . $filename)) {
+            $settingModel->set('error_404_image', '/assets/images/branding/' . $filename, 'file', 'theme', true);
+        }
+    }
+
+    /**
+     * Remove 404 page custom image (AJAX)
+     */
+    public function removeErrorPageImage(): void
+    {
+        $this->requireValidCSRF();
+        $settingModel = new Setting();
+
+        $currentImage = $settingModel->get('error_404_image');
+        if ($currentImage) {
+            $path = dirname(__DIR__, 3) . '/public' . $currentImage;
+            if (file_exists($path) && is_file($path)) {
+                unlink($path);
+            }
+            $settingModel->set('error_404_image', '', 'file', 'theme', true);
+        }
+
+        $this->json(['success' => true, 'message' => '404 image removed']);
     }
 }

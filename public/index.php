@@ -605,6 +605,11 @@ $router->post('/admin/themes/upload', 'Admin\\ThemeController', 'upload');
 $router->post('/admin/themes/activate-installed', 'Admin\\ThemeController', 'activateInstalled');
 $router->post('/admin/themes/delete-installed', 'Admin\\ThemeController', 'deleteInstalled');
 
+// Admin 404 error page customization
+$router->get('/admin/themes/404', 'Admin\\ThemeController', 'errorPage');
+$router->post('/admin/themes/404', 'Admin\\ThemeController', 'saveErrorPage');
+$router->post('/admin/themes/404/remove-image', 'Admin\\ThemeController', 'removeErrorPageImage');
+
 // License store routes (for apparix.app website)
 $router->get('/pricing', 'LicenseStoreController', 'pricing');
 $router->post('/license/checkout', 'LicenseStoreController', 'createCheckout');

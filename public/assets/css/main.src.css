@@ -457,6 +457,60 @@ h3 {
     width: 100%;
 }
 
+/* Header Style: Centered - logo centered with nav items on both sides */
+body.header-centered .navbar .container {
+    flex-wrap: wrap;
+    justify-content: center;
+    height: auto;
+    padding-top: 12px;
+    padding-bottom: 0;
+}
+
+body.header-centered .navbar-brand {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 8px;
+}
+
+body.header-centered .navbar-menu {
+    justify-content: center;
+    width: 100%;
+    padding-bottom: 12px;
+    gap: 2rem;
+}
+
+body.header-centered .mobile-menu-toggle {
+    position: absolute;
+    right: 24px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+/* Header Style: Minimal - smaller, compact navbar */
+body.header-minimal .navbar .container {
+    height: 56px;
+}
+
+body.header-minimal .navbar-brand .logo img {
+    height: 30px;
+}
+
+body.header-minimal .navbar-menu {
+    gap: 1.5rem;
+}
+
+body.header-minimal .navbar-menu a {
+    font-size: 0.8rem;
+}
+
+/* Layout Style: Full Width - removes container max-width */
+body.layout-full-width .container {
+    max-width: 100%;
+    padding-left: 40px;
+    padding-right: 40px;
+}
+
 /* Cart Link with Badge */
 .nav-cart {
     display: flex;

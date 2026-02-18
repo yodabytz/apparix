@@ -165,6 +165,30 @@ $installedThemes = \App\Core\ThemeLoader::getInstalledThemes();
 </div>
 <?php endif; ?>
 
+<!-- Page Customization -->
+<div class="themes-section">
+    <h2>Page Customization</h2>
+    <p class="section-description">Customize special pages and error pages.</p>
+
+    <div class="theme-grid">
+        <div class="theme-card">
+            <div class="theme-preview" style="background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%); display: flex; align-items: center; justify-content: center;">
+                <div style="text-align: center;">
+                    <div style="font-size: 3rem; margin-bottom: 8px;">&#128270;</div>
+                    <div style="font-size: 2.5rem; font-weight: 700; background: linear-gradient(135deg, var(--admin-primary, #3b82f6), #93c5fd); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">404</div>
+                </div>
+            </div>
+            <div class="theme-info">
+                <h3>404 Error Page</h3>
+                <p>Customize the heading, message, buttons, image, and search box.</p>
+            </div>
+            <div class="theme-actions">
+                <a href="/admin/themes/404" class="btn btn-secondary btn-sm">Customize</a>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
 .themes-section {
     margin-bottom: 40px;
