@@ -63,6 +63,10 @@ class ThemeService
         $css .= "    --navbar-bg: {$navbarBg};\n";
         $css .= "    --navbar-text: {$navbarText};\n";
 
+        // Page background color (very light tint of primary)
+        $pageBg = $this->generatePageBackground($theme['primary_color']);
+        $css .= "    --page-bg: {$pageBg};\n";
+
         // Glow/effect color
         $glowColor = $theme['glow_color'] ?? $theme['primary_color'];
         $css .= "    --glow-color: {$glowColor};\n";
@@ -415,6 +419,25 @@ class ThemeService
         $css .= "}\n";
 
         return $css;
+    }
+
+    /**
+     * Generate a very light page background color from the primary color
+     * Creates a ~97% lightness tint suitable for page backgrounds
+     */
+    private function generatePageBackground(string $primaryColor): string
+    {
+        $rgb = $this->hexToRgb($primaryColor);
+        if (!$rgb) {
+            return '#f8f9fa';
+        }
+
+        // Mix with white at ~95% white to get a very subtle tint
+        $r = (int)(255 * 0.95 + $rgb['r'] * 0.05);
+        $g = (int)(255 * 0.95 + $rgb['g'] * 0.05);
+        $b = (int)(255 * 0.95 + $rgb['b'] * 0.05);
+
+        return sprintf('#%02x%02x%02x', min(255, $r), min(255, $g), min(255, $b));
     }
 
     /**

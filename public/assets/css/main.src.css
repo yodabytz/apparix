@@ -5,6 +5,7 @@
     --primary-pink: #FF68C5;
     --secondary-pink: #FF94C8;
     --light-pink: #FFE4F3;
+    --page-bg: #fdf2f8;
     --light-gray: #C6C6C6;
     --dark-gray: #424242;
     --darker-gray: #2d2d2d;
@@ -322,14 +323,14 @@ html {
     font-size: 16px;
     scroll-behavior: smooth;
     color-scheme: light only;
-    background-color: #fdf2f8; /* Fallback for mobile */
+    background-color: var(--page-bg); /* Fallback for mobile */
 }
 
 body {
     font-family: var(--font-body);
     color: var(--text-primary);
     line-height: 1.6;
-    background-color: #fdf2f8; /* Solid fallback */
+    background-color: var(--page-bg); /* Solid fallback */
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -598,7 +599,7 @@ h3 {
 }
 
 .hero-gradient-light {
-    background: linear-gradient(135deg, #fdf2f8 0%, #fff 50%, #fdf2f8 100%);
+    background: linear-gradient(135deg, var(--page-bg) 0%, #fff 50%, var(--page-bg) 100%);
     color: #1f2937;
 }
 
@@ -1059,7 +1060,7 @@ h3 {
     }
 
     body {
-        background: #fdf2f8 !important;
+        background: var(--page-bg) !important;
         background-image: none !important;
         background-attachment: scroll !important;
         overflow-x: hidden;
@@ -1839,7 +1840,7 @@ h3 {
     margin-top: 1.75rem;
     border: 1px solid rgba(255, 107, 157, 0.2);
     border-radius: 10px;
-    background: linear-gradient(135deg, #fff9fb 0%, #fff 100%);
+    background: linear-gradient(135deg, var(--page-bg) 0%, #fff 100%);
     font-size: 0.9rem;
     box-shadow: 0 2px 8px rgba(255, 107, 157, 0.06);
     transition: all 0.2s ease;
@@ -2235,8 +2236,8 @@ h3 {
     align-items: center;
     gap: 0.5rem;
     padding: 0.75rem 1rem;
-    background: linear-gradient(135deg, #fff9fb 0%, #fff0f7 100%);
-    border: 1px solid #fce7f3;
+    background: linear-gradient(135deg, var(--page-bg) 0%, var(--page-bg) 100%);
+    border: 1px solid var(--light-pink);
     border-radius: 8px;
     margin: 1rem 0;
     font-size: 0.9rem;
@@ -4549,7 +4550,7 @@ h3 {
     gap: 40px;
     margin-bottom: 30px;
     padding: 25px;
-    background: #fdf2f8;
+    background: var(--page-bg);
     border-radius: 12px;
 }
 
@@ -4561,7 +4562,7 @@ h3 {
 .average-number {
     font-size: 3rem;
     font-weight: 700;
-    color: #ec4899;
+    color: var(--primary-pink);
     line-height: 1;
     display: block;
 }
@@ -4616,7 +4617,7 @@ h3 {
 
 .bar-fill {
     height: 100%;
-    background: linear-gradient(135deg, #ec4899, #f472b6);
+    background: linear-gradient(135deg, var(--primary-pink), var(--secondary-pink));
     border-radius: 5px;
     transition: width 0.3s ease;
 }
@@ -4643,7 +4644,7 @@ h3 {
 }
 
 .write-review-section a {
-    color: #ec4899;
+    color: var(--primary-pink);
     font-weight: 500;
 }
 
@@ -4675,7 +4676,7 @@ h3 {
 .review-form input[type="text"]:focus,
 .review-form textarea:focus {
     outline: none;
-    border-color: #ec4899;
+    border-color: var(--primary-pink);
 }
 
 .star-rating-input {
@@ -4735,8 +4736,8 @@ h3 {
 }
 
 .review-card.featured {
-    border-color: #ec4899;
-    background: linear-gradient(135deg, #fdf2f8 0%, #fff 100%);
+    border-color: var(--primary-pink);
+    background: linear-gradient(135deg, var(--page-bg) 0%, #fff 100%);
 }
 
 .review-header {
@@ -5467,7 +5468,7 @@ h3 {
 
     /* Fix body rendering */
     html, body {
-        background: #fdf2f8 !important;
+        background: var(--page-bg) !important;
         background-image: none !important;
         background-attachment: scroll !important;
         overflow-x: hidden !important;
@@ -5547,11 +5548,11 @@ h3 {
 /* Extra aggressive fix for small Android screens (Samsung A32 HD+, etc.) */
 @media (max-width: 480px) {
     html {
-        background-color: #fdf2f8 !important;
+        background-color: var(--page-bg) !important;
     }
 
     body {
-        background-color: #fdf2f8 !important;
+        background-color: var(--page-bg) !important;
         background-image: none !important;
         min-height: 100vh !important;
         overflow-y: scroll !important;
@@ -6802,8 +6803,8 @@ iframe[src*="tawk"] {
 
 /* Favorites Account Prompt */
 .favorites-account-prompt {
-    background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%);
-    border: 1px solid #fbcfe8;
+    background: linear-gradient(135deg, var(--page-bg) 0%, var(--light-pink) 100%);
+    border: 1px solid var(--light-pink);
     border-radius: 12px;
     padding: 1.25rem 1.5rem;
     margin-bottom: 1.5rem;

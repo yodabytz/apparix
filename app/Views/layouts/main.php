@@ -97,7 +97,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/assets/css/main.css?v=91">
+    <link rel="stylesheet" href="/assets/css/main.css?v=93">
     <?php
     // Load installed theme CSS (if any)
     $installedThemeCss = \App\Core\ThemeLoader::getThemeCss();
@@ -191,7 +191,7 @@
     </script>
     <?php endif; ?>
 </head>
-<body style="background-color:#fdf2f8 !important"<?php echo $activeHoliday ? ' class="' . $activeHoliday['class'] . '"' : ''; ?>>
+<body<?php echo $activeHoliday ? ' class="' . $activeHoliday['class'] . '"' : ''; ?>>
     <!-- Google Tag Manager (noscript) -->
     <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-MK6Z5DFB"
     height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
