@@ -158,6 +158,9 @@ if (isset($admin)) {
                 <span class="nav-icon">&#128101;</span> Admin Users
             </a>
             <?php endif; ?>
+            <a href="/admin/2fa" class="nav-item <?php echo strpos($_SERVER['REQUEST_URI'], '/admin/2fa') === 0 ? 'active' : ''; ?>">
+                <span class="nav-icon">&#128274;</span> Two-Factor Auth
+            </a>
         </nav>
 
         <div class="sidebar-footer">

@@ -1,0 +1,33 @@
+# Dependencies
+/node_modules/
+/vendor/
+
+# Runtime storage & backups
+/storage/
+/backups/
+
+# Uploads & product images
+/public/uploads/
+/public/assets/images/products/
+
+# Archives & large file types
+*.zip
+*.csv
+*.sql
+*.sqlite
+*.db
+*.log
+*.gz
+*.tgz
+*.tar
+*.7z
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+*.pdf
+*.mp4
+*.mov
+*.avi
+*.mkv

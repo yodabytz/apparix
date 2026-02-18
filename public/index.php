@@ -412,6 +412,14 @@ $router->post('/shipping/validate', 'ShippingController', 'validateMethod');
 $router->get('/admin/login', 'Admin\\AuthController', 'login');
 $router->post('/admin/login', 'Admin\\AuthController', 'doLogin');
 $router->get('/admin/logout', 'Admin\\AuthController', 'logout');
+$router->get('/admin/2fa/cancel', 'Admin\\AuthController', 'cancel2FA');
+
+// Admin two-factor authentication routes
+$router->get('/admin/2fa', 'Admin\\TwoFactorController', 'index');
+$router->get('/admin/2fa/setup', 'Admin\\TwoFactorController', 'setup');
+$router->post('/admin/2fa/enable', 'Admin\\TwoFactorController', 'enable');
+$router->post('/admin/2fa/disable', 'Admin\\TwoFactorController', 'disable');
+$router->post('/admin/2fa/regenerate-codes', 'Admin\\TwoFactorController', 'regenerateBackupCodes');
 
 // Admin dashboard
 $router->get('/admin', 'Admin\\DashboardController', 'index');
