@@ -75,6 +75,48 @@ class UpdateService
     }
 
     /**
+     * Check for updates with caching (for background/dashboard checks)
+     * Only contacts the update server at most once per interval.
+     * Returns cached result otherwise.
+     */
+    public function checkForUpdatesCached(int $cacheSeconds = 43200): ?array
+    {
+        $cacheFile = BASE_PATH . '/storage/cache/update_check.json';
+
+        // Check if cache exists and is fresh
+        if (file_exists($cacheFile)) {
+            $cached = json_decode(file_get_contents($cacheFile), true);
+            if ($cached && isset($cached['checked_at']) && (time() - $cached['checked_at']) < $cacheSeconds) {
+                return $cached;
+            }
+        }
+
+        // Perform fresh check
+        $result = $this->checkForUpdates();
+
+        // Cache the result (even failures, to avoid hammering the server)
+        $result['checked_at'] = time();
+        $cacheDir = dirname($cacheFile);
+        if (!is_dir($cacheDir)) {
+            mkdir($cacheDir, 0755, true);
+        }
+        file_put_contents($cacheFile, json_encode($result));
+
+        return $result;
+    }
+
+    /**
+     * Clear the update check cache (e.g., after installing an update)
+     */
+    public function clearUpdateCache(): void
+    {
+        $cacheFile = BASE_PATH . '/storage/cache/update_check.json';
+        if (file_exists($cacheFile)) {
+            unlink($cacheFile);
+        }
+    }
+
+    /**
      * Download and install an update
      */
     public function installUpdate(string $targetVersion): array
@@ -116,7 +158,10 @@ class UpdateService
             // Step 7: Cleanup
             $this->cleanupTemp();
 
-            // Step 8: Report success
+            // Step 8: Clear update cache so dashboard reflects new version
+            $this->clearUpdateCache();
+
+            // Step 9: Report success
             $this->reportUpdateStatus($targetVersion, 'installed');
 
             return [
@@ -135,7 +180,7 @@ class UpdateService
     }
 
     /**
-     * Download the update file
+     * Download the update file with hash verification
      */
     private function downloadUpdate(string $targetVersion): array
     {
@@ -163,16 +208,20 @@ class UpdateService
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_TIMEOUT => 300,
-            CURLOPT_SSL_VERIFYPEER => true
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_HEADER => true
         ]);
 
-        $response = curl_exec($ch);
+        $fullResponse = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+        $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
         curl_close($ch);
 
+        $headers = substr($fullResponse, 0, $headerSize);
+        $response = substr($fullResponse, $headerSize);
+
         // Check if we got JSON (error) or binary (file)
-        if (strpos($contentType, 'application/json') !== false) {
+        if (strpos($headers, 'application/json') !== false) {
             $data = json_decode($response, true);
             return [
                 'success' => false,
@@ -193,6 +242,19 @@ class UpdateService
                 'success' => false,
                 'error' => 'Failed to save update file'
             ];
+        }
+
+        // Verify file hash if provided by server
+        if (preg_match('/X-File-Hash:\s*(\S+)/i', $headers, $matches)) {
+            $expectedHash = trim($matches[1]);
+            $actualHash = hash_file('sha256', $tempFile);
+            if ($actualHash !== $expectedHash) {
+                unlink($tempFile);
+                return [
+                    'success' => false,
+                    'error' => 'File integrity check failed. The download may be corrupted.'
+                ];
+            }
         }
 
         return [
@@ -229,7 +291,7 @@ class UpdateService
     }
 
     /**
-     * Apply the update (copy files)
+     * Apply the update (copy files, protecting customer data)
      */
     private function applyUpdate(string $sourcePath): array
     {
@@ -239,10 +301,16 @@ class UpdateService
             $sourcePath = $dirs[0];
         }
 
-        // Files/directories to exclude from update
+        // Files/directories to NEVER overwrite during updates
+        // These contain customer-specific data, settings, and uploads
         $exclude = [
+            // Environment & configuration
             '.env',
             '.env.example',
+            'config/database.php',
+
+            // Customer data directories
+            'storage/.installed',
             'storage/logs',
             'storage/sessions',
             'storage/uploads',
@@ -250,11 +318,25 @@ class UpdateService
             'storage/updates',
             'storage/updates_temp',
             'storage/backups',
+            'storage/cache',
+
+            // Customer uploaded content
             'public/assets/images/products',
             'public/assets/images/uploads',
+
+            // Customer-installed plugins and themes
+            'content/plugins',
+            'content/themes',
+
+            // Composer dependencies (customer may have different versions)
+            'vendor',
+
+            // Development/build files
             'tools/generate-license.php',
             '.git',
-            '.gitignore'
+            '.gitignore',
+            '.claudeignore',
+            'node_modules',
         ];
 
         // Recursively copy files
@@ -286,7 +368,7 @@ class UpdateService
             // Check exclusions
             $skip = false;
             foreach ($exclude as $pattern) {
-                if (strpos($relativePath, $pattern) === 0) {
+                if ($relativePath === $pattern || strpos($relativePath, $pattern . '/') === 0) {
                     $skip = true;
                     break;
                 }
@@ -308,7 +390,7 @@ class UpdateService
     }
 
     /**
-     * Create a backup before updating using PharData
+     * Create a backup before updating
      */
     private function createBackup(): array
     {
@@ -323,13 +405,21 @@ class UpdateService
         try {
             $phar = new \PharData($backupPath);
 
-            // Add critical directories
-            $dirsToBackup = ['app', 'version.php'];
+            // Back up all critical directories and files that the update will change
+            $itemsToBackup = [
+                'app',
+                'public/index.php',
+                'public/assets/css',
+                'public/assets/js',
+                'database/migrations',
+                'config',
+                'version.php',
+            ];
 
-            foreach ($dirsToBackup as $item) {
+            foreach ($itemsToBackup as $item) {
                 $fullPath = BASE_PATH . '/' . $item;
                 if (is_dir($fullPath)) {
-                    $phar->buildFromDirectory($fullPath);
+                    $this->addDirectoryToArchive($phar, $fullPath, $item);
                 } elseif (is_file($fullPath)) {
                     $phar->addFile($fullPath, $item);
                 }
@@ -352,6 +442,28 @@ class UpdateService
                 'success' => false,
                 'error' => 'Failed to create backup: ' . $e->getMessage()
             ];
+        }
+    }
+
+    /**
+     * Recursively add a directory to a PharData archive
+     */
+    private function addDirectoryToArchive(\PharData $phar, string $dirPath, string $localPrefix): void
+    {
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($dirPath, \RecursiveDirectoryIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::SELF_FIRST
+        );
+
+        foreach ($iterator as $file) {
+            $realPath = $file->getRealPath();
+            $relativePath = $localPrefix . '/' . $iterator->getSubPathName();
+
+            if ($file->isDir()) {
+                $phar->addEmptyDir($relativePath);
+            } else {
+                $phar->addFile($realPath, $relativePath);
+            }
         }
     }
 
@@ -399,7 +511,7 @@ class UpdateService
     }
 
     /**
-     * Run database migrations
+     * Run database migrations using mysql CLI for reliable multi-statement support
      */
     private function runMigrations(): void
     {
@@ -413,9 +525,10 @@ class UpdateService
         sort($files);
 
         $db = Database::getInstance();
+        $pdo = $db->getConnection();
 
         // Create migrations table if not exists
-        $db->query("CREATE TABLE IF NOT EXISTS migrations (
+        $pdo->exec("CREATE TABLE IF NOT EXISTS migrations (
             id INT PRIMARY KEY AUTO_INCREMENT,
             migration VARCHAR(255) NOT NULL,
             executed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -435,15 +548,31 @@ class UpdateService
                 continue;
             }
 
-            // Execute migration
-            $sql = file_get_contents($file);
+            // Execute migration via mysql CLI for reliable multi-statement support
+            // This handles PREPARE/EXECUTE, DELIMITER changes, etc.
             try {
-                // Split by semicolon and execute each statement
-                $statements = array_filter(array_map('trim', explode(';', $sql)));
-                foreach ($statements as $statement) {
-                    if (!empty($statement)) {
-                        $db->query($statement);
-                    }
+                $dbHost = $_ENV['DB_HOST'] ?? 'localhost';
+                $dbName = $_ENV['DB_NAME'] ?? '';
+                $dbUser = $_ENV['DB_USER'] ?? '';
+                $dbPass = $_ENV['DB_PASS'] ?? '';
+
+                $cmd = sprintf(
+                    'mysql -h %s -u %s -p%s %s < %s 2>&1',
+                    escapeshellarg($dbHost),
+                    escapeshellarg($dbUser),
+                    escapeshellarg($dbPass),
+                    escapeshellarg($dbName),
+                    escapeshellarg($file)
+                );
+
+                $output = [];
+                $exitCode = 0;
+                exec($cmd, $output, $exitCode);
+
+                if ($exitCode !== 0) {
+                    $errorMsg = implode("\n", $output);
+                    error_log("Migration error in {$migration} (exit code {$exitCode}): {$errorMsg}");
+                    continue;
                 }
 
                 // Record migration

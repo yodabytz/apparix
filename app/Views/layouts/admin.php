@@ -7,9 +7,21 @@ header('Expires: Thu, 01 Jan 1970 00:00:00 GMT');
 
 // Get pending orders count for badge
 $pendingOrdersCount = 0;
+$updateAvailable = null;
 if (isset($admin)) {
     $orderModel = new \App\Models\Order();
     $pendingOrdersCount = $orderModel->countOrders('pending') + $orderModel->countOrders('processing');
+
+    // Check for software updates (cached, at most once every 12 hours)
+    try {
+        $updateService = new \App\Core\UpdateService();
+        $updateCheck = $updateService->checkForUpdatesCached();
+        if ($updateCheck && !empty($updateCheck['update_available'])) {
+            $updateAvailable = $updateCheck['update']['version'] ?? $updateCheck['latest_version'] ?? null;
+        }
+    } catch (\Exception $e) {
+        // Silently fail - don't break admin for update check errors
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -151,7 +163,7 @@ if (isset($admin)) {
                 <span class="nav-icon">&#128230;</span> Releases
             </a>
             <a href="/admin/updates" class="nav-item <?php echo strpos($_SERVER['REQUEST_URI'], '/admin/updates') === 0 ? 'active' : ''; ?>">
-                <span class="nav-icon">&#128259;</span> Updates
+                <span class="nav-icon">&#128259;</span> Updates<?php if ($updateAvailable): ?><span class="order-badge" title="v<?php echo escape($updateAvailable); ?> available">1</span><?php endif; ?>
             </a>
             <?php if (isset($admin['role']) && $admin['role'] === 'super_admin'): ?>
             <a href="/admin/users" class="nav-item <?php echo strpos($_SERVER['REQUEST_URI'], '/admin/users') === 0 ? 'active' : ''; ?>">
@@ -180,6 +192,16 @@ if (isset($admin)) {
 
     <!-- Main Content -->
     <main class="admin-main <?php echo isset($admin) ? 'with-sidebar' : ''; ?>">
+        <?php if ($updateAvailable): ?>
+            <div style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 1px solid #93c5fd; border-radius: 8px; padding: 12px 20px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                <span style="color: #1e40af; font-size: 14px;">
+                    <strong>Update available:</strong> Apparix v<?php echo escape($updateAvailable); ?> is ready to install.
+                </span>
+                <a href="/admin/updates" style="background: #2563eb; color: #fff; padding: 6px 16px; border-radius: 6px; font-size: 13px; font-weight: 500; text-decoration: none;">
+                    View Update
+                </a>
+            </div>
+        <?php endif; ?>
         <?php if ($flash = getFlash('success')): ?>
             <div class="alert alert-success"><?php echo escape($flash); ?></div>
         <?php endif; ?>
