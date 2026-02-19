@@ -141,6 +141,17 @@
                     <?php endif; ?>
                 </div>
 
+                <?php if (!empty($quantityTiers)): ?>
+                <div class="quantity-tier-badges">
+                    <span class="tier-label">Buy More, Save More:</span>
+                    <div class="tier-list">
+                        <?php foreach ($quantityTiers as $tier): ?>
+                            <span class="tier-badge">Buy <?php echo (int)$tier['min_quantity']; ?>+ &rarr; <?php echo number_format($tier['discount_percent'], 0); ?>% off</span>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
+
                 <!-- Options (Color, Size, etc.) -->
                 <?php if (!empty($product['options'])): ?>
                     <div class="product-options">
@@ -395,6 +406,43 @@
                 <h2>Description</h2>
                 <div class="description-text"><?php echo nl2br(escape($product['description'])); ?></div>
             </div>
+        <?php endif; ?>
+
+        <?php if (!empty($productBundles)): ?>
+        <!-- Bundle Deals Section -->
+        <div class="bundle-deals-section">
+            <h2>Complete the Set &amp; Save</h2>
+            <?php foreach ($productBundles as $bundle): ?>
+                <div class="bundle-card">
+                    <div class="bundle-header">
+                        <strong><?php echo escape($bundle['name']); ?></strong>
+                        <span class="bundle-discount-badge">
+                            <?php if ($bundle['discount_type'] === 'fixed'): ?>
+                                Save $<?php echo number_format($bundle['discount_value'], 2); ?>
+                            <?php else: ?>
+                                Save <?php echo number_format($bundle['discount_value'], 0); ?>%
+                            <?php endif; ?>
+                        </span>
+                    </div>
+                    <?php if (!empty($bundle['description'])): ?>
+                        <p class="bundle-description"><?php echo escape($bundle['description']); ?></p>
+                    <?php endif; ?>
+                    <div class="bundle-products-grid">
+                        <?php foreach ($bundle['products'] as $bp): ?>
+                            <a href="/products/<?php echo escape($bp['slug']); ?>" class="bundle-product-item">
+                                <?php if (!empty($bp['image'])): ?>
+                                    <img src="<?php echo escape($bp['image']); ?>" alt="<?php echo escape($bp['name']); ?>" loading="lazy" width="80" height="80">
+                                <?php endif; ?>
+                                <div class="bundle-product-info">
+                                    <span class="bundle-product-name"><?php echo escape($bp['name']); ?></span>
+                                    <span class="bundle-product-price"><?php echo formatPrice($bp['sale_price'] ?: $bp['price']); ?></span>
+                                </div>
+                            </a>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        </div>
         <?php endif; ?>
 
         <!-- Reviews Section -->
@@ -1727,3 +1775,22 @@ document.getElementById('reviewForm')?.addEventListener('submit', async function
     displayRecentlyViewed();
 })();
 </script>
+<style>
+.quantity-tier-badges{margin:0.75rem 0;}
+.quantity-tier-badges .tier-label{font-size:0.85rem;font-weight:600;color:#333;display:block;margin-bottom:0.4rem;}
+.quantity-tier-badges .tier-list{display:flex;flex-wrap:wrap;gap:0.4rem;}
+.quantity-tier-badges .tier-badge{display:inline-block;background:linear-gradient(135deg,#ecfdf5,#d1fae5);color:#065f46;font-size:0.8rem;font-weight:600;padding:0.3rem 0.7rem;border-radius:20px;border:1px solid #a7f3d0;}
+.bundle-deals-section{margin-top:2rem;padding-top:1.5rem;border-top:1px solid #e5e7eb;}
+.bundle-deals-section h2{font-size:1.3rem;margin-bottom:1rem;}
+.bundle-card{background:#fafafa;border:1px solid #e5e7eb;border-radius:10px;padding:1.25rem;margin-bottom:1rem;}
+.bundle-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.5rem;margin-bottom:0.5rem;}
+.bundle-discount-badge{background:linear-gradient(135deg,#fef3c7,#fde68a);color:#92400e;font-size:0.8rem;font-weight:700;padding:0.25rem 0.75rem;border-radius:20px;border:1px solid #fbbf24;}
+.bundle-description{font-size:0.85rem;color:#6b7280;margin-bottom:0.75rem;}
+.bundle-products-grid{display:flex;flex-wrap:wrap;gap:0.75rem;}
+.bundle-product-item{display:flex;align-items:center;gap:0.6rem;text-decoration:none;color:inherit;padding:0.5rem;border-radius:8px;transition:background 0.2s;}
+.bundle-product-item:hover{background:#f0f0f0;}
+.bundle-product-item img{width:60px;height:60px;object-fit:cover;border-radius:6px;}
+.bundle-product-info{display:flex;flex-direction:column;}
+.bundle-product-name{font-size:0.85rem;font-weight:500;color:#333;}
+.bundle-product-price{font-size:0.8rem;color:#6b7280;}
+</style>

@@ -165,11 +165,20 @@
                         </div>
                         <?php endif; ?>
 
+                        <?php if (!empty($autoDiscounts)): ?>
+                            <?php foreach ($autoDiscounts as $discount): ?>
+                                <div class="summary-row" style="color: #16a34a;">
+                                    <span><?php echo escape($discount['label']); ?></span>
+                                    <span>-<?php echo formatPrice($discount['amount']); ?></span>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+
                         <div class="summary-divider"></div>
 
                         <div class="summary-row total">
                             <span>Total:</span>
-                            <span><?php echo formatPrice($cartTotal); ?></span>
+                            <span><?php echo formatPrice(max(0, $cartTotal - ($autoDiscountTotal ?? 0))); ?></span>
                         </div>
 
                         <a href="/checkout" class="btn btn-primary btn-large" style="margin-top: 1.5rem;">

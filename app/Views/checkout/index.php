@@ -355,6 +355,15 @@ foreach ($items as $item) {
                         <span id="subtotalAmount"><?php echo formatPrice($cartTotal); ?></span>
                     </div>
 
+                    <?php if (!empty($autoDiscounts)): ?>
+                        <?php foreach ($autoDiscounts as $discount): ?>
+                            <div class="summary-row" style="color: #16a34a;">
+                                <span style="font-size: 0.85em;"><?php echo escape($discount['label']); ?></span>
+                                <span>-<?php echo formatPrice($discount['amount']); ?></span>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+
                     <div class="summary-row" id="discountRow" style="<?php echo $appliedCoupon ? '' : 'display:none;'; ?>">
                         <span>Discount</span>
                         <span class="discount-value">-<span id="discountRowAmount"><?php echo $appliedCoupon ? formatPrice($appliedCoupon['discount']) : '$0.00'; ?></span></span>
@@ -371,7 +380,7 @@ foreach ($items as $item) {
 
                     <div class="summary-row total">
                         <span>Total</span>
-                        <span id="orderTotal"><?php echo formatPrice($appliedCoupon ? $cartTotal - $appliedCoupon['discount'] : $cartTotal); ?></span>
+                        <span id="orderTotal"><?php echo formatPrice(max(0, $cartTotal - ($autoDiscountTotal ?? 0) - ($appliedCoupon ? $appliedCoupon['discount'] : 0))); ?></span>
                     </div>
                 </div>
 
@@ -408,6 +417,7 @@ foreach ($items as $item) {
 const stripePublicKey = '<?php echo escape($stripePublicKey); ?>';
 const csrfToken = '<?php echo csrfToken(); ?>';
 const cartSubtotal = <?php echo $cartTotal; ?>;
+const autoDiscountTotal = <?php echo $autoDiscountTotal ?? 0; ?>;
 const appliedDiscount = <?php echo $appliedCoupon ? $appliedCoupon['discount'] : 0; ?>;
 const isDigitalOnly = <?php echo $isDigitalOnly ? 'true' : 'false'; ?>;
 
@@ -745,7 +755,7 @@ function selectShippingOption(input) {
         shippingAmountEl.textContent = shippingText;
     }
 
-    const total = cartSubtotal - appliedDiscount + selectedShippingRate;
+    const total = Math.max(0, cartSubtotal - autoDiscountTotal - appliedDiscount + selectedShippingRate);
     document.getElementById('orderTotal').textContent = '$' + total.toFixed(2);
     document.getElementById('buttonText').textContent = 'Place Order - $' + total.toFixed(2);
 
@@ -760,7 +770,7 @@ function updateTotals() {
         shippingAmountEl.textContent = shippingText;
     }
 
-    const total = cartSubtotal - appliedDiscount + selectedShippingRate;
+    const total = Math.max(0, cartSubtotal - autoDiscountTotal - appliedDiscount + selectedShippingRate);
     document.getElementById('orderTotal').textContent = '$' + total.toFixed(2);
     document.getElementById('buttonText').textContent = 'Place Order - $' + total.toFixed(2);
 }

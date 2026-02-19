@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Core\Controller;
 use App\Models\AbandonedCart;
+use App\Models\Bundle;
 use App\Models\Cart;
 use App\Models\Newsletter;
 use App\Models\Product;
@@ -66,10 +67,17 @@ class CartController extends Controller
         $items = $this->cartModel->getItems($sessionId, $userId);
         $cartTotal = $this->cartModel->getTotal($sessionId, $userId);
 
+        // Calculate auto-discounts (quantity tiers + bundles)
+        $bundleModel = new Bundle();
+        $autoDiscounts = $bundleModel->calculateCartDiscounts($items);
+        $autoDiscountTotal = array_sum(array_column($autoDiscounts, 'amount'));
+
         $this->render('cart/index', [
             'items' => $items,
             'cartTotal' => $cartTotal,
-            'itemCount' => $this->cartModel->getCount($sessionId, $userId)
+            'itemCount' => $this->cartModel->getCount($sessionId, $userId),
+            'autoDiscounts' => $autoDiscounts,
+            'autoDiscountTotal' => $autoDiscountTotal
         ]);
     }
 

@@ -6,6 +6,7 @@ use App\Core\Controller;
 use App\Core\Database;
 use App\Core\Shipping\ShippingCalculator;
 use App\Core\OrderNotificationService;
+use App\Models\Bundle;
 use App\Models\Cart;
 use App\Models\Product;
 use App\Models\Coupon;
@@ -61,6 +62,11 @@ class CheckoutController extends Controller
             );
         }
 
+        // Calculate auto-discounts (quantity tiers + bundles)
+        $bundleModel = new Bundle();
+        $autoDiscounts = $bundleModel->calculateCartDiscounts($items);
+        $autoDiscountTotal = array_sum(array_column($autoDiscounts, 'amount'));
+
         // Get Stripe public key
         $stripePublicKey = $_ENV['STRIPE_PUBLIC_KEY'] ?? '';
 
@@ -69,7 +75,9 @@ class CheckoutController extends Controller
             'items' => $items,
             'cartTotal' => $cartTotal,
             'savedAddresses' => $savedAddresses,
-            'stripePublicKey' => $stripePublicKey
+            'stripePublicKey' => $stripePublicKey,
+            'autoDiscounts' => $autoDiscounts,
+            'autoDiscountTotal' => $autoDiscountTotal
         ]);
     }
 
@@ -115,6 +123,11 @@ class CheckoutController extends Controller
             }
         }
 
+        // Calculate auto-discounts (quantity tiers + bundles)
+        $bundleModel = new Bundle();
+        $autoDiscounts = $bundleModel->calculateCartDiscounts($items);
+        $autoDiscountTotal = array_sum(array_column($autoDiscounts, 'amount'));
+
         // Apply coupon discount if present
         $discountAmount = 0;
         $appliedCoupon = $_SESSION['applied_coupon'] ?? null;
@@ -123,7 +136,7 @@ class CheckoutController extends Controller
         }
 
         // Calculate total (same formula as process())
-        $total = $subtotal + $shippingCost - $discountAmount;
+        $total = $subtotal + $shippingCost - $autoDiscountTotal - $discountAmount;
 
         // Handle free orders - no payment needed
         if ($total <= 0) {
@@ -158,6 +171,7 @@ class CheckoutController extends Controller
                 'subtotal' => $subtotal,
                 'shipping_cost' => $shippingCost,
                 'shipping_method_id' => $shippingMethodId ? (int)$shippingMethodId : null,
+                'auto_discount_amount' => $autoDiscountTotal,
                 'discount_amount' => $discountAmount,
                 'total' => $total,
                 'coupon_code' => $appliedCoupon['code'] ?? null,
@@ -420,7 +434,17 @@ class CheckoutController extends Controller
             }
         }
 
-        $total = $subtotal + $tax + $shippingCost - $discountAmount;
+        // Calculate auto-discounts (quantity + bundle)
+        $autoDiscountAmount = 0;
+        if ($paymentIntentData) {
+            $autoDiscountAmount = $paymentIntentData['auto_discount_amount'] ?? 0;
+        } else {
+            $bundleModel = new Bundle();
+            $autoDiscounts = $bundleModel->calculateCartDiscounts($items);
+            $autoDiscountAmount = array_sum(array_column($autoDiscounts, 'amount'));
+        }
+
+        $total = $subtotal + $tax + $shippingCost - $autoDiscountAmount - $discountAmount;
 
         // Check if this is a free order
         $isFreeOrder = ($total <= 0);
@@ -562,7 +586,7 @@ class CheckoutController extends Controller
             $orderId = $db->insert(
                 "INSERT INTO orders (user_id, order_number, status, subtotal, tax, shipping_cost, discount_amount, discount_code_id, total, payment_method, payment_status, stripe_payment_intent_id, billing_address_id, shipping_address_id, customer_email, shipping_carrier, shipping_method, shipping_method_id, estimated_delivery)
                  VALUES (?, ?, 'pending', ?, ?, ?, ?, ?, ?, ?, 'paid', ?, ?, ?, ?, ?, ?, ?, ?)",
-                [$userId, $orderNumber, $subtotal, $tax, $shippingCost, $discountAmount, $discountCodeId, $total, $paymentMethod, $stripePaymentId, $billingAddressId, $shippingAddressId, $email, $shippingCarrier, $shippingMethodName, $shippingMethodId, $estimatedDelivery]
+                [$userId, $orderNumber, $subtotal, $tax, $shippingCost, $autoDiscountAmount + $discountAmount, $discountCodeId, $total, $paymentMethod, $stripePaymentId, $billingAddressId, $shippingAddressId, $email, $shippingCarrier, $shippingMethodName, $shippingMethodId, $estimatedDelivery]
             );
 
             // Record coupon usage if a coupon was applied

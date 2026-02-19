@@ -6,6 +6,7 @@ use App\Core\Controller;
 use App\Core\Database;
 use App\Core\License;
 use App\Models\AdminUser;
+use App\Models\Bundle;
 use App\Models\Product;
 
 class ProductController extends Controller
@@ -363,6 +364,10 @@ class ProductController extends Controller
         $shippingClasses = $db->select("SELECT * FROM shipping_classes WHERE is_active = 1 ORDER BY name");
         $shippingOrigins = $db->select("SELECT * FROM shipping_origins WHERE is_active = 1 ORDER BY is_default DESC, name");
 
+        // Get quantity discount tiers
+        $bundleModel = new Bundle();
+        $quantityTiers = $bundleModel->getQuantityTiers($id);
+
         $this->render('admin.products.edit', [
             'title' => 'Edit Product: ' . $product['name'],
             'admin' => $this->admin,
@@ -376,7 +381,8 @@ class ProductController extends Controller
             'productCategoryIds' => $productCategoryIds,
             'colorOptions' => $colorOptions,
             'shippingClasses' => $shippingClasses,
-            'shippingOrigins' => $shippingOrigins
+            'shippingOrigins' => $shippingOrigins,
+            'quantityTiers' => $quantityTiers
         ], 'admin');
     }
 
@@ -493,6 +499,19 @@ class ProductController extends Controller
 
         // Recalculate price range
         $this->updatePriceRange($id);
+
+        // Save quantity discount tiers
+        $tierMins = $this->post('qty_tier_min', []);
+        $tierPcts = $this->post('qty_tier_pct', []);
+        $tiers = [];
+        for ($i = 0; $i < count($tierMins); $i++) {
+            $tiers[] = [
+                'min_quantity' => $tierMins[$i] ?? 0,
+                'discount_percent' => $tierPcts[$i] ?? 0
+            ];
+        }
+        $bundleModel = new Bundle();
+        $bundleModel->saveQuantityTiers($id, $tiers);
 
         $this->adminModel->logActivity($this->admin['admin_id'], 'update_product', 'product', $id, "Updated product: $name");
 

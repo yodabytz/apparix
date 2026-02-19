@@ -466,6 +466,15 @@ $router->get('/admin/products/stats', 'Admin\\ProductController', 'stats');
 $router->get('/admin/customers', 'Admin\\CustomerController', 'index');
 $router->post('/admin/customers/delete', 'Admin\\CustomerController', 'delete');
 
+// Admin bundle routes
+$router->get('/admin/bundles', 'Admin\\BundleController', 'index');
+$router->get('/admin/bundles/create', 'Admin\\BundleController', 'create');
+$router->post('/admin/bundles/store', 'Admin\\BundleController', 'store');
+$router->get('/admin/bundles/:id/edit', 'Admin\\BundleController', 'edit');
+$router->post('/admin/bundles/update', 'Admin\\BundleController', 'update');
+$router->post('/admin/bundles/delete', 'Admin\\BundleController', 'delete');
+$router->get('/admin/bundles/search-products', 'Admin\\BundleController', 'searchProducts');
+
 // Admin coupon routes
 $router->get('/admin/coupons', 'Admin\\CouponController', 'index');
 $router->get('/admin/coupons/create', 'Admin\\CouponController', 'create');

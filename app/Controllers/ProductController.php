@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Core\Controller;
 use App\Core\Database;
+use App\Models\Bundle;
 use App\Models\Product;
 
 class ProductController extends Controller
@@ -101,6 +102,11 @@ class ProductController extends Controller
             }
         }
 
+        // Get bundles and quantity tiers for this product
+        $bundleModel = new Bundle();
+        $productBundles = $bundleModel->getBundlesForProduct($product['id']);
+        $quantityTiers = $bundleModel->getQuantityTiers($product['id']);
+
         $data = [
             'title' => $product['name'],
             'product' => $product,
@@ -110,6 +116,8 @@ class ProductController extends Controller
             'metaDescription' => $product['meta_description'] ?? substr(strip_tags($product['description'] ?? ''), 0, 160),
             'ogImage' => $ogImage,
             'jsonLd' => $jsonLd,
+            'productBundles' => $productBundles,
+            'quantityTiers' => $quantityTiers,
         ];
 
         $this->render('products.show', $data);

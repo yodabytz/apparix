@@ -187,6 +187,30 @@
                     </div>
                 </div>
 
+                <div class="card">
+                    <h3 class="card-title" style="margin-bottom: 1rem;">Quantity Discounts</h3>
+                    <p style="font-size: 0.8rem; color: var(--admin-text-light); margin-bottom: 0.75rem;">
+                        Offer discounts when customers buy multiple of this product.
+                    </p>
+                    <div id="quantityTiers">
+                        <?php if (!empty($quantityTiers)): ?>
+                            <?php foreach ($quantityTiers as $tier): ?>
+                                <div class="qty-tier-row">
+                                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                        <span style="font-size: 0.8rem; white-space: nowrap;">Buy</span>
+                                        <input type="number" name="qty_tier_min[]" class="form-input" style="width: 60px; padding: 0.4rem;" min="2" value="<?php echo (int)$tier['min_quantity']; ?>">
+                                        <span style="font-size: 0.8rem; white-space: nowrap;">+</span>
+                                        <input type="number" name="qty_tier_pct[]" class="form-input" style="width: 60px; padding: 0.4rem;" min="1" max="50" step="0.5" value="<?php echo $tier['discount_percent']; ?>">
+                                        <span style="font-size: 0.8rem;">% off</span>
+                                        <button type="button" class="btn btn-sm btn-danger" onclick="this.closest('.qty-tier-row').remove()" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">X</button>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline" onclick="addQuantityTier()" style="margin-top: 0.5rem;">+ Add Tier</button>
+                </div>
+
                 <button type="submit" class="btn btn-primary" style="width: 100%;">
                     Save Changes
                 </button>
@@ -710,6 +734,21 @@
 <script>
 const productId = <?php echo $product['id']; ?>;
 const csrfToken = '<?php echo csrf_token(); ?>';
+
+function addQuantityTier() {
+    const container = document.getElementById('quantityTiers');
+    const row = document.createElement('div');
+    row.className = 'qty-tier-row';
+    row.innerHTML = '<div style="display: flex; gap: 0.5rem; align-items: center;">' +
+        '<span style="font-size: 0.8rem; white-space: nowrap;">Buy</span>' +
+        '<input type="number" name="qty_tier_min[]" class="form-input" style="width: 60px; padding: 0.4rem;" min="2" value="2">' +
+        '<span style="font-size: 0.8rem; white-space: nowrap;">+</span>' +
+        '<input type="number" name="qty_tier_pct[]" class="form-input" style="width: 60px; padding: 0.4rem;" min="1" max="50" step="0.5" value="5">' +
+        '<span style="font-size: 0.8rem;">% off</span>' +
+        '<button type="button" class="btn btn-sm btn-danger" onclick="this.closest(\'.qty-tier-row\').remove()" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">X</button>' +
+        '</div>';
+    container.appendChild(row);
+}
 
 function showTab(tabName, element) {
     document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');

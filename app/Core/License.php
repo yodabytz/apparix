@@ -38,7 +38,7 @@ class License
      */
     private const EDITION_FEATURES = [
         'F' => [ // Free (no license)
-            'max_products' => 10,
+            'max_products' => 25,
             'max_admin_users' => 1,
             'max_orders_month' => 50,
             'api_access' => false,

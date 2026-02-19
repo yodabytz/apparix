@@ -113,6 +113,9 @@ if (isset($admin)) {
             <a href="/admin/coupons" class="nav-item <?php echo strpos($_SERVER['REQUEST_URI'], '/admin/coupons') === 0 ? 'active' : ''; ?>">
                 <span class="nav-icon">&#127991;</span> Coupons
             </a>
+            <a href="/admin/bundles" class="nav-item <?php echo strpos($_SERVER['REQUEST_URI'], '/admin/bundles') === 0 ? 'active' : ''; ?>">
+                <span class="nav-icon">&#127873;</span> Bundles
+            </a>
             <a href="/admin/categories" class="nav-item <?php echo strpos($_SERVER['REQUEST_URI'], '/admin/categories') === 0 ? 'active' : ''; ?>">
                 <span class="nav-icon">&#128193;</span> Categories
             </a>
