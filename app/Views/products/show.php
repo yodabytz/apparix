@@ -393,7 +393,7 @@
         <?php if ($product['description']): ?>
             <div class="description-section-full">
                 <h2>Description</h2>
-                <div class="description-text"><?php echo $product['description']; ?></div>
+                <div class="description-text"><?php echo nl2br(escape($product['description'])); ?></div>
             </div>
         <?php endif; ?>
 
@@ -1682,20 +1682,42 @@ document.getElementById('reviewForm')?.addEventListener('submit', async function
         // Show max 4 items
         items = items.slice(0, 4);
 
-        // Build product cards
-        grid.innerHTML = items.map(item => `
-            <div class="product-card">
-                <div class="product-image">
-                    <a href="/products/${encodeURIComponent(item.slug)}">
-                        <img src="${item.image}" alt="${item.name}" loading="lazy" width="300" height="300">
-                    </a>
-                </div>
-                <div class="product-info">
-                    <h3><a href="/products/${encodeURIComponent(item.slug)}">${item.name}</a></h3>
-                    <p class="product-price">$${parseFloat(item.price).toFixed(2)}</p>
-                </div>
-            </div>
-        `).join('');
+        // Build product cards using DOM API (prevents XSS from localStorage)
+        grid.innerHTML = '';
+        items.forEach(function(item) {
+            var card = document.createElement('div');
+            card.className = 'product-card';
+
+            var imgDiv = document.createElement('div');
+            imgDiv.className = 'product-image';
+            var imgLink = document.createElement('a');
+            imgLink.href = '/products/' + encodeURIComponent(item.slug);
+            var img = document.createElement('img');
+            img.src = item.image;
+            img.alt = item.name;
+            img.loading = 'lazy';
+            img.width = 300;
+            img.height = 300;
+            imgLink.appendChild(img);
+            imgDiv.appendChild(imgLink);
+
+            var infoDiv = document.createElement('div');
+            infoDiv.className = 'product-info';
+            var h3 = document.createElement('h3');
+            var nameLink = document.createElement('a');
+            nameLink.href = '/products/' + encodeURIComponent(item.slug);
+            nameLink.textContent = item.name;
+            h3.appendChild(nameLink);
+            var price = document.createElement('p');
+            price.className = 'product-price';
+            price.textContent = '$' + parseFloat(item.price).toFixed(2);
+            infoDiv.appendChild(h3);
+            infoDiv.appendChild(price);
+
+            card.appendChild(imgDiv);
+            card.appendChild(infoDiv);
+            grid.appendChild(card);
+        });
 
         section.style.display = 'block';
     }

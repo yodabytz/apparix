@@ -110,6 +110,9 @@ class UserController extends Controller
         // Clear rate limiting on successful login
         $this->rateLimiter->clearAttempts($ip, $email, 'user');
 
+        // Regenerate session ID to prevent fixation
+        session_regenerate_id(true);
+
         // Set session
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['user_email'] = $user['email'];
@@ -135,9 +138,12 @@ class UserController extends Controller
 
         setFlash('success', 'Welcome back' . ($user['first_name'] ? ', ' . $user['first_name'] : '') . '!');
 
-        // Redirect to intended page or account
+        // Redirect to intended page or account (prevent open redirect)
         $intended = $_SESSION['intended_url'] ?? '/account';
         unset($_SESSION['intended_url']);
+        if (!$intended || !str_starts_with($intended, '/') || str_starts_with($intended, '//')) {
+            $intended = '/account';
+        }
         $this->redirect($intended);
     }
 
@@ -225,6 +231,9 @@ class UserController extends Controller
 
         // Send welcome email
         $this->sendWelcomeEmail($email, $firstName ?: null);
+
+        // Regenerate session ID to prevent fixation
+        session_regenerate_id(true);
 
         // Auto-login
         $_SESSION['user_id'] = $userId;

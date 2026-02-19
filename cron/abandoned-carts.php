@@ -22,7 +22,7 @@ $sent = 0;
 $failed = 0;
 
 foreach ($carts as $cart) {
-    $items = $abandonedCart->getCartItems($cart['id']);
+    $items = $abandonedCart->getCartItems($cart['session_id']);
 
     if (empty($items)) {
         continue;
@@ -31,12 +31,12 @@ foreach ($carts as $cart) {
     $result = $abandonedCart->sendAbandonedCartEmail($cart, $items);
 
     if ($result) {
-        $abandonedCart->markEmailSent($cart['id']);
+        $abandonedCart->markEmailSent($cart['session_id'], $cart['email']);
         $sent++;
-        echo "Sent email for cart #{$cart['id']} to " . ($cart['email'] ?? $cart['user_email']) . "\n";
+        echo "Sent email for session {$cart['session_id']} to {$cart['email']}\n";
     } else {
         $failed++;
-        echo "Failed to send email for cart #{$cart['id']}\n";
+        echo "Failed to send email for session {$cart['session_id']}\n";
     }
 
     // Rate limiting

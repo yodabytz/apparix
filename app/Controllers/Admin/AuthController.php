@@ -128,6 +128,15 @@ class AuthController extends Controller
             return;
         }
 
+        // Rate limit 2FA attempts
+        $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+        if (!$this->rateLimiter->isAllowed($ip, $pending['email'], 'admin_2fa')) {
+            $message = $this->rateLimiter->getLockoutMessage($ip, $pending['email'], 'admin_2fa');
+            setFlash('error', $message);
+            $this->redirect('/admin/login');
+            return;
+        }
+
         $code = trim($_POST['two_factor_code'] ?? '');
 
         if (empty($code)) {
@@ -139,6 +148,7 @@ class AuthController extends Controller
         $result = $this->adminModel->verify2FA($pending['admin_id'], $code);
 
         if ($result === false) {
+            $this->rateLimiter->recordFailedAttempt($ip, $pending['email'], 'admin_2fa');
             setFlash('error', 'Invalid verification code. Please try again.');
             $this->redirect('/admin/login');
             return;
@@ -187,6 +197,9 @@ class AuthController extends Controller
                 }
             }
         }
+
+        // Regenerate session ID to prevent fixation
+        session_regenerate_id(true);
 
         // Create session
         $token = $this->adminModel->createSession($admin['id'], $ip, $userAgent);

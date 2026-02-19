@@ -223,11 +223,14 @@ class Visitor extends Model
      */
     public function flagApiOnlyBots(): int
     {
-        // Build pattern for API-only URLs
-        $apiPatterns = array_map(function($url) {
-            return "page_url LIKE '" . addslashes($url) . "%'";
-        }, $this->apiOnlyUrls);
-        $apiWhere = '(' . implode(' OR ', $apiPatterns) . ')';
+        // Build parameterized LIKE conditions for API-only URLs
+        $apiConditions = [];
+        $params = [];
+        foreach ($this->apiOnlyUrls as $url) {
+            $apiConditions[] = "page_url LIKE ?";
+            $params[] = $url . '%';
+        }
+        $apiWhere = '(' . implode(' OR ', $apiConditions) . ')';
 
         // Find IPs where ALL visits are to API endpoints only
         $sql = "
@@ -245,7 +248,7 @@ class Visitor extends Model
             WHERE v.is_bot = 0
         ";
 
-        return $this->db->update($sql, []);
+        return $this->db->update($sql, $params);
     }
 
     /**

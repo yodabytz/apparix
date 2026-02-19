@@ -1004,4 +1004,23 @@ async function removeCoupon() {
         console.error('Failed to remove coupon:', error);
     }
 }
+
+// Capture email for abandoned cart recovery
+(function() {
+    const emailField = document.getElementById('email');
+    if (emailField) {
+        let lastCaptured = '';
+        emailField.addEventListener('blur', function() {
+            const email = this.value.trim();
+            if (email && email !== lastCaptured && email.includes('@')) {
+                lastCaptured = email;
+                fetch('/cart/capture-email', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest'},
+                    body: 'email=' + encodeURIComponent(email) + '&csrf_token=' + encodeURIComponent(document.querySelector('input[name="csrf_token"]').value)
+                }).catch(function() {});
+            }
+        });
+    }
+})();
 </script>

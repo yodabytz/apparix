@@ -50,8 +50,10 @@ class Newsletter
             [$email, $token, $firstName, $userId, $source]
         );
 
-        // Send welcome email
-        $this->sendWelcomeEmail($email, $firstName, $token);
+        // Send welcome email (skip for abandoned cart auto-subscriptions)
+        if ($source !== 'abandoned_cart') {
+            $this->sendWelcomeEmail($email, $firstName, $token);
+        }
 
         return ['success' => true, 'message' => 'Thank you for subscribing!', 'id' => $id, 'token' => $token];
     }

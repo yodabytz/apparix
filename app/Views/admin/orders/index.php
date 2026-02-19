@@ -83,7 +83,7 @@
                                 </div>
                             </td>
                             <td>
-                                <select class="status-select status-<?= $order['status'] ?>" data-order-id="<?= $order['id'] ?>" onchange="updateOrderStatus(this)">
+                                <select class="status-select status-<?= htmlspecialchars($order['status']) ?>" data-order-id="<?= $order['id'] ?>" onchange="updateOrderStatus(this)">
                                     <option value="pending" <?= $order['status'] === 'pending' ? 'selected' : '' ?>>Pending</option>
                                     <option value="processing" <?= $order['status'] === 'processing' ? 'selected' : '' ?>>Processing</option>
                                     <option value="shipped" <?= $order['status'] === 'shipped' ? 'selected' : '' ?>>Shipped</option>

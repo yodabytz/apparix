@@ -3,7 +3,9 @@
 namespace App\Controllers;
 
 use App\Core\Controller;
+use App\Models\AbandonedCart;
 use App\Models\Cart;
+use App\Models\Newsletter;
 use App\Models\Product;
 
 class CartController extends Controller
@@ -19,12 +21,47 @@ class CartController extends Controller
     }
 
     /**
-     * Display cart page
+     * Display cart page (handles recovery via ?recover=session_id)
      */
     public function index()
     {
         $sessionId = session_id();
         $userId = auth() ? auth()['id'] : null;
+
+        // Handle cart recovery from abandoned cart email (HMAC-signed URL)
+        $recoverSession = $this->get('recover');
+        $sig = $this->get('sig');
+        if ($recoverSession && $recoverSession !== $sessionId) {
+            $expectedSig = hash_hmac('sha256', $recoverSession, $_ENV['APP_SECRET'] ?? '');
+            if (!$sig || !hash_equals($expectedSig, $sig)) {
+                setFlash('error', 'Invalid recovery link.');
+                $this->redirect('/cart');
+                return;
+            }
+            $abandonedCart = new AbandonedCart();
+            $oldItems = $abandonedCart->getCartItems($recoverSession);
+
+            if (!empty($oldItems)) {
+                foreach ($oldItems as $item) {
+                    try {
+                        $this->cartModel->addItem(
+                            $item['product_id'],
+                            $item['quantity'],
+                            $sessionId,
+                            $userId,
+                            $item['variant_id']
+                        );
+                    } catch (\Exception $e) {
+                        // Skip items that can't be added (out of stock, etc.)
+                    }
+                }
+                $abandonedCart->markRecovered($recoverSession);
+                setFlash('success', 'Welcome back! Your cart items have been restored.');
+            }
+
+            $this->redirect('/cart');
+            return;
+        }
 
         $items = $this->cartModel->getItems($sessionId, $userId);
         $cartTotal = $this->cartModel->getTotal($sessionId, $userId);
@@ -55,7 +92,7 @@ class CartController extends Controller
         }
 
         // Validate quantity
-        if ($quantity < 1) {
+        if ($quantity < 1 || $quantity > 9999) {
             http_response_code(400);
             return $this->json(['error' => 'Invalid quantity']);
         }
@@ -116,7 +153,7 @@ class CartController extends Controller
         $cartItemId = $this->post('cart_item_id');
         $quantity = intval($this->post('quantity', 1));
 
-        if (!$cartItemId || $quantity < 1) {
+        if (!$cartItemId || $quantity < 1 || $quantity > 9999) {
             http_response_code(400);
             return $this->json(['error' => 'Invalid request']);
         }
@@ -203,6 +240,34 @@ class CartController extends Controller
             http_response_code(500);
             return $this->json(['error' => 'Failed to remove item']);
         }
+    }
+
+    /**
+     * Capture email from checkout for abandoned cart tracking
+     */
+    public function captureEmail()
+    {
+        $email = trim($this->post('email', ''));
+
+        if (!$email || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return $this->json(['error' => 'Invalid email'], 400);
+        }
+
+        $sessionId = session_id();
+
+        // Stamp email on all cart rows for this session
+        $abandonedCart = new AbandonedCart();
+        $abandonedCart->captureEmail($sessionId, $email);
+
+        // Auto-subscribe to newsletter (no welcome email)
+        try {
+            $newsletter = new Newsletter();
+            $newsletter->subscribe($email, null, auth() ? auth()['id'] : null, 'abandoned_cart');
+        } catch (\Exception $e) {
+            // Don't fail if newsletter subscription fails
+        }
+
+        return $this->json(['success' => true]);
     }
 
     /**

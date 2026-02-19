@@ -91,6 +91,13 @@ class InventoryController extends Controller
 
         $file = $_FILES['csv_file'];
 
+        // Validate file size (5MB max)
+        if ($file['size'] > 5 * 1024 * 1024) {
+            setFlash('error', 'CSV file is too large. Maximum size is 5MB.');
+            $this->redirect('/admin/inventory');
+            return;
+        }
+
         // Validate file type
         $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
         if ($ext !== 'csv') {

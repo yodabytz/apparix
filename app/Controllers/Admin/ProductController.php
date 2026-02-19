@@ -961,13 +961,13 @@ class ProductController extends Controller
             $fileSize = $_FILES['images']['size'][$key] ?? 0;
 
             // Check file type
-            if (!in_array($fileType, $allowedTypes)) {
+            if (!in_array($fileType, $allowedTypes, true)) {
                 $failed[] = $fileName . ': Invalid file type (' . $fileType . ')';
                 continue;
             }
 
             // Check file size based on type
-            $isVideo = in_array($fileType, $allowedVideoTypes);
+            $isVideo = in_array($fileType, $allowedVideoTypes, true);
             $maxSize = $isVideo ? $maxVideoSize : $maxImageSize;
 
             if ($fileSize > $maxSize) {
@@ -989,8 +989,14 @@ class ProductController extends Controller
             } else {
                 $prefix = $parentImageId ? 'sub-' : 'img-';
             }
-            $ext = pathinfo($_FILES['images']['name'][$key], PATHINFO_EXTENSION);
-            $filename = $prefix . uniqid() . '.' . strtolower($ext);
+            // Derive safe extension from detected MIME type
+            $mimeExtMap = [
+                'image/jpeg' => 'jpg', 'image/png' => 'png', 'image/gif' => 'gif',
+                'image/webp' => 'webp', 'image/avif' => 'avif', 'image/svg+xml' => 'svg',
+                'video/mp4' => 'mp4', 'video/webm' => 'webm', 'video/quicktime' => 'mov',
+            ];
+            $ext = $mimeExtMap[$fileType] ?? preg_replace('/[^a-z0-9]/', '', strtolower(pathinfo($_FILES['images']['name'][$key], PATHINFO_EXTENSION)));
+            $filename = $prefix . uniqid() . '.' . $ext;
             $filePath = $uploadDir . $filename;
             $webPath = '/assets/images/products/' . $product['slug'] . '/' . $filename;
 

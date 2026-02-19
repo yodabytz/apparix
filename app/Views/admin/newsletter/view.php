@@ -26,7 +26,7 @@
     <div class="admin-card">
         <h2>Content</h2>
         <div class="newsletter-content">
-            <?php echo $newsletter['content']; ?>
+            <iframe sandbox="" srcdoc="<?php echo htmlspecialchars($newsletter['content'], ENT_QUOTES, 'UTF-8'); ?>" style="width: 100%; min-height: 500px; border: 1px solid #e5e7eb; border-radius: 8px; background: #fff;"></iframe>
         </div>
     </div>
 </div>

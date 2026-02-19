@@ -23,11 +23,11 @@ if (file_exists($envFile)) {
     }
 }
 
-// Set default environment variables
-$_ENV['DB_HOST'] = $_ENV['DB_HOST'] ?? 'localhost';
-$_ENV['DB_NAME'] = $_ENV['DB_NAME'] ?? 'apparix_ecommerce';
-$_ENV['DB_USER'] = $_ENV['DB_USER'] ?? 'apparix';
-$_ENV['DB_PASS'] = $_ENV['DB_PASS'] ?? '';
+// Require database credentials from .env (no hardcoded fallbacks)
+if (empty($_ENV['DB_HOST']) || empty($_ENV['DB_NAME']) || empty($_ENV['DB_USER'])) {
+    http_response_code(500);
+    die('Database configuration missing. Check your .env file.');
+}
 
 // Installer detection - redirect to installer if not yet installed
 $installLockFile = BASE_PATH . '/storage/.installed';
@@ -82,9 +82,8 @@ session_set_cookie_params([
     'samesite' => 'Lax' // Lax allows same-site form submissions; Strict can block them
 ]);
 
-// Don't use strict session mode - it causes issues when sessions expire
-// The CSRF token provides the actual protection against session fixation
-ini_set('session.use_strict_mode', '0');
+// Enable strict session mode for session fixation prevention
+ini_set('session.use_strict_mode', '1');
 
 // Start session
 session_start();
@@ -108,6 +107,9 @@ if (empty($_SESSION['user_id']) && !empty($_COOKIE['remember_token'])) {
     $user = $userModel->findByRememberToken($_COOKIE['remember_token']);
 
     if ($user) {
+        // Regenerate session ID to prevent fixation
+        session_regenerate_id(true);
+
         // Restore session
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['user_email'] = $user['email'];
@@ -219,7 +221,7 @@ if (!$skipTracking) {
         $countryCode = null;
         $city = null;
 
-        if ($ip && $ip !== '127.0.0.1' && !str_starts_with($ip, '192.168.') && !str_starts_with($ip, '10.')) {
+        if ($ip && filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
             $cacheKey = 'geo_' . md5($ip);
             $cached = $_SESSION[$cacheKey] ?? null;
 
@@ -308,6 +310,7 @@ $router->get('/cart', 'CartController', 'index');
 $router->post('/cart/add', 'CartController', 'add');
 $router->post('/cart/update', 'CartController', 'update');
 $router->post('/cart/remove', 'CartController', 'remove');
+$router->post('/cart/capture-email', 'CartController', 'captureEmail');
 
 // User routes
 $router->get('/login', 'UserController', 'loginForm');

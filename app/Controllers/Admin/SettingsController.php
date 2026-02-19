@@ -938,11 +938,11 @@ class SettingsController extends Controller
                 $headers = [
                     'From' => "{$fromName} <{$fromEmail}>",
                     'Reply-To' => $fromEmail,
-                    'X-Mailer' => 'PHP/' . phpversion(),
+                    'X-Mailer' => 'PHP',
                     'Content-Type' => 'text/plain; charset=UTF-8'
                 ];
 
-                $result = mail($testTo, $subject, $body, $headers);
+                $result = mail($testTo, $subject, $body, $headers, '-f ' . $fromEmail);
             }
 
             if ($result) {

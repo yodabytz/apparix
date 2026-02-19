@@ -258,16 +258,16 @@ class CheckoutController extends Controller
         // Get form data
         $email = trim($this->post('email', ''));
 
-        // Shipping address
-        $shippingFirstName = trim($this->post('shipping_first_name', ''));
-        $shippingLastName = trim($this->post('shipping_last_name', ''));
-        $shippingAddress1 = trim($this->post('shipping_address1', ''));
-        $shippingAddress2 = trim($this->post('shipping_address2', ''));
-        $shippingCity = trim($this->post('shipping_city', ''));
-        $shippingState = trim($this->post('shipping_state', ''));
-        $shippingPostal = trim($this->post('shipping_postal', ''));
-        $shippingCountry = trim($this->post('shipping_country', 'US'));
-        $shippingPhone = trim($this->post('shipping_phone', ''));
+        // Shipping address (truncated to safe maximums)
+        $shippingFirstName = mb_substr(trim($this->post('shipping_first_name', '')), 0, 100);
+        $shippingLastName = mb_substr(trim($this->post('shipping_last_name', '')), 0, 100);
+        $shippingAddress1 = mb_substr(trim($this->post('shipping_address1', '')), 0, 255);
+        $shippingAddress2 = mb_substr(trim($this->post('shipping_address2', '')), 0, 255);
+        $shippingCity = mb_substr(trim($this->post('shipping_city', '')), 0, 100);
+        $shippingState = mb_substr(trim($this->post('shipping_state', '')), 0, 100);
+        $shippingPostal = mb_substr(trim($this->post('shipping_postal', '')), 0, 20);
+        $shippingCountry = mb_substr(trim($this->post('shipping_country', 'US')), 0, 2);
+        $shippingPhone = mb_substr(trim($this->post('shipping_phone', '')), 0, 30);
 
         // Billing same as shipping?
         $billingSameAsShipping = $this->post('billing_same', '1') === '1';
@@ -534,15 +534,15 @@ class CheckoutController extends Controller
                 );
             } else {
                 // Get billing address from form
-                $billingFirstName = trim($this->post('billing_first_name', ''));
-                $billingLastName = trim($this->post('billing_last_name', ''));
-                $billingAddress1 = trim($this->post('billing_address1', ''));
-                $billingAddress2 = trim($this->post('billing_address2', ''));
-                $billingCity = trim($this->post('billing_city', ''));
-                $billingState = trim($this->post('billing_state', ''));
-                $billingPostal = trim($this->post('billing_postal', ''));
-                $billingCountry = trim($this->post('billing_country', 'US'));
-                $billingPhone = trim($this->post('billing_phone', ''));
+                $billingFirstName = mb_substr(trim($this->post('billing_first_name', '')), 0, 100);
+                $billingLastName = mb_substr(trim($this->post('billing_last_name', '')), 0, 100);
+                $billingAddress1 = mb_substr(trim($this->post('billing_address1', '')), 0, 255);
+                $billingAddress2 = mb_substr(trim($this->post('billing_address2', '')), 0, 255);
+                $billingCity = mb_substr(trim($this->post('billing_city', '')), 0, 100);
+                $billingState = mb_substr(trim($this->post('billing_state', '')), 0, 100);
+                $billingPostal = mb_substr(trim($this->post('billing_postal', '')), 0, 20);
+                $billingCountry = mb_substr(trim($this->post('billing_country', 'US')), 0, 2);
+                $billingPhone = mb_substr(trim($this->post('billing_phone', '')), 0, 30);
 
                 $billingAddressId = $db->insert(
                     "INSERT INTO addresses (user_id, type, first_name, last_name, address_line1, address_line2, city, state, postal_code, country, phone)
@@ -682,6 +682,14 @@ class CheckoutController extends Controller
             $this->cartModel->clear($sessionId, $userId);
             unset($_SESSION['applied_coupon']);
             unset($_SESSION['payment_intent_data']);
+
+            // Mark abandoned cart as recovered
+            try {
+                $abandonedCartModel = new \App\Models\AbandonedCart();
+                $abandonedCartModel->markRecovered($sessionId);
+            } catch (\Exception $e) {
+                // Non-critical
+            }
 
             $db->commit();
 

@@ -42,7 +42,7 @@ class User extends Model
             return null;
         }
 
-        $passwordHash = password_hash($password, PASSWORD_DEFAULT);
+        $passwordHash = password_hash($password, PASSWORD_ARGON2ID);
 
         $id = $this->db->insert(
             "INSERT INTO {$this->table} (email, password_hash, first_name, last_name, newsletter_subscribed) VALUES (?, ?, ?, ?, ?)",
@@ -70,7 +70,7 @@ class User extends Model
         $values = [];
 
         foreach ($data as $key => $value) {
-            if (in_array($key, $allowed)) {
+            if (in_array($key, $allowed, true)) {
                 $updates[] = "{$key} = ?";
                 $values[] = $value;
             }
@@ -91,7 +91,7 @@ class User extends Model
      */
     public function updatePassword(int $id, string $newPassword): bool
     {
-        $hash = password_hash($newPassword, PASSWORD_DEFAULT);
+        $hash = password_hash($newPassword, PASSWORD_ARGON2ID);
         return $this->db->update(
             "UPDATE {$this->table} SET password_hash = ? WHERE id = ?",
             [$hash, $id]

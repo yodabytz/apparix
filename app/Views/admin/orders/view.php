@@ -4,8 +4,8 @@
         <h1>Order <?= htmlspecialchars($order['order_number']) ?></h1>
     </div>
     <div class="header-actions">
-        <span class="status-badge status-<?= $order['status'] ?> large">
-            <?= ucfirst($order['status']) ?>
+        <span class="status-badge status-<?= htmlspecialchars($order['status']) ?> large">
+            <?= htmlspecialchars(ucfirst($order['status'])) ?>
         </span>
     </div>
 </div>
@@ -264,8 +264,8 @@
                 <div class="info-row">
                     <span class="label">Payment:</span>
                     <span class="value">
-                        <span class="payment-badge payment-<?= $order['payment_status'] ?>">
-                            <?= ucfirst($order['payment_status']) ?>
+                        <span class="payment-badge payment-<?= htmlspecialchars($order['payment_status']) ?>">
+                            <?= htmlspecialchars(ucfirst($order['payment_status'])) ?>
                         </span>
                     </span>
                 </div>

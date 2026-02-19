@@ -304,7 +304,7 @@ function sendEmail(string $to, string $subject, string $body, array $options = [
         'Content-Type: ' . ($isHtml ? 'text/html' : 'text/plain') . '; charset=UTF-8',
         'From: ' . $fromName . ' <' . $fromEmail . '>',
         'Reply-To: ' . $replyTo,
-        'X-Mailer: PHP/' . phpversion()
+        'X-Mailer: PHP'
     ];
 
     if (!empty($options['headers'])) {
