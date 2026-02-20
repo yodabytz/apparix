@@ -245,6 +245,10 @@ class Theme extends Model
                 'Poppins' => 'Poppins (Geometric Sans)',
                 'Libre Baskerville' => 'Libre Baskerville (Traditional Serif)',
                 'Raleway' => 'Raleway (Elegant Sans)',
+                'Cinzel' => 'Cinzel (Celtic / Medieval)',
+                'Cinzel Decorative' => 'Cinzel Decorative (Ornate Celtic)',
+                'EB Garamond' => 'EB Garamond (Historical Serif)',
+                'Spectral' => 'Spectral (Dignified Serif)',
             ],
             'body' => [
                 'Inter' => 'Inter (Highly Readable)',
@@ -254,6 +258,9 @@ class Theme extends Model
                 'Source Sans Pro' => 'Source Sans Pro (Professional)',
                 'Nunito' => 'Nunito (Rounded)',
                 'Work Sans' => 'Work Sans (Contemporary)',
+                'Crimson Text' => 'Crimson Text (Classic Serif)',
+                'EB Garamond' => 'EB Garamond (Historical)',
+                'Lora' => 'Lora (Warm Serif)',
             ]
         ];
     }

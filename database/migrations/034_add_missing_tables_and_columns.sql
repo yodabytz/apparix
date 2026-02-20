@@ -192,10 +192,8 @@ CREATE TABLE IF NOT EXISTS shipping_classes (
 CREATE TABLE IF NOT EXISTS product_options (
     id INT PRIMARY KEY AUTO_INCREMENT,
     product_id INT NOT NULL,
-    name VARCHAR(255) NOT NULL,
-    type ENUM('select', 'radio', 'checkbox', 'text', 'color', 'size') NOT NULL DEFAULT 'select',
+    option_name VARCHAR(100) NOT NULL,
     sort_order INT DEFAULT 0,
-    is_active TINYINT(1) DEFAULT 1,
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
     INDEX idx_product (product_id),
     INDEX idx_sort_order (sort_order)
@@ -207,10 +205,8 @@ CREATE TABLE IF NOT EXISTS product_options (
 CREATE TABLE IF NOT EXISTS product_option_values (
     id INT PRIMARY KEY AUTO_INCREMENT,
     option_id INT NOT NULL,
-    value VARCHAR(255) NOT NULL,
-    price_adjustment DECIMAL(10,2) DEFAULT 0.00,
+    value_name VARCHAR(100) NOT NULL,
     sort_order INT DEFAULT 0,
-    is_active TINYINT(1) DEFAULT 1,
     FOREIGN KEY (option_id) REFERENCES product_options(id) ON DELETE CASCADE,
     INDEX idx_option (option_id),
     INDEX idx_sort_order (sort_order)
@@ -316,37 +312,22 @@ CREATE TABLE IF NOT EXISTS favorites (
 -- --------------------------------------------------------------------------
 -- 22. coupons
 -- --------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS coupons (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    code VARCHAR(100) NOT NULL UNIQUE,
-    type ENUM('percentage', 'fixed', 'free_shipping') NOT NULL DEFAULT 'percentage',
-    value DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-    min_order DECIMAL(10,2) DEFAULT NULL,
-    max_uses INT DEFAULT NULL,
-    used_count INT DEFAULT 0,
-    starts_at TIMESTAMP NULL DEFAULT NULL,
-    expires_at TIMESTAMP NULL DEFAULT NULL,
-    is_active TINYINT(1) DEFAULT 1,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_code (code),
-    INDEX idx_is_active (is_active),
-    INDEX idx_expires_at (expires_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Note: discount_codes table is created in migration 010.
+-- coupon_usage below references discount_codes, not a separate coupons table.
 
 -- --------------------------------------------------------------------------
 -- 23. coupon_usage
 -- --------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS coupon_usage (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    coupon_id INT NOT NULL,
+    discount_code_id INT NOT NULL,
     order_id INT NOT NULL,
     user_id INT DEFAULT NULL,
-    discount_amount DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (coupon_id) REFERENCES coupons(id) ON DELETE CASCADE,
+    used_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (discount_code_id) REFERENCES discount_codes(id) ON DELETE CASCADE,
     FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
-    INDEX idx_coupon (coupon_id),
+    INDEX idx_discount_code (discount_code_id),
     INDEX idx_order (order_id),
     INDEX idx_user (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -361,17 +342,19 @@ CREATE TABLE IF NOT EXISTS product_reviews (
     order_id INT DEFAULT NULL,
     rating TINYINT NOT NULL,
     title VARCHAR(255) DEFAULT NULL,
-    review TEXT DEFAULT NULL,
-    status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
-    admin_response TEXT DEFAULT NULL,
-    is_verified TINYINT(1) DEFAULT 0,
+    review_text TEXT DEFAULT NULL,
+    is_approved TINYINT(1) DEFAULT 0,
+    is_verified_purchase TINYINT(1) DEFAULT 1,
+    is_featured TINYINT(1) DEFAULT 0,
+    helpful_count INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NULL DEFAULT NULL,
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
     FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE SET NULL,
     INDEX idx_product (product_id),
     INDEX idx_user (user_id),
-    INDEX idx_status (status),
+    INDEX idx_approved (is_approved),
     INDEX idx_rating (rating),
     INDEX idx_created (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -443,12 +426,17 @@ CREATE TABLE IF NOT EXISTS gift_card_transactions (
 CREATE TABLE IF NOT EXISTS newsletter_subscribers (
     id INT PRIMARY KEY AUTO_INCREMENT,
     email VARCHAR(255) NOT NULL UNIQUE,
-    name VARCHAR(255) DEFAULT NULL,
-    is_active TINYINT(1) DEFAULT 1,
+    first_name VARCHAR(100) DEFAULT NULL,
+    user_id INT DEFAULT NULL,
+    token VARCHAR(64) DEFAULT NULL,
+    source VARCHAR(50) DEFAULT 'website',
+    preferences LONGTEXT DEFAULT NULL,
+    is_subscribed TINYINT(1) DEFAULT 1,
     subscribed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     unsubscribed_at TIMESTAMP NULL DEFAULT NULL,
     INDEX idx_email (email),
-    INDEX idx_is_active (is_active)
+    INDEX idx_is_subscribed (is_subscribed),
+    INDEX idx_token (token)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------------------------
@@ -471,16 +459,18 @@ CREATE TABLE IF NOT EXISTS newsletters (
 -- --------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS popup_coupons (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    name VARCHAR(255) NOT NULL,
-    coupon_code VARCHAR(100) NOT NULL,
-    headline VARCHAR(255) DEFAULT NULL,
-    description TEXT DEFAULT NULL,
-    image VARCHAR(255) DEFAULT NULL,
-    display_delay INT DEFAULT 0,
-    display_frequency INT DEFAULT 1,
-    is_active TINYINT(1) DEFAULT 1,
+    code VARCHAR(50) NOT NULL,
+    email VARCHAR(255) DEFAULT NULL,
+    discount_percent DECIMAL(5,2) DEFAULT 10.00,
+    min_order DECIMAL(10,2) DEFAULT 0.00,
+    used TINYINT(1) DEFAULT 0,
+    used_at DATETIME DEFAULT NULL,
+    order_id INT UNSIGNED DEFAULT NULL,
+    expires_at DATETIME DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_is_active (is_active)
+    INDEX idx_code (code),
+    INDEX idx_email (email),
+    INDEX idx_expires (expires_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------------------------
@@ -569,15 +559,15 @@ ALTER TABLE visitors ADD COLUMN IF NOT EXISTS page_url TEXT DEFAULT NULL;
 -- --------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS admin_sessions (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    admin_id INT NOT NULL,
-    token VARCHAR(255) NOT NULL UNIQUE,
+    admin_user_id INT NOT NULL,
+    session_token VARCHAR(255) NOT NULL UNIQUE,
     ip_address VARCHAR(45) DEFAULT NULL,
     user_agent TEXT DEFAULT NULL,
     expires_at TIMESTAMP NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (admin_id) REFERENCES admin_users(id) ON DELETE CASCADE,
-    INDEX idx_admin (admin_id),
-    INDEX idx_token (token),
+    FOREIGN KEY (admin_user_id) REFERENCES admin_users(id) ON DELETE CASCADE,
+    INDEX idx_admin (admin_user_id),
+    INDEX idx_token (session_token),
     INDEX idx_expires_at (expires_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -586,15 +576,15 @@ CREATE TABLE IF NOT EXISTS admin_sessions (
 -- --------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS admin_activity_log (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    admin_id INT DEFAULT NULL,
+    admin_user_id INT DEFAULT NULL,
     action VARCHAR(255) NOT NULL,
     entity_type VARCHAR(100) DEFAULT NULL,
     entity_id INT DEFAULT NULL,
     details TEXT DEFAULT NULL,
     ip_address VARCHAR(45) DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (admin_id) REFERENCES admin_users(id) ON DELETE SET NULL,
-    INDEX idx_admin (admin_id),
+    FOREIGN KEY (admin_user_id) REFERENCES admin_users(id) ON DELETE SET NULL,
+    INDEX idx_admin (admin_user_id),
     INDEX idx_action (action),
     INDEX idx_entity (entity_type, entity_id),
     INDEX idx_created_at (created_at)
@@ -606,13 +596,10 @@ CREATE TABLE IF NOT EXISTS admin_activity_log (
 CREATE TABLE IF NOT EXISTS order_status_history (
     id INT PRIMARY KEY AUTO_INCREMENT,
     order_id INT NOT NULL,
-    old_status VARCHAR(50) DEFAULT NULL,
-    new_status VARCHAR(50) NOT NULL,
+    status VARCHAR(50) NOT NULL,
     notes TEXT DEFAULT NULL,
-    created_by INT DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
-    FOREIGN KEY (created_by) REFERENCES admin_users(id) ON DELETE SET NULL,
     INDEX idx_order (order_id),
     INDEX idx_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -639,13 +626,14 @@ CREATE TABLE IF NOT EXISTS inventory_import_logs (
 -- --------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS product_image_option_values (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    product_image_id INT NOT NULL,
+    image_id INT NOT NULL,
     option_value_id INT NOT NULL,
-    FOREIGN KEY (product_image_id) REFERENCES product_images(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (image_id) REFERENCES product_images(id) ON DELETE CASCADE,
     FOREIGN KEY (option_value_id) REFERENCES product_option_values(id) ON DELETE CASCADE,
-    INDEX idx_product_image (product_image_id),
+    INDEX idx_image (image_id),
     INDEX idx_option_value (option_value_id),
-    UNIQUE KEY uq_image_option_value (product_image_id, option_value_id)
+    UNIQUE KEY uq_image_option_value (image_id, option_value_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------------------------

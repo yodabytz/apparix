@@ -93,3 +93,27 @@ INSERT INTO themes (
     'Inter', 'Inter',
     'sidebar', 'standard', 'grid', 4
 ) ON DUPLICATE KEY UPDATE name = VALUES(name);
+
+-- Celtic Theme
+INSERT INTO themes (
+    slug, name, description, is_preset, is_active,
+    primary_color, secondary_color, accent_color,
+    navbar_bg_color, navbar_text_color, glow_color,
+    color_variants,
+    heading_font, body_font,
+    layout_style, header_style, category_layout, product_grid_columns,
+    effect_settings,
+    custom_css
+) VALUES (
+    'celtic',
+    'Celtic',
+    'Mystical and ancient, inspired by Celtic heritage with deep greens, gold accents, and medieval typography',
+    1, 0,
+    '#1B5E3A', '#C9A84C', '#F4ECD8',
+    '#1A1F16', '#F4ECD8', '#C9A84C',
+    '{"primary_light":"#238C4E","primary_dark":"#154A2E","primary_50":"#3AAF6A","secondary_light":"#D4B96A","secondary_dark":"#A1863D","accent_light":"#FAF6EE","accent_dark":"#E0D4B8"}',
+    'Cinzel', 'Crimson Text',
+    'sidebar', 'centered', 'grid', 4,
+    '{"button_glow":{"enabled":true,"intensity":"subtle"},"hover_animations":{"enabled":true,"speed":"normal"},"background_animation":{"enabled":false,"style":"dots"},"page_transitions":{"enabled":true,"style":"fade-up"},"shimmer_effects":{"enabled":false},"shadow_style":"soft","border_radius":"slightly-rounded","card_hover":{"enabled":true,"style":"lift"}}',
+    '/* Celtic ornamental styling */\n.section-title, h1, h2, h3 { letter-spacing: 0.05em; }\n.navbar { border-bottom: 2px solid #C9A84C; }\n.product-card { border: 1px solid #E0D4B8; }\n.product-card:hover { border-color: #C9A84C; }\n.btn-primary { border: 1px solid rgba(201,168,76,0.3); }\n.footer { border-top: 2px solid #C9A84C; }\n.breadcrumb a { color: #1B5E3A; }\n.category-sidebar .category-item.active { border-left: 3px solid #C9A84C; }'
+) ON DUPLICATE KEY UPDATE name = VALUES(name);

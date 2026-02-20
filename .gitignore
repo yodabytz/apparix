@@ -48,3 +48,4 @@ instructions.txt
 
 # Claude config
 .claude/
+storage/releases/
