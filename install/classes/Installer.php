@@ -135,19 +135,30 @@ class Installer
      */
     private function splitSqlStatements(string $sql): array
     {
-        // Simple split on semicolons (handles most cases)
+        // Strip single-line comments (-- ...) before splitting
+        $lines = explode("\n", $sql);
+        $cleaned = '';
+        foreach ($lines as $line) {
+            $trimmed = ltrim($line);
+            if (str_starts_with($trimmed, '--')) {
+                continue;
+            }
+            $cleaned .= $line . "\n";
+        }
+
+        // Split on semicolons, respecting quoted strings
         $statements = [];
         $current = '';
         $inString = false;
         $stringChar = '';
 
-        for ($i = 0; $i < strlen($sql); $i++) {
-            $char = $sql[$i];
+        for ($i = 0; $i < strlen($cleaned); $i++) {
+            $char = $cleaned[$i];
 
             if (!$inString && ($char === '"' || $char === "'")) {
                 $inString = true;
                 $stringChar = $char;
-            } elseif ($inString && $char === $stringChar && ($i === 0 || $sql[$i-1] !== '\\')) {
+            } elseif ($inString && $char === $stringChar && ($i === 0 || $cleaned[$i-1] !== '\\')) {
                 $inString = false;
             }
 
