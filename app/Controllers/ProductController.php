@@ -6,6 +6,7 @@ use App\Core\Controller;
 use App\Core\Database;
 use App\Models\Bundle;
 use App\Models\Product;
+use App\Models\Review;
 
 class ProductController extends Controller
 {
@@ -81,8 +82,12 @@ class ProductController extends Controller
             $ogImage = appUrl() . $product['images'][0]['image_path'];
         }
 
+        // Fetch approved reviews for JSON-LD structured data (Google Merchant Center)
+        $reviewModel = new Review();
+        $reviews = $reviewModel->getProductReviews($product['id'], 50);
+
         // Build JSON-LD structured data
-        $jsonLd = $this->buildProductJsonLd($product, $ogImage);
+        $jsonLd = $this->buildProductJsonLd($product, $ogImage, $reviews);
 
         // Get latest version for license products
         $latestVersion = null;
@@ -319,7 +324,7 @@ class ProductController extends Controller
     /**
      * Build JSON-LD structured data for a product
      */
-    private function buildProductJsonLd(array $product, ?string $ogImage): string
+    private function buildProductJsonLd(array $product, ?string $ogImage, array $reviews = []): string
     {
         $baseUrl = appUrl();
 
@@ -410,6 +415,46 @@ class ProductController extends Controller
                 ]
             ]
         ];
+
+        // Add aggregateRating and individual reviews to Product node
+        if (!empty($reviews)) {
+            $totalRating = 0;
+            $reviewItems = [];
+            foreach ($reviews as $r) {
+                $totalRating += (int)$r['rating'];
+                $item = [
+                    '@type' => 'Review',
+                    'datePublished' => date('Y-m-d', strtotime($r['created_at'])),
+                    'reviewRating' => [
+                        '@type' => 'Rating',
+                        'ratingValue' => (string)(int)$r['rating'],
+                        'bestRating' => '5',
+                        'worstRating' => '1'
+                    ],
+                    'author' => [
+                        '@type' => 'Person',
+                        'name' => $r['display_name'] ?? 'Customer'
+                    ]
+                ];
+                if (!empty($r['title'])) {
+                    $item['name'] = $r['title'];
+                }
+                if (!empty($r['comment'])) {
+                    $item['reviewBody'] = $r['comment'];
+                }
+                $reviewItems[] = $item;
+            }
+
+            $avgRating = round($totalRating / count($reviews), 1);
+            $jsonLd['@graph'][0]['aggregateRating'] = [
+                '@type' => 'AggregateRating',
+                'ratingValue' => (string)$avgRating,
+                'reviewCount' => count($reviews),
+                'bestRating' => '5',
+                'worstRating' => '1'
+            ];
+            $jsonLd['@graph'][0]['review'] = $reviewItems;
+        }
 
         return json_encode($jsonLd, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
     }
