@@ -13,7 +13,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%);
+            background: linear-gradient(135deg, #eef4fa 0%, #dce8f5 100%);
             min-height: 100vh;
             color: #1f2937;
         }
@@ -32,6 +32,9 @@
         .installer-logo img {
             max-width: 200px;
             height: auto;
+            background: #1a1a2e;
+            padding: 16px 24px;
+            border-radius: 12px;
         }
         .installer-subtitle {
             color: #6b7280;
@@ -49,7 +52,7 @@
             background: #e5e7eb;
             transition: all 0.2s;
         }
-        .step-dot.active { background: #FF68C5; transform: scale(1.2); }
+        .step-dot.active { background: #2186c4; transform: scale(1.2); }
         .step-dot.completed { background: #10b981; }
         .card {
             background: white;
@@ -85,8 +88,8 @@
         }
         .form-control:focus {
             outline: none;
-            border-color: #FF68C5;
-            box-shadow: 0 0 0 3px rgba(255,104,197,0.1);
+            border-color: #2186c4;
+            box-shadow: 0 0 0 3px rgba(33,134,196,0.1);
         }
         .form-row {
             display: grid;
@@ -111,10 +114,10 @@
             transition: all 0.2s;
         }
         .btn-primary {
-            background: #FF68C5;
+            background: #2186c4;
             color: white;
         }
-        .btn-primary:hover { background: #ff4db8; }
+        .btn-primary:hover { background: #1a6fa3; }
         .btn-secondary {
             background: #f3f4f6;
             color: #374151;
@@ -169,8 +172,8 @@
             cursor: pointer;
             transition: all 0.2s;
         }
-        .theme-card:hover { border-color: #FF68C5; }
-        .theme-card.selected { border-color: #FF68C5; background: #fdf2f8; }
+        .theme-card:hover { border-color: #2186c4; }
+        .theme-card.selected { border-color: #2186c4; background: #eef4fa; }
         .theme-preview {
             height: 80px;
             border-radius: 8px;

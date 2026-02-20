@@ -61,6 +61,6 @@
     </div>
 
     <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 0.9rem;">
-        <p>Need help? Check out the <a href="https://docs.apparix.app" target="_blank" style="color: #FF68C5;">documentation</a> or contact support.</p>
+        <p>Need help? Check out the <a href="https://docs.apparix.app" target="_blank" style="color: #2186c4;">documentation</a> or contact support.</p>
     </div>
 </div>
