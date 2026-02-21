@@ -344,6 +344,12 @@
         </div>
 
         <div class="settings-card">
+            <h3>Navigation Menus</h3>
+            <p class="help-text">Customize the links shown in your navbar and footer.</p>
+            <a href="/admin/settings/menus" class="btn btn-outline" style="margin-top: 0.75rem;">Edit Menus</a>
+        </div>
+
+        <div class="settings-card">
             <h3>Need Help?</h3>
             <p class="help-text">Configure your store's basic information and email delivery settings here. For payment processing, visit the <a href="/admin/settings/payments" style="color: var(--admin-primary);">Payments</a> settings page.</p>
         </div>

@@ -578,6 +578,8 @@ $router->get('/admin/settings/payments', 'Admin\\SettingsController', 'payments'
 $router->post('/admin/settings/payments/update', 'Admin\\SettingsController', 'updatePayments');
 $router->post('/admin/settings/update-email', 'Admin\\SettingsController', 'updateEmail');
 $router->post('/admin/settings/test-email', 'Admin\\SettingsController', 'testEmail');
+$router->get('/admin/settings/menus', 'Admin\\SettingsController', 'menus');
+$router->post('/admin/settings/menus', 'Admin\\SettingsController', 'updateMenus');
 
 // Admin releases management (for this site - manages releases)
 $router->get('/admin/releases', 'Admin\\ReleaseController', 'index');

@@ -235,10 +235,17 @@ $bodyClasses = trim($bodyClasses);
                 <span></span>
                 <span></span>
             </button>
+            <?php
+            $navMenuItems = setting('navbar_menu', [
+                ['label' => 'Home', 'url' => '/'],
+                ['label' => 'Shop', 'url' => '/products'],
+            ]);
+            if (is_string($navMenuItems)) $navMenuItems = json_decode($navMenuItems, true) ?: [];
+            ?>
             <ul class="navbar-menu" id="navbarMenu">
-                <li><a href="/">Home</a></li>
-                <li><a href="/products">Shop</a></li>
-                <li><a href="/pricing">Pricing</a></li>
+                <?php foreach ($navMenuItems as $navItem): ?>
+                <li><a href="<?php echo escape($navItem['url']); ?>"><?php echo escape($navItem['label']); ?></a></li>
+                <?php endforeach; ?>
                 <li class="nav-search">
                     <form action="/search" method="GET" class="nav-search-form">
                         <input type="text" name="q" placeholder="Search..." class="nav-search-input" autocomplete="off">
@@ -379,7 +386,17 @@ $bodyClasses = trim($bodyClasses);
             <?php endif; ?>
 
             <p class="footer-copy">&copy; <?php echo date('Y'); ?> <?php echo appName(); ?>. All rights reserved.</p>
-            <p class="footer-links"><a href="/pricing">Pricing</a> | <a href="/privacy">Privacy</a> | <a href="/terms">Terms</a> | <a href="/contact">Contact</a></p>
+            <?php
+            $footMenuItems = setting('footer_menu', [
+                ['label' => 'Privacy', 'url' => '/privacy'],
+                ['label' => 'Terms', 'url' => '/terms'],
+                ['label' => 'Contact', 'url' => '/contact'],
+            ]);
+            if (is_string($footMenuItems)) $footMenuItems = json_decode($footMenuItems, true) ?: [];
+            ?>
+            <p class="footer-links"><?php echo implode(' | ', array_map(function($item) {
+                return '<a href="' . escape($item['url']) . '">' . escape($item['label']) . '</a>';
+            }, $footMenuItems)); ?></p>
             <?php
             // Show "Powered by Apparix" if enabled in settings OR if on free tier (can't disable on free)
             $showPoweredBy = !empty($settings['show_powered_by']) || \App\Core\License::isFree();

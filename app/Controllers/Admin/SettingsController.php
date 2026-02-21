@@ -1112,4 +1112,73 @@ class SettingsController extends Controller
         }
         return $response;
     }
+
+    /**
+     * Navigation menus editor
+     */
+    public function menus(): void
+    {
+        $defaultNavbar = [
+            ['label' => 'Home', 'url' => '/'],
+            ['label' => 'Shop', 'url' => '/products'],
+        ];
+        $defaultFooter = [
+            ['label' => 'Privacy', 'url' => '/privacy'],
+            ['label' => 'Terms', 'url' => '/terms'],
+            ['label' => 'Contact', 'url' => '/contact'],
+        ];
+
+        $navbarMenu = $this->settingModel->get('navbar_menu', $defaultNavbar);
+        $footerMenu = $this->settingModel->get('footer_menu', $defaultFooter);
+
+        // Ensure arrays
+        if (is_string($navbarMenu)) $navbarMenu = json_decode($navbarMenu, true) ?: $defaultNavbar;
+        if (is_string($footerMenu)) $footerMenu = json_decode($footerMenu, true) ?: $defaultFooter;
+
+        $this->view('admin/settings/menus', [
+            'admin' => $this->admin,
+            'navbarMenu' => $navbarMenu,
+            'footerMenu' => $footerMenu,
+            'flash' => $_SESSION['flash'] ?? null,
+        ]);
+        unset($_SESSION['flash']);
+    }
+
+    /**
+     * Save navigation menus
+     */
+    public function updateMenus(): void
+    {
+        $this->verifyCsrf();
+
+        $navbarJson = $_POST['navbar_menu'] ?? '[]';
+        $footerJson = $_POST['footer_menu'] ?? '[]';
+
+        $navbarMenu = json_decode($navbarJson, true);
+        $footerMenu = json_decode($footerJson, true);
+
+        if (!is_array($navbarMenu) || !is_array($footerMenu)) {
+            $_SESSION['flash'] = ['type' => 'error', 'message' => 'Invalid menu data'];
+            $this->redirect('/admin/settings/menus');
+            return;
+        }
+
+        // Sanitize menu items
+        $navbarMenu = array_values(array_filter(array_map(function ($item) {
+            if (empty($item['label']) || empty($item['url'])) return null;
+            return ['label' => trim($item['label']), 'url' => trim($item['url'])];
+        }, $navbarMenu)));
+
+        $footerMenu = array_values(array_filter(array_map(function ($item) {
+            if (empty($item['label']) || empty($item['url'])) return null;
+            return ['label' => trim($item['label']), 'url' => trim($item['url'])];
+        }, $footerMenu)));
+
+        $this->settingModel->set('navbar_menu', $navbarMenu, 'json', 'layout', true);
+        $this->settingModel->set('footer_menu', $footerMenu, 'json', 'layout', true);
+        $this->settingModel->clearCache();
+
+        $_SESSION['flash'] = ['type' => 'success', 'message' => 'Navigation menus updated successfully'];
+        $this->redirect('/admin/settings/menus');
+    }
 }
