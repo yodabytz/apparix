@@ -20,7 +20,7 @@ class UpdateService
     public function __construct()
     {
         $versionInfo = $this->getVersionInfo();
-        $this->updateServer = $versionInfo['update_server'] ?? 'https://apparix.vibrixmedia.com';
+        $this->updateServer = $versionInfo['update_server'] ?? 'https://apparix.app';
         $this->currentVersion = $versionInfo['version'] ?? '1.0.0';
         $this->licenseKey = $_ENV['LICENSE_KEY'] ?? '';
         $this->domain = $this->getCurrentDomain();
@@ -40,7 +40,7 @@ class UpdateService
         return [
             'version' => '1.0.0',
             'product' => 'Apparix E-Commerce Platform',
-            'update_server' => 'https://apparix.vibrixmedia.com'
+            'update_server' => 'https://apparix.app'
         ];
     }
 

@@ -6,7 +6,7 @@
  * Sends reminder emails to users who have items in their wishlist for more than 7 days
  *
  * Recommended schedule: Daily at 10 AM
- * Crontab: 0 10 * * * php /var/www/www.apparix.vibrixmedia.com/cron/wishlist-reminders.php
+ * Crontab: 0 10 * * * php /var/www/www.apparix.app/cron/wishlist-reminders.php
  */
 
 // Ensure this is run from CLI

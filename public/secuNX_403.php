@@ -106,7 +106,7 @@ header('X-Robots-Tag: noindex, nofollow');
             If you believe this is an error, please contact us with reference:<br>
             <strong><?php echo date('Y-m-d H:i:s'); ?></strong>
         </div>
-        <a href="mailto:support@apparix.vibrixmedia.com" class="btn">Contact Support</a>
+        <a href="mailto:support@apparix.app" class="btn">Contact Support</a>
     </div>
 </body>
 </html>

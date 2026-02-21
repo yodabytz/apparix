@@ -5,7 +5,7 @@
     "type": "marketplace",
     "description": "Sync your products and orders with eBay via modern RESTful APIs (Inventory & Fulfillment)",
     "author": "Apparix",
-    "author_url": "https://apparix.vibrixmedia.com",
+    "author_url": "https://apparix.app",
     "icon": "ebay-logo.svg",
     "requires": {
         "apparix": ">=1.0.0",

@@ -1,7 +1,7 @@
 <?php
 /**
  * Abandoned Cart Email Cron Job
- * Run every hour: 0 * * * * php /var/www/www.apparix.vibrixmedia.com/cron/abandoned-carts.php
+ * Run every hour: 0 * * * * php /var/www/www.apparix.app/cron/abandoned-carts.php
  */
 
 require_once dirname(__DIR__) . '/public/index.php';

@@ -8,7 +8,7 @@
  * - Placed more than 3 weeks ago
  *
  * Run this daily via cron:
- * 0 10 * * * /usr/bin/php /var/www/www.apparix.vibrixmedia.com/cron/send-review-requests.php
+ * 0 10 * * * /usr/bin/php /var/www/www.apparix.app/cron/send-review-requests.php
  */
 
 // Set working directory

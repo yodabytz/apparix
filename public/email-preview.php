@@ -83,8 +83,8 @@ if ($template === 'newsletter') {
                                 <!-- Logo area -->
                                 <tr>
                                     <td align="center" style="padding: 40px 40px 20px 40px;">
-                                        <a href="https://apparix.vibrixmedia.com" style="text-decoration: none;">
-                                            <img src="https://apparix.vibrixmedia.com/assets/images/placeholder.png" alt="Store Logo" width="280" style="max-width: 280px; width: 100%; height: auto; display: block;">
+                                        <a href="https://apparix.app" style="text-decoration: none;">
+                                            <img src="https://apparix.app/assets/images/placeholder.png" alt="Store Logo" width="280" style="max-width: 280px; width: 100%; height: auto; display: block;">
                                         </a>
                                     </td>
                                 </tr>
@@ -176,7 +176,7 @@ if ($template === 'newsletter') {
                                 Thank you for shopping with us!
                             </p>
                             <p style="margin: 0; font-size: 13px; color: #9ca3af; line-height: 1.6;">
-                                Questions? Contact us at <a href="mailto:hello@apparix.vibrixmedia.com" style="color: #FF68C5; text-decoration: none;">hello@apparix.vibrixmedia.com</a>
+                                Questions? Contact us at <a href="mailto:hello@apparix.app" style="color: #FF68C5; text-decoration: none;">hello@apparix.app</a>
                             </p>
                         </td>
                     </tr>

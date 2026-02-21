@@ -8,7 +8,7 @@
  * - Are older than 7 days
  *
  * Run daily via cron:
- * 0 3 * * * /usr/bin/php /var/www/www.apparix.vibrixmedia.com/scripts/cleanup-orphaned-favorites.php
+ * 0 3 * * * /usr/bin/php /var/www/www.apparix.app/scripts/cleanup-orphaned-favorites.php
  */
 
 require_once __DIR__ . '/../app/Core/Database.php';
