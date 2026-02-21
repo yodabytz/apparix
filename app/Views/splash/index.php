@@ -307,10 +307,15 @@
 
         <h1>Welcome to <span><?php echo escape(appName()); ?></span></h1>
 
+        <?php $storeTagline = setting('store_tagline'); ?>
+        <?php if ($storeTagline): ?>
+        <p class="tagline"><?php echo escape($storeTagline); ?></p>
+        <?php else: ?>
         <p class="tagline">
             We're getting things ready. Something great is on its way.<br>
             Stay tuned!
         </p>
+        <?php endif; ?>
 
         <div class="coming-soon-badge">Coming Soon</div>
 
@@ -359,7 +364,9 @@
     </div>
 
     <footer class="splash-footer">
-        <p>&copy; <?php echo date('Y'); ?> <?php echo escape(appName()); ?>. Built with <a href="https://apparix.app" target="_blank" rel="noopener">Apparix</a>.</p>
+        <p>&copy; <?php echo date('Y'); ?> <?php echo escape(appName()); ?>.<?php
+            $showPoweredBy = setting('show_powered_by') || \App\Core\License::isFree();
+            if ($showPoweredBy): ?> Powered by <a href="https://apparix.app" target="_blank" rel="noopener">Apparix</a>.<?php endif; ?></p>
     </footer>
 </body>
 </html>
