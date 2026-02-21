@@ -173,10 +173,10 @@ class SettingsController extends Controller
             return;
         }
 
-        // Validate file size (max 2MB)
-        $maxSize = 2 * 1024 * 1024;
+        // Validate file size (max 8MB)
+        $maxSize = 8 * 1024 * 1024;
         if ($file['size'] > $maxSize) {
-            $this->json(['error' => 'File too large. Maximum size is 2MB.'], 400);
+            $this->json(['error' => 'File too large. Maximum size is 8MB.'], 400);
             return;
         }
 
@@ -308,7 +308,18 @@ class SettingsController extends Controller
         $this->requireValidCSRF();
 
         if (empty($_FILES['og_image']) || $_FILES['og_image']['error'] !== UPLOAD_ERR_OK) {
-            $this->json(['error' => 'No file uploaded'], 400);
+            $errorCode = $_FILES['og_image']['error'] ?? -1;
+            $errorMessages = [
+                UPLOAD_ERR_INI_SIZE => 'File exceeds server upload limit (' . ini_get('upload_max_filesize') . ')',
+                UPLOAD_ERR_FORM_SIZE => 'File exceeds form upload limit',
+                UPLOAD_ERR_PARTIAL => 'File was only partially uploaded',
+                UPLOAD_ERR_NO_FILE => 'No file was selected',
+                UPLOAD_ERR_NO_TMP_DIR => 'Server missing temporary folder',
+                UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk',
+                UPLOAD_ERR_EXTENSION => 'Upload stopped by PHP extension',
+            ];
+            $errorMsg = $errorMessages[$errorCode] ?? 'No file uploaded (error code: ' . $errorCode . ')';
+            $this->json(['error' => $errorMsg], 400);
             return;
         }
 
@@ -324,9 +335,9 @@ class SettingsController extends Controller
             return;
         }
 
-        // Validate file size (max 2MB)
-        if ($file['size'] > 2 * 1024 * 1024) {
-            $this->json(['error' => 'File too large. Maximum size is 2MB.'], 400);
+        // Validate file size (max 8MB)
+        if ($file['size'] > 8 * 1024 * 1024) {
+            $this->json(['error' => 'File too large. Maximum size is 8MB.'], 400);
             return;
         }
 

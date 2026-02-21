@@ -117,41 +117,17 @@
     <link rel="stylesheet" href="/assets/css/holidays.css?v=10">
     <?php endif; ?>
 
-    <!-- Google Tag Manager -->
-    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-    })(window,document,'script','dataLayer','GTM-MK6Z5DFB');</script>
-    <!-- End Google Tag Manager -->
-
     <!-- Google Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-Z70TTG09B4"></script>
+    <?php $gaId = setting('google_analytics_id'); ?>
+    <?php if ($gaId): ?>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=<?php echo escape($gaId); ?>"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-      gtag('config', 'G-Z70TTG09B4');
+      gtag('config', '<?php echo escape($gaId); ?>');
     </script>
-
-    <!-- Google Ads Conversion Tracking - Add to Cart -->
-    <script>
-    function gtag_report_conversion(url) {
-      var callback = function () {
-        if (typeof(url) != 'undefined') {
-          window.location = url;
-        }
-      };
-      gtag('event', 'conversion', {
-          'send_to': 'AW-17845558218/QdVLCKiaquAbEMq3tr1C',
-          'event_callback': callback
-      });
-      return false;
-    }
-    </script>
-
-    <!-- Google AdSense -->
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script>
+    <?php endif; ?>
 
     <!-- reCAPTCHA v3 -->
     <?php echo \App\Core\ReCaptcha::getScript(); ?>
