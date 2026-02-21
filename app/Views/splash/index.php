@@ -46,10 +46,10 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@400;500;600;700&family=Nunito:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="<?php echo $themeService->getGoogleFontsUrl(); ?>" rel="stylesheet">
 
     <!-- Main CSS for visual effects -->
-    <link rel="stylesheet" href="/assets/css/main.css?v=94">
+    <link rel="stylesheet" href="/assets/css/main.css?v=95">
 
     <?php
     // Inject full dynamic theme CSS variables
@@ -71,7 +71,7 @@
         }
 
         body {
-            font-family: 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-family: var(--font-body, 'Inter'), -apple-system, BlinkMacSystemFont, sans-serif;
             background: linear-gradient(135deg, #f8fafc 0%, #ffffff 50%, #f8fafc 100%);
             min-height: 100vh;
             display: flex;
@@ -119,7 +119,7 @@
         }
 
         h1 {
-            font-family: 'Montserrat', sans-serif;
+            font-family: var(--font-heading, 'Montserrat'), sans-serif;
             font-size: 2.75rem;
             font-weight: 700;
             color: #1e293b;
@@ -195,51 +195,32 @@
             color: <?php echo escape($primaryColor); ?>;
         }
 
-        .social-links {
-            display: flex;
-            justify-content: center;
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-
-        .social-link {
-            display: flex;
+        .contact-link {
+            display: inline-flex;
             align-items: center;
-            justify-content: center;
-            width: 48px;
-            height: 48px;
-            background: white;
-            border: 1px solid #e2e8f0;
-            border-radius: 14px;
-            color: #64748b;
-            text-decoration: none;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-        }
-
-        .social-link:hover {
-            transform: translateY(-3px);
-            background: <?php echo escape($primaryColor); ?>;
-            border-color: <?php echo escape($primaryColor); ?>;
-            color: white;
-            box-shadow: 0 8px 20px <?php echo escape($primaryColor); ?>40;
-        }
-
-        .contact-info {
-            color: #64748b;
-            font-size: 0.95rem;
-        }
-
-        .contact-info a {
+            gap: 0.6rem;
             color: <?php echo escape($primaryColor); ?>;
             text-decoration: none;
             font-weight: 600;
-            transition: color 0.2s ease;
+            font-size: 0.95rem;
+            padding: 0.7rem 1.5rem;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            transition: all 0.3s ease;
+            margin-bottom: 1rem;
         }
 
-        .contact-info a:hover {
-            color: <?php echo escape($accentColor); ?>;
-            text-decoration: underline;
+        .contact-link svg {
+            color: <?php echo escape($primaryColor); ?>;
+            flex-shrink: 0;
+        }
+
+        .contact-link:hover {
+            transform: translateY(-2px);
+            border-color: <?php echo escape($primaryColor); ?>;
+            box-shadow: 0 6px 16px <?php echo escape($primaryColor); ?>25;
         }
 
         .splash-footer {
@@ -324,11 +305,11 @@
             <img src="<?php echo storeLogo() ?: '/assets/images/apparix-logo.png'; ?>" alt="<?php echo escape(appName()); ?>">
         </div>
 
-        <h1>Modern <span>E-Commerce</span> Platform</h1>
+        <h1>Welcome to <span><?php echo escape(appName()); ?></span></h1>
 
         <p class="tagline">
-            A powerful, self-hosted shopping cart and content management system.<br>
-            Built for performance. Designed for growth.
+            We're getting things ready. Something great is on its way.<br>
+            Stay tuned!
         </p>
 
         <div class="coming-soon-badge">Coming Soon</div>
@@ -340,50 +321,41 @@
                     <line x1="3" y1="6" x2="21" y2="6"></line>
                     <path d="M16 10a4 4 0 0 1-8 0"></path>
                 </svg>
-                Product Management
+                Online Shopping
             </div>
             <div class="feature-tag">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
-                    <line x1="1" y1="10" x2="23" y2="10"></line>
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
                 </svg>
-                Payment Gateways
+                Secure Checkout
             </div>
             <div class="feature-tag">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
-                    <path d="M2 17l10 5 10-5"></path>
-                    <path d="M2 12l10 5 10-5"></path>
+                    <rect x="1" y="3" width="15" height="13"></rect>
+                    <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+                    <circle cx="5.5" cy="18.5" r="2.5"></circle>
+                    <circle cx="18.5" cy="18.5" r="2.5"></circle>
                 </svg>
-                Plugin System
+                Fast Shipping
             </div>
             <div class="feature-tag">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <line x1="2" y1="12" x2="22" y2="12"></line>
-                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
                 </svg>
-                Marketplace Sync
+                Curated Selection
             </div>
         </div>
 
-        <div class="social-links">
-            <a href="mailto:<?php echo escape(storeEmail()); ?>" class="social-link" title="Email Us">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
-                    <polyline points="22,6 12,13 2,6"></polyline>
-                </svg>
-            </a>
-            <a href="https://github.com" class="social-link" title="GitHub" target="_blank" rel="noopener">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-                </svg>
-            </a>
-        </div>
-
-        <p class="contact-info">
-            Questions? <a href="mailto:<?php echo escape(storeEmail()); ?>"><?php echo escape(storeEmail()); ?></a>
-        </p>
+        <?php $contactEmail = storeEmail(); ?>
+        <?php if ($contactEmail): ?>
+        <a href="mailto:<?php echo escape($contactEmail); ?>" class="contact-link">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                <polyline points="22,6 12,13 2,6"></polyline>
+            </svg>
+            <?php echo escape($contactEmail); ?>
+        </a>
+        <?php endif; ?>
     </div>
 
     <footer class="splash-footer">

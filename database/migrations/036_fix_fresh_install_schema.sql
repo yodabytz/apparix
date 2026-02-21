@@ -164,6 +164,7 @@ ALTER TABLE stock_notifications ADD COLUMN IF NOT EXISTS notified_at TIMESTAMP N
 ALTER TABLE product_bundles ADD COLUMN IF NOT EXISTS slug VARCHAR(255) DEFAULT NULL;
 ALTER TABLE product_bundles ADD COLUMN IF NOT EXISTS description TEXT DEFAULT NULL;
 ALTER TABLE product_bundles ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP NULL DEFAULT NULL;
+ALTER TABLE product_bundles ADD COLUMN IF NOT EXISTS expires_at DATETIME DEFAULT NULL;
 
 -- --------------------------------------------------------------------------
 -- Missing tables

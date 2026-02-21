@@ -283,6 +283,20 @@ class ThemeService
             $fonts[] = "family={$fontName}:wght@300;400;500;600;700";
         }
 
+        // Extract extra Google Fonts referenced in custom_css
+        if (!empty($this->activeTheme['custom_css'])) {
+            $loadedFonts = [$headingFont, $bodyFont];
+            if (preg_match_all('/font-family:\s*["\']([^"\']+)["\']/', $this->activeTheme['custom_css'], $matches)) {
+                foreach ($matches[1] as $extraFont) {
+                    if (!in_array($extraFont, $loadedFonts) && !in_array($extraFont, ['cursive', 'serif', 'sans-serif', 'monospace'])) {
+                        $fontName = str_replace(' ', '+', $extraFont);
+                        $fonts[] = "family={$fontName}:wght@400;700";
+                        $loadedFonts[] = $extraFont;
+                    }
+                }
+            }
+        }
+
         if (empty($fonts)) {
             return 'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap';
         }
