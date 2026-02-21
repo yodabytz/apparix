@@ -670,6 +670,18 @@ document.addEventListener('DOMContentLoaded', function() {
     logoInput.addEventListener('change', function() {
         if (!this.files.length) return;
 
+        // Check file size before uploading (8MB limit)
+        if (this.files[0].size > 8 * 1024 * 1024) {
+            showNotification('File is too large (max 8MB). Please use a smaller image.', 'error');
+            this.value = '';
+            return;
+        }
+
+        const btn = document.getElementById('upload-logo-btn');
+        const origBtnText = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = 'Uploading...';
+
         const formData = new FormData();
         formData.append('logo', this.files[0]);
         formData.append('_csrf_token', csrfToken);
@@ -679,7 +691,23 @@ document.addEventListener('DOMContentLoaded', function() {
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
             body: formData
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                if (response.status === 413) {
+                    throw new Error('File is too large. Please reduce the file size and try again.');
+                }
+                return response.text().then(text => {
+                    try {
+                        const json = JSON.parse(text);
+                        throw new Error(json.error || 'Upload failed (HTTP ' + response.status + ')');
+                    } catch(e) {
+                        if (e.message.includes('Upload failed') || e.message.includes('too large')) throw e;
+                        throw new Error('Upload failed. Your server may be blocking the request. (HTTP ' + response.status + ')');
+                    }
+                });
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.success) {
                 updateLogoPreview(data.path);
@@ -692,8 +720,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         })
         .catch(err => {
-            console.error(err);
-            showNotification('Error uploading logo', 'error');
+            console.error('Upload error:', err);
+            showNotification(err.message || 'Upload failed. Check your connection and try again.', 'error');
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.textContent = origBtnText;
         });
 
         this.value = '';
@@ -704,6 +736,18 @@ document.addEventListener('DOMContentLoaded', function() {
     faviconInput.addEventListener('change', function() {
         if (!this.files.length) return;
 
+        // Check file size before uploading (8MB limit)
+        if (this.files[0].size > 8 * 1024 * 1024) {
+            showNotification('File is too large (max 8MB). Please use a smaller image.', 'error');
+            this.value = '';
+            return;
+        }
+
+        const btn = document.getElementById('upload-favicon-btn');
+        const origBtnText = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = 'Uploading...';
+
         const formData = new FormData();
         formData.append('favicon', this.files[0]);
         formData.append('_csrf_token', csrfToken);
@@ -713,7 +757,23 @@ document.addEventListener('DOMContentLoaded', function() {
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
             body: formData
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                if (response.status === 413) {
+                    throw new Error('File is too large. Please reduce the file size and try again.');
+                }
+                return response.text().then(text => {
+                    try {
+                        const json = JSON.parse(text);
+                        throw new Error(json.error || 'Upload failed (HTTP ' + response.status + ')');
+                    } catch(e) {
+                        if (e.message.includes('Upload failed') || e.message.includes('too large')) throw e;
+                        throw new Error('Upload failed. Your server may be blocking the request. (HTTP ' + response.status + ')');
+                    }
+                });
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.success) {
                 updateFaviconPreview(data.path);
@@ -723,8 +783,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         })
         .catch(err => {
-            console.error(err);
-            showNotification('Error uploading favicon', 'error');
+            console.error('Upload error:', err);
+            showNotification(err.message || 'Upload failed. Check your connection and try again.', 'error');
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.textContent = origBtnText;
         });
 
         this.value = '';
@@ -866,6 +930,18 @@ document.addEventListener('DOMContentLoaded', function() {
     ogImageInput.addEventListener('change', function() {
         if (!this.files.length) return;
 
+        // Check file size before uploading (8MB limit)
+        if (this.files[0].size > 8 * 1024 * 1024) {
+            showNotification('File is too large (max 8MB). Please use a smaller image.', 'error');
+            this.value = '';
+            return;
+        }
+
+        const btn = document.getElementById('upload-og-image-btn');
+        const origBtnText = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = 'Uploading...';
+
         const formData = new FormData();
         formData.append('og_image', this.files[0]);
         formData.append('_csrf_token', csrfToken);
@@ -875,7 +951,23 @@ document.addEventListener('DOMContentLoaded', function() {
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
             body: formData
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                if (response.status === 413) {
+                    throw new Error('File is too large. Please reduce the file size and try again.');
+                }
+                return response.text().then(text => {
+                    try {
+                        const json = JSON.parse(text);
+                        throw new Error(json.error || 'Upload failed (HTTP ' + response.status + ')');
+                    } catch(e) {
+                        if (e.message.includes('Upload failed') || e.message.includes('too large')) throw e;
+                        throw new Error('Upload failed. Your server may be blocking the request. (HTTP ' + response.status + ')');
+                    }
+                });
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.success) {
                 updateOgImagePreview(data.path);
@@ -885,8 +977,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         })
         .catch(err => {
-            console.error(err);
-            showNotification('Error uploading image', 'error');
+            console.error('Upload error:', err);
+            showNotification(err.message || 'Upload failed. Check your connection and try again.', 'error');
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.textContent = origBtnText;
         });
 
         this.value = '';

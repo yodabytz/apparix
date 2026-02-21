@@ -279,6 +279,169 @@ class DashboardController extends Controller
         $licenseInfo['product_count'] = (int)$productCount['count'];
         $licenseInfo['product_remaining'] = License::getRemainingCount('max_products', (int)$productCount['count']);
 
+        // === SYSTEM HEALTH & SETUP CHECKLIST ===
+        $systemHealth = [];
+        $setupTasks = [];
+        $settingModel = new \App\Models\Setting();
+
+        // --- PHP Configuration ---
+        $uploadMax = $this->parsePhpSize(ini_get('upload_max_filesize'));
+        $postMax = $this->parsePhpSize(ini_get('post_max_size'));
+
+        if ($uploadMax < 8 * 1024 * 1024) {
+            $systemHealth[] = [
+                'type' => 'warning',
+                'title' => 'Low Upload Limit',
+                'message' => 'PHP upload_max_filesize is ' . ini_get('upload_max_filesize') . '. Recommended: at least 8M for image uploads. Edit your php.ini and restart PHP-FPM.'
+            ];
+        }
+        if ($postMax < 10 * 1024 * 1024) {
+            $systemHealth[] = [
+                'type' => 'warning',
+                'title' => 'Low POST Limit',
+                'message' => 'PHP post_max_size is ' . ini_get('post_max_size') . '. Recommended: at least 10M. This limits the maximum data you can submit in forms and uploads.'
+            ];
+        }
+
+        // Check required PHP extensions
+        if (!extension_loaded('gd') && !extension_loaded('imagick')) {
+            $systemHealth[] = [
+                'type' => 'warning',
+                'title' => 'No Image Processing',
+                'message' => 'Neither GD nor Imagick PHP extensions are installed. Image resizing will not work. Install php-gd: sudo apt install php' . PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION . '-gd'
+            ];
+        }
+        if (!extension_loaded('curl')) {
+            $systemHealth[] = [
+                'type' => 'error',
+                'title' => 'cURL Extension Missing',
+                'message' => 'The PHP cURL extension is required for payment processing, update checks, and external API calls.'
+            ];
+        }
+        if (!extension_loaded('mbstring')) {
+            $systemHealth[] = [
+                'type' => 'warning',
+                'title' => 'mbstring Extension Missing',
+                'message' => 'The PHP mbstring extension is recommended for proper Unicode/UTF-8 text handling.'
+            ];
+        }
+
+        // --- Directory Permissions ---
+        $basePath = dirname(PUBLIC_PATH);
+        $dirs = [
+            'Branding uploads' => PUBLIC_PATH . '/assets/images/branding',
+            'Product images' => PUBLIC_PATH . '/assets/images/products',
+            'Storage logs' => $basePath . '/storage/logs',
+            'Storage sessions' => $basePath . '/storage/sessions',
+        ];
+        foreach ($dirs as $label => $dir) {
+            if (!is_dir($dir)) {
+                $systemHealth[] = [
+                    'type' => 'error',
+                    'title' => $label . ' Directory Missing',
+                    'message' => 'The directory ' . str_replace($basePath, '', $dir) . ' does not exist. Create it and set ownership to your web server user (e.g. www-data).'
+                ];
+            } elseif (!is_writable($dir)) {
+                $systemHealth[] = [
+                    'type' => 'error',
+                    'title' => $label . ' Not Writable',
+                    'message' => 'The directory ' . str_replace($basePath, '', $dir) . ' is not writable. Run: sudo chown -R www-data:www-data ' . $dir
+                ];
+            }
+        }
+
+        // Check .env is not web-accessible (basic check)
+        $envFile = $basePath . '/.env';
+        if (file_exists($envFile) && strpos(realpath(PUBLIC_PATH), realpath($basePath)) === 0) {
+            // .env exists and public dir is inside base - that's normal
+            // But check if .env is inside public dir
+            if (file_exists(PUBLIC_PATH . '/.env')) {
+                $systemHealth[] = [
+                    'type' => 'error',
+                    'title' => '.env File in Public Directory',
+                    'message' => 'Your .env file is inside the public web root. This is a serious security risk. Move it one directory above the public folder.'
+                ];
+            }
+        }
+
+        // --- Store Setup Checklist ---
+        $storeName = $settingModel->get('store_name', '');
+        if (empty($storeName) || $storeName === 'My Store') {
+            $setupTasks[] = [
+                'label' => 'Set your store name',
+                'link' => '/admin/settings',
+                'description' => 'Give your store a name that appears in page titles and throughout the site.'
+            ];
+        }
+
+        if (empty($settingModel->get('store_email', ''))) {
+            $setupTasks[] = [
+                'label' => 'Add a contact email',
+                'link' => '/admin/settings',
+                'description' => 'Set an email address so customers can reach you.'
+            ];
+        }
+
+        if (empty($settingModel->get('store_logo', ''))) {
+            $setupTasks[] = [
+                'label' => 'Upload your logo',
+                'link' => '/admin/settings',
+                'description' => 'Add a logo that appears in the navbar and emails.'
+            ];
+        }
+
+        if (empty($settingModel->get('store_favicon', ''))) {
+            $setupTasks[] = [
+                'label' => 'Upload a favicon',
+                'link' => '/admin/settings',
+                'description' => 'The small icon shown in browser tabs. Upload one under Settings > Branding.'
+            ];
+        }
+
+        $seoTitle = $settingModel->get('seo_title', '');
+        $seoDesc = $settingModel->get('seo_description', '');
+        if (empty($seoTitle) && empty($seoDesc)) {
+            $setupTasks[] = [
+                'label' => 'Configure homepage SEO',
+                'link' => '/admin/settings',
+                'description' => 'Set a meta title and description so search engines display your site correctly.'
+            ];
+        }
+
+        if (empty($settingModel->get('seo_og_image', ''))) {
+            $setupTasks[] = [
+                'label' => 'Upload a social sharing image',
+                'link' => '/admin/settings',
+                'description' => 'Upload an OG image (1200x630px) that appears when your site is shared on social media.'
+            ];
+        }
+
+        $stripeKey = $_ENV['STRIPE_SECRET_KEY'] ?? '';
+        if (empty($stripeKey)) {
+            $setupTasks[] = [
+                'label' => 'Configure payment processing',
+                'link' => '/admin/settings/payments',
+                'description' => 'Add your Stripe API keys to accept payments.'
+            ];
+        }
+
+        $mailFrom = $settingModel->get('mail_from_email', '');
+        if (empty($mailFrom)) {
+            $setupTasks[] = [
+                'label' => 'Set up email settings',
+                'link' => '/admin/settings',
+                'description' => 'Configure a sender email address for order confirmations and notifications.'
+            ];
+        }
+
+        if ((int)$productCount['count'] === 0) {
+            $setupTasks[] = [
+                'label' => 'Add your first product',
+                'link' => '/admin/products/create',
+                'description' => 'Start building your catalog by adding products.'
+            ];
+        }
+
         $this->render('admin.dashboard.index', [
             'title' => 'Admin Dashboard',
             'admin' => $this->admin,
@@ -299,7 +462,25 @@ class DashboardController extends Controller
             'topReferrers' => $topReferrers,
             'topPages' => $topPages,
             'favoritesStats' => $favoritesStats,
-            'licenseInfo' => $licenseInfo
+            'licenseInfo' => $licenseInfo,
+            'systemHealth' => $systemHealth,
+            'setupTasks' => $setupTasks,
         ], 'admin');
+    }
+
+    /**
+     * Parse PHP size string (e.g., '2M', '128K') to bytes
+     */
+    private function parsePhpSize(string $size): int
+    {
+        $size = trim($size);
+        $last = strtolower($size[strlen($size) - 1]);
+        $value = (int)$size;
+        switch ($last) {
+            case 'g': $value *= 1024;
+            case 'm': $value *= 1024;
+            case 'k': $value *= 1024;
+        }
+        return $value;
     }
 }

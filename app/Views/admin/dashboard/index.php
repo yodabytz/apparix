@@ -3,6 +3,46 @@
     <a href="/admin/products/create" class="btn btn-primary">+ Add Product</a>
 </div>
 
+<?php if (!empty($systemHealth)): ?>
+<div style="margin-bottom: 24px;">
+    <h3 style="margin: 0 0 12px; font-size: 1rem; display: flex; align-items: center; gap: 8px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        System Health
+    </h3>
+    <?php foreach ($systemHealth as $alert): ?>
+    <div style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; padding: 10px 14px; border-radius: 8px; font-size: 0.875rem; <?php echo $alert['type'] === 'error' ? 'background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5;' : 'background: #fef3c7; color: #92400e; border: 1px solid #fcd34d;'; ?>">
+        <span style="flex-shrink: 0; margin-top: 1px;"><?php echo $alert['type'] === 'error' ? '&#10060;' : '&#9888;'; ?></span>
+        <div>
+            <strong><?php echo escape($alert['title']); ?></strong>
+            <span style="opacity: 0.85;"> &mdash; <?php echo escape($alert['message']); ?></span>
+        </div>
+    </div>
+    <?php endforeach; ?>
+</div>
+<?php endif; ?>
+
+<?php if (!empty($setupTasks)): ?>
+<div style="margin-bottom: 24px; background: var(--admin-card-bg, #fff); border-radius: 12px; padding: 20px 24px; border: 1px solid var(--admin-border, #e2e8f0);">
+    <h3 style="margin: 0 0 4px; font-size: 1.05rem; display: flex; align-items: center; gap: 8px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        Getting Started
+    </h3>
+    <p style="margin: 0 0 16px; font-size: 0.85rem; color: var(--admin-text-light, #64748b);">Complete these steps to finish setting up your store.</p>
+    <div style="display: flex; flex-direction: column; gap: 6px;">
+        <?php foreach ($setupTasks as $task): ?>
+        <a href="<?php echo escape($task['link']); ?>" style="display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 8px; background: var(--admin-bg, #f8fafc); border: 1px solid var(--admin-border, #e2e8f0); text-decoration: none; color: inherit; transition: border-color 0.2s, background 0.2s;">
+            <span style="width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--admin-border, #cbd5e1); flex-shrink: 0;"></span>
+            <div style="flex: 1; min-width: 0;">
+                <strong style="font-size: 0.875rem; color: var(--admin-text, #1e293b);"><?php echo escape($task['label']); ?></strong>
+                <p style="margin: 2px 0 0; font-size: 0.8rem; color: var(--admin-text-light, #64748b);"><?php echo escape($task['description']); ?></p>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0; opacity: 0.4;"><polyline points="9 18 15 12 9 6"/></svg>
+        </a>
+        <?php endforeach; ?>
+    </div>
+</div>
+<?php endif; ?>
+
 <!-- Stats Grid -->
 <div class="stats-grid">
     <div class="stat-card primary">
