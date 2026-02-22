@@ -209,6 +209,9 @@ class ProductController extends Controller
         $customDate = trim($this->post('custom_date', '')) ?: null;
         $customDateLabel = trim($this->post('custom_date_label', '')) ?: null;
 
+        // Supplier email
+        $supplierEmail = trim($this->post('supplier_email', '')) ?: null;
+
         if (empty($name) || $price <= 0) {
             setFlash('error', 'Product name and price are required');
             $this->redirect('/admin/products/create');
@@ -220,9 +223,9 @@ class ProductController extends Controller
 
         // Create product
         $productId = $db->insert(
-            "INSERT INTO products (name, slug, sku, manufacturer, description, price, sale_price, inventory_count, is_active, featured, is_digital, is_license_product, download_file, download_limit, custom_date, custom_date_label)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            [$name, $slug, $sku, $manufacturer, $description, $price, $salePrice, $inventory, $isActive, $featured, $isDigital, $isLicenseProduct, $downloadFile, $downloadLimit, $customDate, $customDateLabel]
+            "INSERT INTO products (name, slug, sku, manufacturer, description, price, sale_price, inventory_count, is_active, featured, is_digital, is_license_product, download_file, download_limit, custom_date, custom_date_label, supplier_email)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [$name, $slug, $sku, $manufacturer, $description, $price, $salePrice, $inventory, $isActive, $featured, $isDigital, $isLicenseProduct, $downloadFile, $downloadLimit, $customDate, $customDateLabel, $supplierEmail]
         );
 
         // Handle categories
@@ -457,6 +460,9 @@ class ProductController extends Controller
         $customDate = trim($this->post('custom_date', '')) ?: null;
         $customDateLabel = trim($this->post('custom_date_label', '')) ?: null;
 
+        // Supplier email
+        $supplierEmail = trim($this->post('supplier_email', '')) ?: null;
+
         // Sanitize and limit SEO fields
         $metaKeywords = substr($metaKeywords, 0, 500);
         $metaDescription = substr($metaDescription, 0, 320);
@@ -483,8 +489,8 @@ class ProductController extends Controller
         $db->update(
             "UPDATE products SET name = ?, slug = ?, sku = ?, manufacturer = ?, description = ?, meta_keywords = ?, meta_description = ?,
              price = ?, sale_price = ?, cost = ?, cost_not_applicable = ?, inventory_count = ?, processing_time = ?, is_active = ?, featured = ?, sort_order = ?,
-             is_digital = ?, is_license_product = ?, download_file = ?, download_limit = ?, custom_date = ?, custom_date_label = ?, updated_at = NOW() WHERE id = ?",
-            [$name, $slug, $sku, $manufacturer, $description, $metaKeywords, $metaDescription, $price, $salePrice, $cost, $costNotApplicable, $inventory, $processingTime, $isActive, $featured, $sortOrder, $isDigital, $isLicenseProduct, $downloadFile, $downloadLimit, $customDate, $customDateLabel, $id]
+             is_digital = ?, is_license_product = ?, download_file = ?, download_limit = ?, custom_date = ?, custom_date_label = ?, supplier_email = ?, updated_at = NOW() WHERE id = ?",
+            [$name, $slug, $sku, $manufacturer, $description, $metaKeywords, $metaDescription, $price, $salePrice, $cost, $costNotApplicable, $inventory, $processingTime, $isActive, $featured, $sortOrder, $isDigital, $isLicenseProduct, $downloadFile, $downloadLimit, $customDate, $customDateLabel, $supplierEmail, $id]
         );
 
         // Check and send back-in-stock notifications if inventory was restored

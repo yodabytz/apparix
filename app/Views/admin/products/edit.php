@@ -141,6 +141,12 @@
                         <input type="text" id="custom_date_label" name="custom_date_label" class="form-input" value="<?php echo escape($product['custom_date_label'] ?? ''); ?>" placeholder="e.g. St. Patrick's Day" maxlength="100">
                         <small style="color: var(--admin-text-light);">Shown as: "Order by [date] to receive it by [label]!"</small>
                     </div>
+
+                    <div class="form-group" style="margin-top: 1rem;">
+                        <label class="form-label" for="supplier_email">Supplier Order Email</label>
+                        <input type="text" id="supplier_email" name="supplier_email" class="form-input" value="<?php echo escape($product['supplier_email'] ?? ''); ?>" placeholder="e.g. orders@supplier.com, warehouse@supplier.com" maxlength="255">
+                        <small style="color: var(--admin-text-light);">Supplier receives order notification. Comma-separate multiple emails.</small>
+                    </div>
                 </div>
 
                 <div class="card">
