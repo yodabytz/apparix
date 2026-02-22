@@ -126,6 +126,58 @@
 </div>
 <?php endif; ?>
 
+<!-- Security Status Card -->
+<?php if (!empty($securityStatus)): ?>
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div class="card-header">
+        <h3 class="card-title" style="display: flex; align-items: center; gap: 8px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Security Status
+        </h3>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+        <?php foreach ($securityStatus as $tool): ?>
+        <div style="display: flex; align-items: center; gap: 14px; padding: 12px 16px; border-radius: 8px; background: var(--admin-bg, #f8fafc); border: 1px solid var(--admin-border, #e2e8f0);">
+            <?php if ($tool['active']): ?>
+                <span style="width: 28px; height: 28px; border-radius: 50%; background: #dcfce7; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                </span>
+            <?php elseif ($tool['installed']): ?>
+                <span style="width: 28px; height: 28px; border-radius: 50%; background: #fef3c7; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="3"><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                </span>
+            <?php else: ?>
+                <span style="width: 28px; height: 28px; border-radius: 50%; background: #fee2e2; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </span>
+            <?php endif; ?>
+            <div style="flex: 1; min-width: 0;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 2px;">
+                    <strong style="font-size: 0.9rem;"><?php echo escape($tool['label']); ?></strong>
+                    <?php if ($tool['active']): ?>
+                        <span class="badge badge-success" style="font-size: 0.7rem;">Active</span>
+                    <?php elseif ($tool['installed']): ?>
+                        <span class="badge badge-warning" style="font-size: 0.7rem;">Inactive</span>
+                    <?php else: ?>
+                        <span class="badge badge-danger" style="font-size: 0.7rem;">Not Installed</span>
+                    <?php endif; ?>
+                </div>
+                <div style="font-size: 0.8rem; color: var(--admin-text-light, #64748b);">
+                    <?php echo escape($tool['description']); ?>
+                    <?php if ($tool['details']): ?>
+                        <span style="opacity: 0.8;"> &mdash; <?php echo escape($tool['details']); ?></span>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <?php if (!$tool['installed']): ?>
+                <a href="<?php echo escape($tool['url']); ?>" target="_blank" rel="noopener" style="font-size: 0.8rem; font-weight: 600; color: var(--admin-primary, #3b82f6); white-space: nowrap; text-decoration: none;">Get It &rarr;</a>
+            <?php endif; ?>
+        </div>
+        <?php endforeach; ?>
+    </div>
+</div>
+<?php endif; ?>
+
 <!-- Profit Tracking Section -->
 <?php if (isset($profitStats) && $profitStats['complete_order_count'] > 0): ?>
 <div class="card profit-card" style="margin-bottom: 1.5rem;">

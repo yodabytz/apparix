@@ -158,7 +158,8 @@ class ThemeController extends Controller
             ],
             'background_animation' => [
                 'enabled' => (bool)$this->post('effect_background_enabled'),
-                'style' => $this->post('effect_background_style', 'circles')
+                'style' => $this->post('effect_background_style', 'circles'),
+                'opacity' => max(0.05, min(1, (float)$this->post('effect_background_opacity', '0.5')))
             ],
             'page_transitions' => [
                 'enabled' => (bool)$this->post('effect_page_transitions_enabled'),

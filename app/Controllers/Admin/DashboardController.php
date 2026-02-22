@@ -442,6 +442,9 @@ class DashboardController extends Controller
             ];
         }
 
+        // === SECURITY STATUS ===
+        $securityStatus = $this->getSecurityStatus();
+
         $this->render('admin.dashboard.index', [
             'title' => 'Admin Dashboard',
             'admin' => $this->admin,
@@ -465,7 +468,106 @@ class DashboardController extends Controller
             'licenseInfo' => $licenseInfo,
             'systemHealth' => $systemHealth,
             'setupTasks' => $setupTasks,
+            'securityStatus' => $securityStatus,
         ], 'admin');
+    }
+
+    /**
+     * Detect security tools (fail2ban, ModSecurity, SecuNX)
+     */
+    private function getSecurityStatus(): array
+    {
+        $tools = [];
+
+        // --- Fail2Ban ---
+        $f2bInstalled = file_exists('/usr/bin/fail2ban-client') || file_exists('/usr/sbin/fail2ban-client');
+        $f2bActive = false;
+        $f2bDetails = '';
+        if ($f2bInstalled) {
+            $output = @shell_exec('fail2ban-client status 2>/dev/null');
+            if ($output && preg_match('/Number of jail:\s*(\d+)/i', $output, $m)) {
+                $f2bActive = (int)$m[1] > 0;
+                $f2bDetails = $m[1] . ' active jail' . ((int)$m[1] !== 1 ? 's' : '');
+            } else {
+                $f2bDetails = 'Installed but not responding';
+            }
+        }
+        $tools[] = [
+            'name' => 'fail2ban',
+            'label' => 'Fail2Ban',
+            'description' => 'Intrusion prevention — bans IPs after repeated failed login attempts.',
+            'installed' => $f2bInstalled,
+            'active' => $f2bActive,
+            'details' => $f2bDetails,
+            'url' => 'https://github.com/fail2ban/fail2ban',
+        ];
+
+        // --- ModSecurity ---
+        $modsecInstalled = file_exists('/etc/nginx/modsecurity_includes.conf')
+            || file_exists('/etc/modsecurity/modsecurity.conf')
+            || file_exists('/usr/lib/nginx/modules/ngx_http_modsecurity_module.so');
+        $modsecActive = false;
+        $modsecDetails = '';
+        if ($modsecInstalled) {
+            // Check if any site nginx config has modsecurity on
+            $siteConfigs = glob('/etc/nginx/sites-enabled/*');
+            foreach ($siteConfigs as $conf) {
+                $content = @file_get_contents($conf);
+                if ($content && preg_match('/modsecurity\s+on\s*;/i', $content)) {
+                    $modsecActive = true;
+                    break;
+                }
+            }
+            $modsecDetails = $modsecActive ? 'WAF enabled in nginx' : 'Installed but not enabled';
+        }
+        $tools[] = [
+            'name' => 'modsecurity',
+            'label' => 'ModSecurity',
+            'description' => 'Web Application Firewall — blocks SQL injection, XSS, and other attacks.',
+            'installed' => $modsecInstalled,
+            'active' => $modsecActive,
+            'details' => $modsecDetails,
+            'url' => 'https://github.com/owasp-modsecurity/ModSecurity',
+        ];
+
+        // --- SecuNX ---
+        $secunxInstalled = file_exists('/etc/nginx/secuNX/blocklist.conf')
+            || file_exists('/etc/nginx/snippets/secunx.conf');
+        $secunxActive = false;
+        $secunxDetails = '';
+        if ($secunxInstalled) {
+            // Check if snippet is included in any site config
+            $siteConfigs = $siteConfigs ?? glob('/etc/nginx/sites-enabled/*');
+            foreach ($siteConfigs as $conf) {
+                $content = @file_get_contents($conf);
+                if ($content && (str_contains($content, 'secunx') || str_contains($content, 'secuNX'))) {
+                    $secunxActive = true;
+                    break;
+                }
+            }
+            // Count deny rules
+            $blocklistFile = '/etc/nginx/secuNX/blocklist.conf';
+            if (file_exists($blocklistFile)) {
+                $blockContent = @file_get_contents($blocklistFile);
+                if ($blockContent) {
+                    $denyCount = substr_count($blockContent, 'deny ');
+                    $secunxDetails = $secunxActive
+                        ? number_format($denyCount) . ' IPs blocked'
+                        : 'Installed but not included in site config';
+                }
+            }
+        }
+        $tools[] = [
+            'name' => 'secunx',
+            'label' => 'SecuNX',
+            'description' => 'IP blocklist — blocks known malicious IPs and bot networks.',
+            'installed' => $secunxInstalled,
+            'active' => $secunxActive,
+            'details' => $secunxDetails,
+            'url' => 'https://apparix.app/plugins',
+        ];
+
+        return $tools;
     }
 
     /**

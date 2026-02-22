@@ -184,15 +184,34 @@
                         </label>
                         <select name="effect_background_style" class="form-control effect-option"
                                 id="effect-background-style">
-                            <option value="circles" <?php echo ($effectSettings['background_animation']['style'] ?? 'circles') === 'circles' ? 'selected' : ''; ?>>Floating Circles</option>
-                            <option value="gradient" <?php echo ($effectSettings['background_animation']['style'] ?? '') === 'gradient' ? 'selected' : ''; ?>>Gradient Orbs</option>
-                            <option value="geometric" <?php echo ($effectSettings['background_animation']['style'] ?? '') === 'geometric' ? 'selected' : ''; ?>>Geometric</option>
-                            <option value="dots" <?php echo ($effectSettings['background_animation']['style'] ?? '') === 'dots' ? 'selected' : ''; ?>>Dots Grid</option>
-                            <option value="waves" <?php echo ($effectSettings['background_animation']['style'] ?? '') === 'waves' ? 'selected' : ''; ?>>Waves</option>
-                            <option value="particles" <?php echo ($effectSettings['background_animation']['style'] ?? '') === 'particles' ? 'selected' : ''; ?>>Particles</option>
+                            <optgroup label="CSS Effects">
+                                <option value="circles" <?php echo ($effectSettings['background_animation']['style'] ?? 'circles') === 'circles' ? 'selected' : ''; ?>>Floating Circles</option>
+                                <option value="gradient" <?php echo ($effectSettings['background_animation']['style'] ?? '') === 'gradient' ? 'selected' : ''; ?>>Gradient Orbs</option>
+                                <option value="geometric" <?php echo ($effectSettings['background_animation']['style'] ?? '') === 'geometric' ? 'selected' : ''; ?>>Geometric</option>
+                                <option value="dots" <?php echo ($effectSettings['background_animation']['style'] ?? '') === 'dots' ? 'selected' : ''; ?>>Dots Grid</option>
+                                <option value="waves" <?php echo ($effectSettings['background_animation']['style'] ?? '') === 'waves' ? 'selected' : ''; ?>>Waves</option>
+                                <option value="particles" <?php echo ($effectSettings['background_animation']['style'] ?? '') === 'particles' ? 'selected' : ''; ?>>Particles</option>
+                            </optgroup>
+                            <optgroup label="Canvas Effects">
+                                <option value="swirl" <?php echo ($effectSettings['background_animation']['style'] ?? '') === 'swirl' ? 'selected' : ''; ?>>Swirl</option>
+                                <option value="stars" <?php echo ($effectSettings['background_animation']['style'] ?? '') === 'stars' ? 'selected' : ''; ?>>Stars / Fairy Lights</option>
+                                <option value="aurora" <?php echo ($effectSettings['background_animation']['style'] ?? '') === 'aurora' ? 'selected' : ''; ?>>Aurora</option>
+                                <option value="coalesce" <?php echo ($effectSettings['background_animation']['style'] ?? '') === 'coalesce' ? 'selected' : ''; ?>>Coalesce</option>
+                                <option value="fireflies" <?php echo ($effectSettings['background_animation']['style'] ?? '') === 'fireflies' ? 'selected' : ''; ?>>Fireflies</option>
+                            </optgroup>
                         </select>
                     </div>
                     <span class="effect-description">Animated background decoration style</span>
+
+                    <div style="margin-top: 10px;">
+                        <label for="effect-background-opacity" style="font-size: 0.85rem; color: var(--admin-text-light);">
+                            Opacity: <span id="opacity-value"><?php echo ($effectSettings['background_animation']['opacity'] ?? 0.5); ?></span>
+                        </label>
+                        <input type="range" name="effect_background_opacity" id="effect-background-opacity"
+                               min="0.05" max="1" step="0.05"
+                               value="<?php echo ($effectSettings['background_animation']['opacity'] ?? 0.5); ?>"
+                               class="form-control" style="width: 100%;">
+                    </div>
                 </div>
 
                 <div class="effect-group">
@@ -380,7 +399,7 @@
             <h3>Live Preview</h3>
             <div class="preview-frame" id="preview-frame">
                 <div class="preview-header" id="preview-header">
-                    <div class="preview-logo">Your Store</div>
+                    <div class="preview-logo" id="preview-logo">Your Store</div>
                     <div class="preview-nav">
                         <span>Shop</span>
                         <span>About</span>
@@ -818,18 +837,100 @@ document.addEventListener('DOMContentLoaded', function() {
         const accent = accentColor.value;
         const navbarBg = navbarBgColor.value;
         const navbarText = navbarTextColor.value;
+        const glow = glowColor.value;
 
-        // Update preview elements (with null checks)
+        // Helper to convert hex to rgba
+        function hexToRgba(hex, alpha) {
+            var r = parseInt(hex.slice(1,3), 16);
+            var g = parseInt(hex.slice(3,5), 16);
+            var b = parseInt(hex.slice(5,7), 16);
+            return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
+        }
+
+        // Get font selections
+        var headingFontSelect = document.getElementById('heading-font');
+        var bodyFontSelect = document.getElementById('body-font');
+        var headingFont = headingFontSelect ? headingFontSelect.value : 'Inter';
+        var bodyFont = bodyFontSelect ? bodyFontSelect.value : 'Inter';
+
+        // Get style options
+        var shadowSelect = document.getElementById('effect-shadow-style');
+        var radiusSelect = document.getElementById('effect-border-radius');
+        var shadowStyle = shadowSelect ? shadowSelect.value : 'soft';
+        var borderRadius = radiusSelect ? radiusSelect.value : 'rounded';
+
+        // Determine border radius
+        var radiusValue = '8px';
+        if (borderRadius === 'sharp') radiusValue = '0';
+        else if (borderRadius === 'slightly-rounded') radiusValue = '4px';
+        else if (borderRadius === 'rounded') radiusValue = '8px';
+        else if (borderRadius === 'pill') radiusValue = '20px';
+
+        // Determine shadow
+        var shadowValue = '0 1px 3px rgba(0,0,0,0.05)';
+        if (shadowStyle === 'none') shadowValue = 'none';
+        else if (shadowStyle === 'subtle') shadowValue = '0 1px 3px rgba(0,0,0,0.06)';
+        else if (shadowStyle === 'soft') shadowValue = '0 2px 8px rgba(0,0,0,0.08)';
+        else if (shadowStyle === 'dramatic') shadowValue = '0 4px 16px rgba(0,0,0,0.12)';
+
         var el;
-        if ((el = document.getElementById('preview-header'))) el.style.background = navbarBg;
-        if ((el = document.getElementById('preview-logo'))) el.style.color = navbarText;
-        if ((el = document.querySelector('.preview-nav'))) el.style.color = navbarText;
-        if ((el = document.getElementById('preview-hero'))) el.style.background = 'linear-gradient(135deg, ' + accent + ' 0%, white 100%)';
-        if ((el = document.getElementById('preview-btn'))) el.style.background = primary;
 
-        // Update all product prices
+        // Navigation
+        if ((el = document.getElementById('preview-header'))) {
+            el.style.background = navbarBg;
+            el.style.borderBottom = '1px solid ' + hexToRgba(navbarText, 0.1);
+        }
+        if ((el = document.getElementById('preview-logo'))) {
+            el.style.color = navbarText;
+            el.style.fontFamily = headingFont + ', serif';
+        }
+        if ((el = document.querySelector('.preview-nav'))) el.style.color = navbarText;
+
+        // Hero section
+        if ((el = document.getElementById('preview-hero'))) {
+            el.style.background = 'linear-gradient(135deg, ' + accent + ' 0%, white 100%)';
+            el.style.fontFamily = bodyFont + ', sans-serif';
+        }
+        if ((el = document.querySelector('.preview-hero h2'))) {
+            el.style.fontFamily = headingFont + ', serif';
+            el.style.color = secondary;
+        }
+
+        // Button
+        if ((el = document.getElementById('preview-btn'))) {
+            el.style.background = primary;
+            el.style.borderRadius = radiusValue;
+            el.style.boxShadow = '0 4px 15px ' + hexToRgba(glow, 0.3);
+        }
+
+        // Products section background
+        if ((el = document.getElementById('preview-products'))) {
+            el.style.background = hexToRgba(accent, 0.08);
+        }
+
+        // Product cards
+        document.querySelectorAll('.preview-product-card').forEach(function(card) {
+            card.style.borderRadius = radiusValue;
+            card.style.boxShadow = shadowValue;
+        });
+
+        // Product prices
         document.querySelectorAll('.preview-product-price').forEach(function(priceEl) {
             priceEl.style.color = primary;
+        });
+
+        // Product names
+        document.querySelectorAll('.preview-product-name').forEach(function(nameEl) {
+            nameEl.style.fontFamily = bodyFont + ', sans-serif';
+        });
+    }
+
+    // Opacity slider value display
+    var opacitySlider = document.getElementById('effect-background-opacity');
+    var opacityLabel = document.getElementById('opacity-value');
+    if (opacitySlider && opacityLabel) {
+        opacitySlider.addEventListener('input', function() {
+            opacityLabel.textContent = this.value;
         });
     }
 
@@ -839,6 +940,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Listen to all inputs for preview updates
     form.querySelectorAll('input, select').forEach(input => {
         input.addEventListener('change', updatePreview);
+        input.addEventListener('input', updatePreview);
     });
 
     // Save function

@@ -73,6 +73,8 @@ class AuthController extends Controller
         $admin = $this->adminModel->findByEmail($email);
 
         if (!$admin || !$this->adminModel->verifyPassword($password, $admin['password_hash'])) {
+            // Log for fail2ban
+            error_log("Apparix admin login failed for {$email} from {$ip}");
             // Record failed attempt and apply progressive delay
             $this->rateLimiter->recordFailedAttempt($ip, $email, 'admin');
             $delay = $this->rateLimiter->getDelay($ip, $email, 'admin');

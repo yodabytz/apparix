@@ -224,7 +224,7 @@ class ThemeService
 
         // Disable shimmer effects if turned off
         if (empty($effects['shimmer_effects']['enabled'])) {
-            $css .= ".hero-product::before, .shimmer-effect { display: none !important; }\n";
+            $css .= ".hero-product::before, .product-card::before, .shimmer-effect::before { display: none !important; }\n";
         }
 
         // Card hover effects
@@ -359,6 +359,44 @@ class ThemeService
     {
         $effects = $this->getEffectSettings();
         return !empty($effects['background_animation']['enabled']);
+    }
+
+    /**
+     * Check if a canvas-based background effect is selected
+     */
+    public function isCanvasEffect(): bool
+    {
+        $effects = $this->getEffectSettings();
+        if (empty($effects['background_animation']['enabled'])) return false;
+        $style = $effects['background_animation']['style'] ?? 'circles';
+        return in_array($style, ['swirl', 'stars', 'aurora', 'coalesce', 'fireflies']);
+    }
+
+    /**
+     * Get canvas effect configuration for ambient-bg.js
+     */
+    public function getCanvasEffectConfig(): array
+    {
+        $effects = $this->getEffectSettings();
+        $style = $effects['background_animation']['style'] ?? 'circles';
+        $opacity = $effects['background_animation']['opacity'] ?? 0.5;
+
+        return [
+            'effect' => $style,
+            'opacity' => $opacity,
+            'color1' => $this->activeTheme['primary_color'] ?? '#ff68c5',
+            'color2' => $this->activeTheme['secondary_color'] ?? '#a855f7',
+            'particleCount' => 80,
+        ];
+    }
+
+    /**
+     * Get background effect opacity
+     */
+    public function getBackgroundOpacity(): float
+    {
+        $effects = $this->getEffectSettings();
+        return (float)($effects['background_animation']['opacity'] ?? 0.5);
     }
 
     /**

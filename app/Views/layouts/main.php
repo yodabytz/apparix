@@ -97,7 +97,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="<?php echo $themeService->getGoogleFontsUrl(); ?>" rel="stylesheet">
-    <link rel="stylesheet" href="/assets/css/main.css?v=94">
+    <link rel="stylesheet" href="/assets/css/main.css?v=95">
     <?php
     // Load installed theme CSS (if any)
     $installedThemeCss = \App\Core\ThemeLoader::getThemeCss();
@@ -182,16 +182,23 @@ $bodyClasses = trim($bodyClasses);
 
     <!-- Animated background shapes -->
     <?php if ($bgAnimationEnabled): ?>
-    <div class="bg-shapes <?php echo $bgAnimationClass; ?>" aria-hidden="true">
-        <div class="shape"></div>
-        <div class="shape"></div>
-        <div class="shape"></div>
-        <div class="shape"></div>
-        <div class="shape"></div>
-        <div class="shape"></div>
-        <div class="shape"></div>
-        <div class="shape"></div>
-    </div>
+        <?php if ($themeService->isCanvasEffect()): ?>
+        <?php $canvasConfig = $themeService->getCanvasEffectConfig(); ?>
+        <script>window.ambientBgConfig = <?php echo json_encode($canvasConfig); ?>;</script>
+        <script src="/assets/js/ambient-bg.js?v=1" defer></script>
+        <?php else: ?>
+        <?php $bgOpacity = $themeService->getBackgroundOpacity(); ?>
+        <div class="bg-shapes <?php echo $bgAnimationClass; ?>" aria-hidden="true"<?php if ($bgOpacity != 0.5): ?> style="opacity: <?php echo $bgOpacity; ?>"<?php endif; ?>>
+            <div class="shape"></div>
+            <div class="shape"></div>
+            <div class="shape"></div>
+            <div class="shape"></div>
+            <div class="shape"></div>
+            <div class="shape"></div>
+            <div class="shape"></div>
+            <div class="shape"></div>
+        </div>
+        <?php endif; ?>
     <?php endif; ?>
     <!-- Navigation -->
     <?php
@@ -312,49 +319,49 @@ $bodyClasses = trim($bodyClasses);
         <div class="container">
             <!-- Social Media Links -->
             <?php
-            $hasSocialLinks = !empty($settings['social_facebook']) || !empty($settings['social_instagram']) ||
-                              !empty($settings['social_twitter']) || !empty($settings['social_tiktok']) ||
-                              !empty($settings['social_youtube']) || !empty($settings['social_etsy']) ||
-                              !empty($settings['social_pinterest']) || !empty($settings['social_linkedin']);
+            $hasSocialLinks = !empty(setting('social_facebook')) || !empty(setting('social_instagram')) ||
+                              !empty(setting('social_twitter')) || !empty(setting('social_tiktok')) ||
+                              !empty(setting('social_youtube')) || !empty(setting('social_etsy')) ||
+                              !empty(setting('social_pinterest')) || !empty(setting('social_linkedin'));
             if ($hasSocialLinks): ?>
             <div class="social-links">
-                <?php if (!empty($settings['social_facebook'])): ?>
-                <a href="<?php echo escape($settings['social_facebook']); ?>" target="_blank" rel="noopener" class="social-link" title="Facebook">
+                <?php if (!empty(setting('social_facebook'))): ?>
+                <a href="<?php echo escape(setting('social_facebook')); ?>" target="_blank" rel="noopener" class="social-link" title="Facebook">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
                 </a>
                 <?php endif; ?>
-                <?php if (!empty($settings['social_instagram'])): ?>
-                <a href="<?php echo escape($settings['social_instagram']); ?>" target="_blank" rel="noopener" class="social-link" title="Instagram">
+                <?php if (!empty(setting('social_instagram'))): ?>
+                <a href="<?php echo escape(setting('social_instagram')); ?>" target="_blank" rel="noopener" class="social-link" title="Instagram">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
                 </a>
                 <?php endif; ?>
-                <?php if (!empty($settings['social_twitter'])): ?>
-                <a href="<?php echo escape($settings['social_twitter']); ?>" target="_blank" rel="noopener" class="social-link" title="X (Twitter)">
+                <?php if (!empty(setting('social_twitter'))): ?>
+                <a href="<?php echo escape(setting('social_twitter')); ?>" target="_blank" rel="noopener" class="social-link" title="X (Twitter)">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
                 </a>
                 <?php endif; ?>
-                <?php if (!empty($settings['social_tiktok'])): ?>
-                <a href="<?php echo escape($settings['social_tiktok']); ?>" target="_blank" rel="noopener" class="social-link" title="TikTok">
+                <?php if (!empty(setting('social_tiktok'))): ?>
+                <a href="<?php echo escape(setting('social_tiktok')); ?>" target="_blank" rel="noopener" class="social-link" title="TikTok">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg>
                 </a>
                 <?php endif; ?>
-                <?php if (!empty($settings['social_youtube'])): ?>
-                <a href="<?php echo escape($settings['social_youtube']); ?>" target="_blank" rel="noopener" class="social-link" title="YouTube">
+                <?php if (!empty(setting('social_youtube'))): ?>
+                <a href="<?php echo escape(setting('social_youtube')); ?>" target="_blank" rel="noopener" class="social-link" title="YouTube">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
                 </a>
                 <?php endif; ?>
-                <?php if (!empty($settings['social_etsy'])): ?>
-                <a href="<?php echo escape($settings['social_etsy']); ?>" target="_blank" rel="noopener" class="social-link" title="Etsy Shop">
+                <?php if (!empty(setting('social_etsy'))): ?>
+                <a href="<?php echo escape(setting('social_etsy')); ?>" target="_blank" rel="noopener" class="social-link" title="Etsy Shop">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M8.559 3.89c0-.308.032-.6.06-.861.631-.054 1.647-.109 2.721-.109 2.005 0 4.178.243 4.995.392.198.034.314.104.326.316.063 1.104.249 2.396.376 3.426l-.81.125c-.323-1.282-.764-2.618-2.152-2.966-.698-.175-1.676-.21-2.303-.206-.524.003-1.148.014-1.213.014v6.639c1.134.009 2.291-.078 2.875-.134.635-.062.914-.263 1.043-.989l.217-1.217h.77c-.02.929-.064 2.035-.073 3.2.009 1.073.053 2.253.073 3.151h-.77l-.217-1.178c-.128-.766-.393-.94-1.043-1.037-.584-.088-1.741-.108-2.875-.117v4.94c0 1.553.204 1.966.726 2.146.521.18 1.327.195 2.234.195 1.855 0 3.073-.181 3.888-.769.84-.605 1.476-1.781 2.036-3.365l.836.249c-.236 1.121-.772 3.386-.961 4.281-.108.51-.205.682-.741.805-1.156.267-4.088.393-5.842.393-1.617 0-2.842-.025-3.813-.08-.506-.03-.813-.086-.813-.579 0-.449.05-1.393.05-3.886v-8.52c0-2.491-.05-3.434-.05-3.884z"/></svg>
                 </a>
                 <?php endif; ?>
-                <?php if (!empty($settings['social_pinterest'])): ?>
-                <a href="<?php echo escape($settings['social_pinterest']); ?>" target="_blank" rel="noopener" class="social-link" title="Pinterest">
+                <?php if (!empty(setting('social_pinterest'))): ?>
+                <a href="<?php echo escape(setting('social_pinterest')); ?>" target="_blank" rel="noopener" class="social-link" title="Pinterest">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0a12 12 0 0 0-4.373 23.178c-.07-.634-.134-1.606.028-2.298.146-.625.938-3.977.938-3.977s-.239-.479-.239-1.187c0-1.113.645-1.943 1.448-1.943.682 0 1.012.512 1.012 1.127 0 .687-.437 1.712-.663 2.663-.188.796.4 1.446 1.185 1.446 1.422 0 2.515-1.5 2.515-3.664 0-1.915-1.377-3.254-3.342-3.254-2.276 0-3.612 1.707-3.612 3.471 0 .688.265 1.425.595 1.826a.24.24 0 0 1 .056.23c-.061.252-.196.796-.222.907-.035.146-.116.177-.268.107-1-.465-1.624-1.926-1.624-3.1 0-2.523 1.834-4.84 5.286-4.84 2.775 0 4.932 1.977 4.932 4.62 0 2.757-1.739 4.976-4.151 4.976-.811 0-1.573-.421-1.834-.919l-.498 1.902c-.181.695-.669 1.566-.995 2.097A12 12 0 1 0 12 0z"/></svg>
                 </a>
                 <?php endif; ?>
-                <?php if (!empty($settings['social_linkedin'])): ?>
-                <a href="<?php echo escape($settings['social_linkedin']); ?>" target="_blank" rel="noopener" class="social-link" title="LinkedIn">
+                <?php if (!empty(setting('social_linkedin'))): ?>
+                <a href="<?php echo escape(setting('social_linkedin')); ?>" target="_blank" rel="noopener" class="social-link" title="LinkedIn">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
                 </a>
                 <?php endif; ?>
