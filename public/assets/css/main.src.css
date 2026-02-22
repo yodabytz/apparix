@@ -731,6 +731,7 @@ body.layout-full-width .container {
 
 .hero .btn-primary {
     box-shadow: 0 4px 20px rgba(var(--glow-color-rgb, 255,104,197),0.4), 0 0 40px rgba(var(--glow-color-rgb, 255,104,197),0.2);
+    border: 1px solid var(--secondary-pink, rgba(255,255,255,0.3));
     transition: all 0.3s ease;
 }
 
