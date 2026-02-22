@@ -663,6 +663,16 @@
                     </small>
                 </div>
 
+                <div class="form-group">
+                    <label class="form-checkbox">
+                        <input type="checkbox" name="us_only" value="1" <?php echo !empty($product['us_only']) ? 'checked' : ''; ?>>
+                        <span>US Only — Block overseas shipping</span>
+                    </label>
+                    <small style="color: var(--admin-text-light); display: block; margin-top: 0.25rem;">
+                        This product can only ship to US addresses. International customers will see a notice.
+                    </small>
+                </div>
+
                 <div class="form-group" id="shippingPriceGroup" style="margin-top: 1rem;<?php echo !empty($product['ships_free']) ? ' display: none;' : ''; ?>">
                     <label class="form-label" for="shipping_price">Fixed Shipping Price ($)</label>
                     <input type="number" id="shipping_price" name="shipping_price" class="form-input" step="0.01" min="0"

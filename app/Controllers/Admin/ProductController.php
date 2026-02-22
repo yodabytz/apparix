@@ -417,14 +417,15 @@ class ProductController extends Controller
             $heightIn = $this->post('height_in') !== '' ? floatval($this->post('height_in')) : null;
             $shipsFree = $this->post('ships_free') ? 1 : 0;
             $shipsFreeUs = $this->post('ships_free_us') ? 1 : 0;
+            $usOnly = $this->post('us_only') ? 1 : 0;
             $shippingPrice = $this->post('shipping_price') !== '' ? floatval($this->post('shipping_price')) : null;
             $shippingClassId = $this->post('shipping_class_id') !== '' ? intval($this->post('shipping_class_id')) : null;
             $originId = $this->post('origin_id') !== '' ? intval($this->post('origin_id')) : null;
 
             $db->update(
                 "UPDATE products SET weight_oz = ?, length_in = ?, width_in = ?, height_in = ?,
-                 ships_free = ?, ships_free_us = ?, shipping_price = ?, shipping_class_id = ?, origin_id = ?, updated_at = NOW() WHERE id = ?",
-                [$weightOz, $lengthIn, $widthIn, $heightIn, $shipsFree, $shipsFreeUs, $shippingPrice, $shippingClassId, $originId, $id]
+                 ships_free = ?, ships_free_us = ?, us_only = ?, shipping_price = ?, shipping_class_id = ?, origin_id = ?, updated_at = NOW() WHERE id = ?",
+                [$weightOz, $lengthIn, $widthIn, $heightIn, $shipsFree, $shipsFreeUs, $usOnly, $shippingPrice, $shippingClassId, $originId, $id]
             );
 
             $this->adminModel->logActivity($this->admin['admin_id'], 'update_product_shipping', 'product', $id, "Updated shipping for: {$product['name']}");

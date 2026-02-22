@@ -125,6 +125,9 @@
                         } elseif (!empty($product['ships_free_us'])) {
                             $freeShippingText = '<span class="free-shipping-indicator">Free US Shipping</span>';
                         }
+                        if (!empty($product['us_only'])) {
+                            $freeShippingText .= ' <span class="us-only-indicator">US Only</span>';
+                        }
                     }
                     ?>
                     <?php if ($showRange): ?>

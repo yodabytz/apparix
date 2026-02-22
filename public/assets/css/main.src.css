@@ -1694,6 +1694,18 @@ body.layout-full-width .container {
     display: none;
 }
 
+.us-only-indicator {
+    display: inline;
+    color: #b45309;
+    font-weight: 500;
+    font-size: 0.8rem;
+    margin-left: 0.5rem;
+    padding: 2px 8px;
+    background: #fff8e1;
+    border: 1px solid #fbbf24;
+    border-radius: 4px;
+}
+
 .add-to-cart-form {
     width: 100%;
     margin-top: 0.5rem;

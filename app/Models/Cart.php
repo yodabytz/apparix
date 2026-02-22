@@ -80,6 +80,7 @@ class Cart extends Model
                 p.weight_oz,
                 p.ships_free,
                 p.ships_free_us,
+                p.us_only,
                 COALESCE(pv.shipping_cost, p.shipping_price) as shipping_price,
                 p.is_digital,
                 p.origin_id,

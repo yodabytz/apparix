@@ -53,6 +53,7 @@ class ShippingController extends Controller
 
             $items = [];
             $subtotal = 0;
+            $usOnlyItems = [];
 
             foreach ($cartItems as $item) {
                 $itemPrice = $item['sale_price'] ?? $item['price'];
@@ -61,12 +62,18 @@ class ShippingController extends Controller
                 }
                 $lineTotal = $itemPrice * $item['quantity'];
 
+                // Track US-only items for international blocking
+                if (!empty($item['us_only']) && $countryCode !== 'US') {
+                    $usOnlyItems[] = $item['name'];
+                }
+
                 $items[] = [
                     'product_id' => $item['product_id'],
                     'quantity' => $item['quantity'],
                     'weight_oz' => $item['weight_oz'] ?? 0,
                     'ships_free' => $item['ships_free'] ?? 0,
                     'ships_free_us' => $item['ships_free_us'] ?? 0,
+                    'us_only' => $item['us_only'] ?? 0,
                     'shipping_price' => $item['shipping_price'] ?? null,
                     'handling_fee' => $item['handling_fee'] ?? 0,
                     'origin_shipping_usa' => $item['origin_shipping_usa'] ?? null,
@@ -74,6 +81,22 @@ class ShippingController extends Controller
                     'origin_shipping_overseas' => $item['origin_shipping_overseas'] ?? null
                 ];
                 $subtotal += $lineTotal;
+            }
+
+            // Block international orders with US-only products
+            if (!empty($usOnlyItems)) {
+                $names = array_slice($usOnlyItems, 0, 3);
+                $label = implode(', ', $names);
+                if (count($usOnlyItems) > 3) {
+                    $label .= ' and ' . (count($usOnlyItems) - 3) . ' more';
+                }
+                echo json_encode([
+                    'success' => false,
+                    'error' => 'The following items only ship within the US: ' . $label,
+                    'us_only_blocked' => true,
+                    'options' => []
+                ]);
+                return;
             }
 
             $result = $this->calculator->getShippingOptions(
