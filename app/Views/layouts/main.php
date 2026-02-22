@@ -185,7 +185,6 @@ $bodyClasses = trim($bodyClasses);
         <?php if ($themeService->isCanvasEffect()): ?>
         <?php $canvasConfig = $themeService->getCanvasEffectConfig(); ?>
         <script>window.ambientBgConfig = <?php echo json_encode($canvasConfig); ?>;</script>
-        <script src="/assets/js/ambient-bg.js?v=1" defer></script>
         <?php else: ?>
         <?php $bgOpacity = $themeService->getBackgroundOpacity(); ?>
         <div class="bg-shapes <?php echo $bgAnimationClass; ?>" aria-hidden="true"<?php if ($bgOpacity != 0.5): ?> style="opacity: <?php echo $bgOpacity; ?>"<?php endif; ?>>
@@ -465,6 +464,9 @@ $bodyClasses = trim($bodyClasses);
     </script>
 
     <script src="/assets/js/main.js?v=13"></script>
+    <?php if ($bgAnimationEnabled && $themeService->isCanvasEffect()): ?>
+    <script src="/assets/js/ambient-bg.js?v=2"></script>
+    <?php endif; ?>
     <?php if ($activeHoliday): ?>
     <script src="/assets/js/holidays.js?v=10"></script>
     <?php endif; ?>

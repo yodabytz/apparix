@@ -384,9 +384,8 @@ class ThemeService
         return [
             'effect' => $style,
             'opacity' => $opacity,
-            'color1' => $this->activeTheme['primary_color'] ?? '#ff68c5',
-            'color2' => $this->activeTheme['secondary_color'] ?? '#a855f7',
-            'particleCount' => 80,
+            'color1' => $this->activeTheme['glow_color'] ?? $this->activeTheme['secondary_color'] ?? '#c9a84c',
+            'color2' => $this->activeTheme['accent_color'] ?? '#ffffff',
         ];
     }
 
