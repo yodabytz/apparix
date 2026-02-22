@@ -184,21 +184,12 @@
                         </label>
                         <select name="effect_background_style" class="form-control effect-option"
                                 id="effect-background-style">
-                            <optgroup label="CSS Effects">
-                                <option value="circles" <?php echo ($effectSettings['background_animation']['style'] ?? 'circles') === 'circles' ? 'selected' : ''; ?>>Floating Circles</option>
-                                <option value="gradient" <?php echo ($effectSettings['background_animation']['style'] ?? '') === 'gradient' ? 'selected' : ''; ?>>Gradient Orbs</option>
-                                <option value="geometric" <?php echo ($effectSettings['background_animation']['style'] ?? '') === 'geometric' ? 'selected' : ''; ?>>Geometric</option>
-                                <option value="dots" <?php echo ($effectSettings['background_animation']['style'] ?? '') === 'dots' ? 'selected' : ''; ?>>Dots Grid</option>
-                                <option value="waves" <?php echo ($effectSettings['background_animation']['style'] ?? '') === 'waves' ? 'selected' : ''; ?>>Waves</option>
-                                <option value="particles" <?php echo ($effectSettings['background_animation']['style'] ?? '') === 'particles' ? 'selected' : ''; ?>>Particles</option>
-                            </optgroup>
-                            <optgroup label="Canvas Effects">
-                                <option value="swirl" <?php echo ($effectSettings['background_animation']['style'] ?? '') === 'swirl' ? 'selected' : ''; ?>>Swirl</option>
-                                <option value="stars" <?php echo ($effectSettings['background_animation']['style'] ?? '') === 'stars' ? 'selected' : ''; ?>>Stars / Fairy Lights</option>
-                                <option value="aurora" <?php echo ($effectSettings['background_animation']['style'] ?? '') === 'aurora' ? 'selected' : ''; ?>>Aurora</option>
-                                <option value="coalesce" <?php echo ($effectSettings['background_animation']['style'] ?? '') === 'coalesce' ? 'selected' : ''; ?>>Coalesce</option>
-                                <option value="fireflies" <?php echo ($effectSettings['background_animation']['style'] ?? '') === 'fireflies' ? 'selected' : ''; ?>>Fireflies</option>
-                            </optgroup>
+                            <option value="circles" <?php echo ($effectSettings['background_animation']['style'] ?? 'circles') === 'circles' ? 'selected' : ''; ?>>Floating Circles</option>
+                            <option value="gradient" <?php echo ($effectSettings['background_animation']['style'] ?? '') === 'gradient' ? 'selected' : ''; ?>>Gradient Orbs</option>
+                            <option value="geometric" <?php echo ($effectSettings['background_animation']['style'] ?? '') === 'geometric' ? 'selected' : ''; ?>>Geometric</option>
+                            <option value="dots" <?php echo ($effectSettings['background_animation']['style'] ?? '') === 'dots' ? 'selected' : ''; ?>>Dots Grid</option>
+                            <option value="waves" <?php echo ($effectSettings['background_animation']['style'] ?? '') === 'waves' ? 'selected' : ''; ?>>Waves</option>
+                            <option value="particles" <?php echo ($effectSettings['background_animation']['style'] ?? '') === 'particles' ? 'selected' : ''; ?>>Particles</option>
                         </select>
                     </div>
                     <span class="effect-description">Animated background decoration style</span>
@@ -210,6 +201,35 @@
                         <input type="range" name="effect_background_opacity" id="effect-background-opacity"
                                min="0.05" max="1" step="0.05"
                                value="<?php echo ($effectSettings['background_animation']['opacity'] ?? 0.5); ?>"
+                               class="form-control" style="width: 100%;">
+                    </div>
+                </div>
+
+                <div class="effect-group">
+                    <div class="effect-toggle">
+                        <label class="toggle-label">
+                            <input type="checkbox" name="effect_header_enabled" id="effect-header"
+                                   <?php echo !empty($effectSettings['header_effect']['enabled']) ? 'checked' : ''; ?>>
+                            <span class="toggle-text">Header Effect</span>
+                        </label>
+                        <select name="effect_header_style" class="form-control effect-option"
+                                id="effect-header-style">
+                            <option value="swirl" <?php echo ($effectSettings['header_effect']['style'] ?? 'swirl') === 'swirl' ? 'selected' : ''; ?>>Swirl</option>
+                            <option value="stars" <?php echo ($effectSettings['header_effect']['style'] ?? '') === 'stars' ? 'selected' : ''; ?>>Stars / Fairy Lights</option>
+                            <option value="aurora" <?php echo ($effectSettings['header_effect']['style'] ?? '') === 'aurora' ? 'selected' : ''; ?>>Aurora</option>
+                            <option value="coalesce" <?php echo ($effectSettings['header_effect']['style'] ?? '') === 'coalesce' ? 'selected' : ''; ?>>Coalesce</option>
+                            <option value="fireflies" <?php echo ($effectSettings['header_effect']['style'] ?? '') === 'fireflies' ? 'selected' : ''; ?>>Fireflies</option>
+                        </select>
+                    </div>
+                    <span class="effect-description">Canvas animation inside the navigation bar</span>
+
+                    <div style="margin-top: 10px;">
+                        <label for="effect-header-opacity" style="font-size: 0.85rem; color: var(--admin-text-light);">
+                            Opacity: <span id="header-opacity-value"><?php echo ($effectSettings['header_effect']['opacity'] ?? 0.5); ?></span>
+                        </label>
+                        <input type="range" name="effect_header_opacity" id="effect-header-opacity"
+                               min="0.05" max="1" step="0.05"
+                               value="<?php echo ($effectSettings['header_effect']['opacity'] ?? 0.5); ?>"
                                class="form-control" style="width: 100%;">
                     </div>
                 </div>
@@ -925,12 +945,19 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Opacity slider value display
+    // Opacity slider value displays
     var opacitySlider = document.getElementById('effect-background-opacity');
     var opacityLabel = document.getElementById('opacity-value');
     if (opacitySlider && opacityLabel) {
         opacitySlider.addEventListener('input', function() {
             opacityLabel.textContent = this.value;
+        });
+    }
+    var headerOpacitySlider = document.getElementById('effect-header-opacity');
+    var headerOpacityLabel = document.getElementById('header-opacity-value');
+    if (headerOpacitySlider && headerOpacityLabel) {
+        headerOpacitySlider.addEventListener('input', function() {
+            headerOpacityLabel.textContent = this.value;
         });
     }
 

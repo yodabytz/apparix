@@ -180,24 +180,25 @@ $bodyClasses = trim($bodyClasses);
     height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <!-- End Google Tag Manager (noscript) -->
 
-    <!-- Animated background shapes -->
+    <!-- Animated background shapes (body) -->
     <?php if ($bgAnimationEnabled): ?>
-        <?php if ($themeService->isCanvasEffect()): ?>
-        <?php $canvasConfig = $themeService->getCanvasEffectConfig(); ?>
-        <script>window.ambientBgConfig = <?php echo json_encode($canvasConfig); ?>;</script>
-        <?php else: ?>
-        <?php $bgOpacity = $themeService->getBackgroundOpacity(); ?>
-        <div class="bg-shapes <?php echo $bgAnimationClass; ?>" aria-hidden="true"<?php if ($bgOpacity != 0.5): ?> style="opacity: <?php echo $bgOpacity; ?>"<?php endif; ?>>
-            <div class="shape"></div>
-            <div class="shape"></div>
-            <div class="shape"></div>
-            <div class="shape"></div>
-            <div class="shape"></div>
-            <div class="shape"></div>
-            <div class="shape"></div>
-            <div class="shape"></div>
-        </div>
-        <?php endif; ?>
+    <?php $bgOpacity = $themeService->getBackgroundOpacity(); ?>
+    <div class="bg-shapes <?php echo $bgAnimationClass; ?>" aria-hidden="true"<?php if ($bgOpacity != 0.5): ?> style="opacity: <?php echo $bgOpacity; ?>"<?php endif; ?>>
+        <div class="shape"></div>
+        <div class="shape"></div>
+        <div class="shape"></div>
+        <div class="shape"></div>
+        <div class="shape"></div>
+        <div class="shape"></div>
+        <div class="shape"></div>
+        <div class="shape"></div>
+    </div>
+    <?php endif; ?>
+
+    <!-- Header canvas effect -->
+    <?php if ($themeService->isHeaderEffectEnabled()): ?>
+    <?php $headerConfig = $themeService->getHeaderEffectConfig(); ?>
+    <script>window.ambientBgConfig = <?php echo json_encode($headerConfig); ?>;</script>
     <?php endif; ?>
     <!-- Navigation -->
     <?php
@@ -464,8 +465,8 @@ $bodyClasses = trim($bodyClasses);
     </script>
 
     <script src="/assets/js/main.js?v=13"></script>
-    <?php if ($bgAnimationEnabled && $themeService->isCanvasEffect()): ?>
-    <script src="/assets/js/ambient-bg.js?v=2"></script>
+    <?php if ($themeService->isHeaderEffectEnabled()): ?>
+    <script src="/assets/js/ambient-bg.js?v=3"></script>
     <?php endif; ?>
     <?php if ($activeHoliday): ?>
     <script src="/assets/js/holidays.js?v=10"></script>

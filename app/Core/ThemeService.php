@@ -362,24 +362,31 @@ class ThemeService
     }
 
     /**
-     * Check if a canvas-based background effect is selected
+     * Get background effect opacity
      */
-    public function isCanvasEffect(): bool
+    public function getBackgroundOpacity(): float
     {
         $effects = $this->getEffectSettings();
-        if (empty($effects['background_animation']['enabled'])) return false;
-        $style = $effects['background_animation']['style'] ?? 'circles';
-        return in_array($style, ['swirl', 'stars', 'aurora', 'coalesce', 'fireflies']);
+        return (float)($effects['background_animation']['opacity'] ?? 0.5);
     }
 
     /**
-     * Get canvas effect configuration for ambient-bg.js
+     * Check if header canvas effect is enabled
      */
-    public function getCanvasEffectConfig(): array
+    public function isHeaderEffectEnabled(): bool
     {
         $effects = $this->getEffectSettings();
-        $style = $effects['background_animation']['style'] ?? 'circles';
-        $opacity = $effects['background_animation']['opacity'] ?? 0.5;
+        return !empty($effects['header_effect']['enabled']);
+    }
+
+    /**
+     * Get header canvas effect configuration for ambient-bg.js
+     */
+    public function getHeaderEffectConfig(): array
+    {
+        $effects = $this->getEffectSettings();
+        $style = $effects['header_effect']['style'] ?? 'swirl';
+        $opacity = $effects['header_effect']['opacity'] ?? 0.5;
 
         return [
             'effect' => $style,
@@ -387,15 +394,6 @@ class ThemeService
             'color1' => $this->activeTheme['glow_color'] ?? $this->activeTheme['secondary_color'] ?? '#c9a84c',
             'color2' => $this->activeTheme['accent_color'] ?? '#ffffff',
         ];
-    }
-
-    /**
-     * Get background effect opacity
-     */
-    public function getBackgroundOpacity(): float
-    {
-        $effects = $this->getEffectSettings();
-        return (float)($effects['background_animation']['opacity'] ?? 0.5);
     }
 
     /**

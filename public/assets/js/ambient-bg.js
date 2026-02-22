@@ -1,7 +1,13 @@
 /**
  * Ambient Canvas Backgrounds for Apparix
- * Based on crnacura/AmbientCanvasBackgrounds (Codrops)
- * Renders inside the navbar header area
+ *
+ * Based on "Ambient Canvas Backgrounds" by crnacura
+ * Original: https://github.com/crnacura/AmbientCanvasBackgrounds
+ * Article: https://tympanus.net/codrops/2018/12/13/ambient-canvas-backgrounds/
+ * Author: Mary Lou / Codrops (https://tympanus.net/codrops)
+ * License: MIT
+ *
+ * Adapted for Apparix: renders inside navbar header, uses theme colors
  */
 (function() {
 'use strict';

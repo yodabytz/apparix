@@ -161,6 +161,11 @@ class ThemeController extends Controller
                 'style' => $this->post('effect_background_style', 'circles'),
                 'opacity' => max(0.05, min(1, (float)$this->post('effect_background_opacity', '0.5')))
             ],
+            'header_effect' => [
+                'enabled' => (bool)$this->post('effect_header_enabled'),
+                'style' => $this->post('effect_header_style', 'swirl'),
+                'opacity' => max(0.05, min(1, (float)$this->post('effect_header_opacity', '0.5')))
+            ],
             'page_transitions' => [
                 'enabled' => (bool)$this->post('effect_page_transitions_enabled'),
                 'style' => $this->post('effect_page_transitions_style', 'fade-up')
