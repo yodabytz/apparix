@@ -5773,7 +5773,7 @@ body.layout-full-width .container {
         justify-content: center !important;
         align-items: center !important;
         position: relative !important;
-        height: 56px !important;
+        height: 70px !important;
         padding: 0 12px !important;
         flex-wrap: nowrap !important;
         flex-direction: row !important;
@@ -5782,7 +5782,7 @@ body.layout-full-width .container {
     /* Override centered header on mobile */
     body.header-centered .navbar .container {
         justify-content: center !important;
-        height: 56px !important;
+        height: 70px !important;
         padding-top: 0 !important;
         padding-bottom: 0 !important;
     }
@@ -5800,25 +5800,36 @@ body.layout-full-width .container {
     }
 
     .navbar-brand .logo img {
-        height: 38px !important;
-        max-width: 160px !important;
+        height: 50px !important;
+        max-width: 200px !important;
         width: auto !important;
         object-fit: contain;
     }
 
-    /* Hamburger: absolutely positioned on the right */
+    /* Classic hamburger: absolutely positioned on the right */
     .mobile-menu-toggle {
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
+        gap: 0;
         width: 44px;
         height: 44px;
-        padding: 10px;
+        padding: 8px;
         position: absolute !important;
         right: 12px !important;
         top: 50% !important;
         transform: translateY(-50%) !important;
         z-index: 1001;
+    }
+
+    /* Classic hamburger bars: gold color, thicker lines */
+    .mobile-menu-toggle span {
+        width: 22px !important;
+        height: 3px !important;
+        background-color: var(--secondary-pink, var(--navbar-text, #333)) !important;
+        border-radius: 2px;
+        margin: 2px 0 !important;
     }
 
     body.header-centered .mobile-menu-toggle {
@@ -5828,15 +5839,10 @@ body.layout-full-width .container {
         transform: translateY(-50%) !important;
     }
 
-    /* Hamburger bars: use navbar text color so they contrast with the navbar bg */
-    .mobile-menu-toggle span {
-        background-color: var(--navbar-text, #333) !important;
-    }
-
     /* --- Mobile Slide-out Menu --- */
     .navbar-menu {
         position: fixed;
-        top: 56px;
+        top: 70px;
         left: 0;
         right: 0;
         bottom: 0;
