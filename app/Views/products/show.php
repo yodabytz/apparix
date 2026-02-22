@@ -404,7 +404,7 @@
         <?php if ($product['description']): ?>
             <div class="description-section-full">
                 <h2>Description</h2>
-                <div class="description-text"><?php echo nl2br(escape($product['description'])); ?></div>
+                <div class="description-text"><?php echo str_replace('✤', '<span class="bullet-symbol">✤</span>', nl2br(escape($product['description']))); ?></div>
             </div>
         <?php endif; ?>
 
