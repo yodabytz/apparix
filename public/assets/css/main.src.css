@@ -5744,43 +5744,38 @@ body.layout-full-width .container {
 }
 
 @media (max-width: 768px) {
-    .mobile-menu-toggle {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 44px;
-        height: 44px;
-        padding: 10px;
-        z-index: 1001;
-    }
-
-    .mobile-menu-toggle span {
-        background-color: var(--primary-pink, var(--dark-gray)) !important;
-    }
-
     /* --- Mobile Navbar --- */
     .navbar {
         position: sticky;
         top: 0;
         z-index: 1000;
+        background: var(--navbar-bg, white) !important;
     }
 
     .navbar .container {
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        position: relative !important;
         height: 56px !important;
         padding: 0 12px !important;
-        flex-direction: row !important;
-        justify-content: space-between !important;
-        align-items: center !important;
         flex-wrap: nowrap !important;
+        flex-direction: row !important;
     }
 
     /* Override centered header on mobile */
     body.header-centered .navbar .container {
-        flex-wrap: nowrap !important;
-        justify-content: space-between !important;
+        justify-content: center !important;
         height: 56px !important;
         padding-top: 0 !important;
         padding-bottom: 0 !important;
+    }
+
+    /* Logo centered in navbar */
+    .navbar-brand {
+        width: auto !important;
+        margin: 0 !important;
+        flex: none !important;
     }
 
     body.header-centered .navbar-brand {
@@ -5788,17 +5783,38 @@ body.layout-full-width .container {
         margin-bottom: 0 !important;
     }
 
-    body.header-centered .mobile-menu-toggle {
-        position: static !important;
-        transform: none !important;
-    }
-
-    /* Logo sizing on mobile - respect theme but cap it */
     .navbar-brand .logo img {
         height: 38px !important;
         max-width: 160px !important;
         width: auto !important;
         object-fit: contain;
+    }
+
+    /* Hamburger: absolutely positioned on the right */
+    .mobile-menu-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        padding: 10px;
+        position: absolute !important;
+        right: 12px !important;
+        top: 50% !important;
+        transform: translateY(-50%) !important;
+        z-index: 1001;
+    }
+
+    body.header-centered .mobile-menu-toggle {
+        position: absolute !important;
+        right: 12px !important;
+        top: 50% !important;
+        transform: translateY(-50%) !important;
+    }
+
+    /* Hamburger bars: use navbar text color so they contrast with the navbar bg */
+    .mobile-menu-toggle span {
+        background-color: var(--navbar-text, #333) !important;
     }
 
     /* --- Mobile Slide-out Menu --- */
@@ -5808,7 +5824,7 @@ body.layout-full-width .container {
         left: 0;
         right: 0;
         bottom: 0;
-        background: var(--navbar-bg, white);
+        background: var(--navbar-bg, white) !important;
         color: var(--navbar-text, inherit);
         flex-direction: column;
         align-items: stretch;
