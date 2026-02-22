@@ -92,10 +92,15 @@
                     <option value="move_down_10">Move Down 10 Spots</option>
                     <option value="move_to_bottom">Move to Bottom</option>
                 </optgroup>
+                <optgroup label="Urgency">
+                    <option value="set_custom_date">Set Order By Date</option>
+                </optgroup>
                 <optgroup label="Other">
                     <option value="delete">Delete Products</option>
                 </optgroup>
             </select>
+            <input type="date" id="bulkCustomDate" style="display:none; width: auto;" class="form-control">
+            <input type="text" id="bulkCustomDateLabel" style="display:none; width: auto;" class="form-control" placeholder="e.g. St. Patrick's Day" maxlength="100">
             <button type="button" onclick="applyBulkAction()" class="btn btn-primary btn-sm">Apply</button>
             <button type="button" onclick="clearSelection()" class="btn btn-outline btn-sm">Cancel</button>
         </div>
@@ -314,6 +319,13 @@ function clearSelection() {
     updateSelection();
 }
 
+// Show/hide Order By Date fields when bulk action changes
+document.getElementById('bulkAction').addEventListener('change', function() {
+    var show = this.value === 'set_custom_date';
+    document.getElementById('bulkCustomDate').style.display = show ? 'inline-block' : 'none';
+    document.getElementById('bulkCustomDateLabel').style.display = show ? 'inline-block' : 'none';
+});
+
 function applyBulkAction() {
     const action = document.getElementById('bulkAction').value;
     if (!action) {
@@ -344,6 +356,12 @@ function applyBulkAction() {
     // Include category_id for reorder actions
     if (['move_to_top', 'move_up_10', 'move_down_10', 'move_to_bottom'].indexOf(action) !== -1 && currentCategoryId > 0) {
         body += '&category_id=' + currentCategoryId;
+    }
+
+    // Include order-by-date fields
+    if (action === 'set_custom_date') {
+        body += '&custom_date_value=' + encodeURIComponent(document.getElementById('bulkCustomDate').value);
+        body += '&custom_date_label_value=' + encodeURIComponent(document.getElementById('bulkCustomDateLabel').value);
     }
 
     fetch('/admin/products/bulk-action', {

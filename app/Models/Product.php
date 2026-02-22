@@ -55,6 +55,7 @@ class Product extends Model
             'name-az' => 'p.name ASC',
             'name-za' => 'p.name DESC',
             'newest' => 'p.created_at DESC',
+            'custom-date' => 'CASE WHEN p.custom_date IS NULL THEN 1 ELSE 0 END ASC, p.custom_date ASC',
             default => 'p.sort_order ASC, p.created_at DESC', // admin-defined order
         };
 

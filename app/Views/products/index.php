@@ -69,6 +69,7 @@
                             <option value="price-high" <?php echo ($sort ?? '') === 'price-high' ? 'selected' : ''; ?>>Price: High to Low</option>
                             <option value="name-az" <?php echo ($sort ?? '') === 'name-az' ? 'selected' : ''; ?>>Name: A-Z</option>
                             <option value="name-za" <?php echo ($sort ?? '') === 'name-za' ? 'selected' : ''; ?>>Name: Z-A</option>
+                            <option value="custom-date" <?php echo ($sort ?? '') === 'custom-date' ? 'selected' : ''; ?>>Order By Date</option>
                         </select>
                     </div>
                 </div>

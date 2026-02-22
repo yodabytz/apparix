@@ -130,6 +130,17 @@
                         <input type="number" id="sort_order" name="sort_order" class="form-input" value="<?php echo $product['sort_order'] ?? 0; ?>" min="0">
                         <small style="color: var(--admin-text-light);">Lower numbers appear first (0 = default)</small>
                     </div>
+
+                    <div class="form-group" style="margin-top: 1rem;">
+                        <label class="form-label" for="custom_date">Order By Date</label>
+                        <input type="date" id="custom_date" name="custom_date" class="form-input" value="<?php echo $product['custom_date'] ?? ''; ?>">
+                        <small style="color: var(--admin-text-light);">Deadline date customers must order by. Leave empty to hide.</small>
+                    </div>
+                    <div class="form-group" style="margin-top: 0.5rem;">
+                        <label class="form-label" for="custom_date_label">Occasion Label</label>
+                        <input type="text" id="custom_date_label" name="custom_date_label" class="form-input" value="<?php echo escape($product['custom_date_label'] ?? ''); ?>" placeholder="e.g. St. Patrick's Day" maxlength="100">
+                        <small style="color: var(--admin-text-light);">Shown as: "Order by [date] to receive it by [label]!"</small>
+                    </div>
                 </div>
 
                 <div class="card">

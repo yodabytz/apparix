@@ -219,6 +219,14 @@
                 </div>
                 <?php endif; ?>
 
+                <?php if (!empty($product['custom_date']) && strtotime($product['custom_date']) >= strtotime('today')): ?>
+                <div class="order-by-urgency">
+                    <span class="urgency-icon">&#9200;</span>
+                    Order by <strong><?php echo date('F j, Y', strtotime($product['custom_date'])); ?></strong>
+                    to receive it by <?php echo !empty($product['custom_date_label']) ? escape($product['custom_date_label']) : 'the deadline'; ?>!
+                </div>
+                <?php endif; ?>
+
                 <!-- Add to Cart -->
                 <form action="/cart/add" method="POST" class="add-to-cart-section" id="addToCartForm">
                     <?php echo csrfField(); ?>

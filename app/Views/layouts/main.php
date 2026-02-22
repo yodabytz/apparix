@@ -97,7 +97,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="<?php echo $themeService->getGoogleFontsUrl(); ?>" rel="stylesheet">
-    <link rel="stylesheet" href="/assets/css/main.css?v=98">
+    <link rel="stylesheet" href="/assets/css/main.css?v=99">
     <?php
     // Load installed theme CSS (if any)
     $installedThemeCss = \App\Core\ThemeLoader::getThemeCss();

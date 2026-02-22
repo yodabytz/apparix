@@ -205,6 +205,10 @@ class ProductController extends Controller
         $downloadFile = $isDigital ? trim($this->post('download_file', '')) ?: null : null;
         $downloadLimit = $isDigital ? intval($this->post('download_limit', 5)) : null;
 
+        // Order by date fields
+        $customDate = trim($this->post('custom_date', '')) ?: null;
+        $customDateLabel = trim($this->post('custom_date_label', '')) ?: null;
+
         if (empty($name) || $price <= 0) {
             setFlash('error', 'Product name and price are required');
             $this->redirect('/admin/products/create');
@@ -216,9 +220,9 @@ class ProductController extends Controller
 
         // Create product
         $productId = $db->insert(
-            "INSERT INTO products (name, slug, sku, manufacturer, description, price, sale_price, inventory_count, is_active, featured, is_digital, is_license_product, download_file, download_limit)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            [$name, $slug, $sku, $manufacturer, $description, $price, $salePrice, $inventory, $isActive, $featured, $isDigital, $isLicenseProduct, $downloadFile, $downloadLimit]
+            "INSERT INTO products (name, slug, sku, manufacturer, description, price, sale_price, inventory_count, is_active, featured, is_digital, is_license_product, download_file, download_limit, custom_date, custom_date_label)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [$name, $slug, $sku, $manufacturer, $description, $price, $salePrice, $inventory, $isActive, $featured, $isDigital, $isLicenseProduct, $downloadFile, $downloadLimit, $customDate, $customDateLabel]
         );
 
         // Handle categories
@@ -449,6 +453,10 @@ class ProductController extends Controller
         $downloadFile = $isDigital ? trim($this->post('download_file', '')) ?: null : null;
         $downloadLimit = $isDigital ? intval($this->post('download_limit', 5)) : null;
 
+        // Order by date fields
+        $customDate = trim($this->post('custom_date', '')) ?: null;
+        $customDateLabel = trim($this->post('custom_date_label', '')) ?: null;
+
         // Sanitize and limit SEO fields
         $metaKeywords = substr($metaKeywords, 0, 500);
         $metaDescription = substr($metaDescription, 0, 320);
@@ -475,8 +483,8 @@ class ProductController extends Controller
         $db->update(
             "UPDATE products SET name = ?, slug = ?, sku = ?, manufacturer = ?, description = ?, meta_keywords = ?, meta_description = ?,
              price = ?, sale_price = ?, cost = ?, cost_not_applicable = ?, inventory_count = ?, processing_time = ?, is_active = ?, featured = ?, sort_order = ?,
-             is_digital = ?, is_license_product = ?, download_file = ?, download_limit = ?, updated_at = NOW() WHERE id = ?",
-            [$name, $slug, $sku, $manufacturer, $description, $metaKeywords, $metaDescription, $price, $salePrice, $cost, $costNotApplicable, $inventory, $processingTime, $isActive, $featured, $sortOrder, $isDigital, $isLicenseProduct, $downloadFile, $downloadLimit, $id]
+             is_digital = ?, is_license_product = ?, download_file = ?, download_limit = ?, custom_date = ?, custom_date_label = ?, updated_at = NOW() WHERE id = ?",
+            [$name, $slug, $sku, $manufacturer, $description, $metaKeywords, $metaDescription, $price, $salePrice, $cost, $costNotApplicable, $inventory, $processingTime, $isActive, $featured, $sortOrder, $isDigital, $isLicenseProduct, $downloadFile, $downloadLimit, $customDate, $customDateLabel, $id]
         );
 
         // Check and send back-in-stock notifications if inventory was restored
@@ -1711,6 +1719,19 @@ class ProductController extends Controller
                     $actionLabel = str_replace('_', ' ', $action);
                     $this->adminModel->logActivity($this->admin['admin_id'], 'bulk_reorder', 'products', 0, "Bulk $actionLabel: $count products");
                 }
+                break;
+
+            case 'set_custom_date':
+                $customDate = trim($this->post('custom_date_value', '')) ?: null;
+                $customDateLabel = trim($this->post('custom_date_label_value', '')) ?: null;
+                $placeholders = implode(',', array_fill(0, count($ids), '?'));
+                if ($customDate) {
+                    $params = array_merge([$customDate, $customDateLabel], array_map('intval', $ids));
+                    $db->update("UPDATE products SET custom_date = ?, custom_date_label = ? WHERE id IN ($placeholders)", $params);
+                } else {
+                    $db->update("UPDATE products SET custom_date = NULL, custom_date_label = NULL WHERE id IN ($placeholders)", array_map('intval', $ids));
+                }
+                $this->adminModel->logActivity($this->admin['admin_id'], 'bulk_set_custom_date', 'products', 0, "Set order-by date on $count products");
                 break;
 
             case 'delete':
