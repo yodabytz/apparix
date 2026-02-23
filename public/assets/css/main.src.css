@@ -1828,6 +1828,26 @@ body.layout-full-width .container {
     color: var(--primary-pink);
 }
 
+.footer-powered-by {
+    margin-top: 0.75rem;
+    font-size: 0.8rem;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+}
+
+.footer-powered-by:hover {
+    opacity: 0.8;
+}
+
+.footer-powered-by a {
+    color: rgba(255, 255, 255, 0.6);
+    text-decoration: none;
+}
+
+.footer-powered-by a:hover {
+    color: var(--primary-pink);
+}
+
 /* Footer Social Links */
 .social-links {
     display: flex;

@@ -97,7 +97,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="<?php echo $themeService->getGoogleFontsUrl(); ?>" rel="stylesheet">
-    <link rel="stylesheet" href="/assets/css/main.css?v=103">
+    <link rel="stylesheet" href="/assets/css/main.css?v=104">
     <?php
     // Load installed theme CSS (if any)
     $installedThemeCss = \App\Core\ThemeLoader::getThemeCss();
@@ -382,7 +382,7 @@ $bodyClasses = trim($bodyClasses);
             }, $footMenuItems)); ?></p>
             <?php
             // Show "Powered by Apparix" if enabled in settings OR if on free tier (can't disable on free)
-            $showPoweredBy = !empty($settings['show_powered_by']) || \App\Core\License::isFree();
+            $showPoweredBy = setting('show_powered_by', false) || \App\Core\License::isFree();
             if ($showPoweredBy): ?>
             <p class="footer-powered-by"><a href="https://apparix.app" target="_blank" rel="noopener">Powered by Apparix</a></p>
             <?php endif; ?>
@@ -558,13 +558,13 @@ $bodyClasses = trim($bodyClasses);
     }
     .exit-popup-content {
         position: relative;
-        background: linear-gradient(135deg, #fff5f9 0%, #ffffff 100%);
+        background: linear-gradient(135deg, var(--light-pink, #FFE4F3) 0%, #ffffff 100%);
         border-radius: 20px;
         padding: 2.5rem;
         max-width: 420px;
         width: 100%;
         text-align: center;
-        box-shadow: 0 25px 50px rgba(0,0,0,0.25);
+        box-shadow: 0 25px 80px rgba(255, 104, 197, 0.25), 0 10px 30px rgba(0,0,0,0.15);
         animation: exitPopupIn 0.4s ease;
     }
     @keyframes exitPopupIn {
@@ -573,28 +573,30 @@ $bodyClasses = trim($bodyClasses);
     }
     .exit-popup-close {
         position: absolute;
-        top: 1rem;
-        right: 1rem;
-        background: none;
-        border: none;
-        font-size: 1.5rem;
-        color: #9ca3af;
-        cursor: pointer;
+        top: 12px;
+        right: 12px;
         width: 32px;
         height: 32px;
+        border: none;
+        background: var(--light-pink, #FFE4F3);
+        color: var(--primary-pink, #FF68C5);
+        font-size: 1.5rem;
+        line-height: 1;
+        border-radius: 50%;
+        cursor: pointer;
+        transition: var(--transition, all 0.2s ease);
         display: flex;
         align-items: center;
         justify-content: center;
-        border-radius: 50%;
-        transition: all 0.2s;
     }
     .exit-popup-close:hover {
-        background: #f3f4f6;
-        color: #1f2937;
+        background: var(--primary-pink, #FF68C5);
+        color: white;
+        transform: rotate(90deg);
     }
     .exit-popup-badge {
         display: inline-block;
-        background: #FF68C5;
+        background: var(--primary-pink, #FF68C5);
         color: white;
         padding: 0.375rem 1rem;
         border-radius: 9999px;
@@ -604,22 +606,22 @@ $bodyClasses = trim($bodyClasses);
         margin-bottom: 1rem;
     }
     .exit-popup-content h3 {
-        font-family: 'Playfair Display', Georgia, serif;
+        font-family: var(--font-heading, 'Playfair Display', Georgia, serif);
         font-size: 1.75rem;
-        color: #1f2937;
+        color: var(--text-primary, #333333);
         margin: 0 0 0.75rem 0;
     }
     .exit-popup-content > p {
-        color: #4b5563;
+        color: var(--text-secondary, #666666);
         margin: 0 0 1.25rem 0;
         line-height: 1.5;
     }
     .exit-popup-content strong {
-        color: #FF68C5;
+        color: var(--primary-pink, #FF68C5);
         font-size: 1.25em;
     }
     .exit-popup-timer {
-        background: #1f2937;
+        background: var(--darker-gray, #2d2d2d);
         color: white;
         padding: 0.75rem 1.25rem;
         border-radius: 12px;
@@ -637,7 +639,7 @@ $bodyClasses = trim($bodyClasses);
         font-family: monospace;
         font-size: 1.25rem;
         font-weight: 700;
-        color: #FF68C5;
+        color: var(--primary-pink, #FF68C5);
     }
     .exit-popup-form {
         display: flex;
@@ -646,19 +648,31 @@ $bodyClasses = trim($bodyClasses);
     }
     .exit-popup-form input[type="email"] {
         padding: 0.875rem 1rem;
-        border: 2px solid #e5e7eb;
+        border: 2px solid var(--border-color, #E5E5E5);
         border-radius: 10px;
         font-size: 1rem;
-        transition: border-color 0.2s;
+        transition: var(--transition, all 0.2s ease);
+        background: white;
     }
     .exit-popup-form input[type="email"]:focus {
         outline: none;
-        border-color: #FF68C5;
+        border-color: var(--primary-pink, #FF68C5);
+        box-shadow: 0 0 0 3px rgba(255, 104, 197, 0.15);
     }
     .exit-popup-form .btn {
         padding: 0.875rem 1.5rem;
+        background: linear-gradient(135deg, var(--primary-pink, #FF68C5) 0%, var(--secondary-pink, #FF94C8) 100%);
+        color: white;
+        border: none;
+        border-radius: 10px;
         font-size: 1rem;
         font-weight: 600;
+        cursor: pointer;
+        transition: var(--transition, all 0.2s ease);
+    }
+    .exit-popup-form .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-pink, 0 8px 25px rgba(255, 104, 197, 0.4));
     }
     .exit-coupon-result {
         padding: 1rem 0;
@@ -668,8 +682,8 @@ $bodyClasses = trim($bodyClasses);
         margin-bottom: 0.75rem;
     }
     .coupon-code {
-        background: #1f2937;
-        color: #FF68C5;
+        background: var(--darker-gray, #2d2d2d);
+        color: var(--primary-pink, #FF68C5);
         font-family: monospace;
         font-size: 1.5rem;
         font-weight: 700;
@@ -679,20 +693,24 @@ $bodyClasses = trim($bodyClasses);
         letter-spacing: 0.1em;
         user-select: all;
         cursor: pointer;
+        transition: transform 0.2s;
+    }
+    .coupon-code:hover {
+        transform: scale(1.02);
     }
     .coupon-expires {
-        color: #6b7280;
+        color: var(--text-secondary, #666666);
         font-size: 0.875rem;
         margin-bottom: 0.5rem;
     }
     .coupon-note {
-        color: #9ca3af;
+        color: var(--text-muted, #999999);
         font-size: 0.75rem;
         font-style: italic;
         margin-bottom: 1rem;
     }
     .exit-popup-exclusion {
-        color: #9ca3af;
+        color: var(--text-muted, #999999);
         font-size: 0.7rem;
         margin: -0.25rem 0 0.75rem;
     }
@@ -704,19 +722,20 @@ $bodyClasses = trim($bodyClasses);
     }
     .exit-popup-message.error {
         background: #fef2f2;
-        color: #dc2626;
+        color: var(--error, #E53935);
     }
     .exit-popup-dismiss {
-        margin-top: 1rem;
-        font-size: 0.8125rem;
+        margin-top: 1.25rem;
+        margin-bottom: 0;
     }
     .exit-popup-dismiss a {
-        color: #9ca3af;
+        color: var(--text-muted, #999999);
+        font-size: 0.85rem;
         text-decoration: none;
+        transition: var(--transition, all 0.2s ease);
     }
     .exit-popup-dismiss a:hover {
-        color: #6b7280;
-        text-decoration: underline;
+        color: var(--primary-pink, #FF68C5);
     }
     @media (max-width: 480px) {
         .exit-popup-content {
@@ -774,24 +793,26 @@ $bodyClasses = trim($bodyClasses);
     }
     .clover-modal-close {
         position: absolute;
-        top: 1rem;
-        right: 1rem;
-        background: none;
-        border: none;
-        font-size: 1.5rem;
-        color: #9ca3af;
-        cursor: pointer;
+        top: 12px;
+        right: 12px;
         width: 32px;
         height: 32px;
+        border: none;
+        background: #dcfce7;
+        color: #22c55e;
+        font-size: 1.5rem;
+        line-height: 1;
+        border-radius: 50%;
+        cursor: pointer;
+        transition: var(--transition, all 0.2s ease);
         display: flex;
         align-items: center;
         justify-content: center;
-        border-radius: 50%;
-        transition: all 0.2s;
     }
     .clover-modal-close:hover {
-        background: #f3f4f6;
-        color: #1f2937;
+        background: #22c55e;
+        color: white;
+        transform: rotate(90deg);
     }
     .clover-icon {
         font-size: 4rem;
@@ -805,12 +826,13 @@ $bodyClasses = trim($bodyClasses);
         100% { transform: rotate(360deg) scale(1); }
     }
     .clover-modal h3 {
+        font-family: var(--font-heading, 'Playfair Display', Georgia, serif);
         color: #166534;
         font-size: 1.5rem;
         margin-bottom: 0.5rem;
     }
     .clover-modal p {
-        color: #4b5563;
+        color: var(--text-secondary, #666666);
         margin-bottom: 1rem;
     }
     .clover-code {
