@@ -116,6 +116,9 @@
         <div style="display: flex; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid #f3f4f6;">
             <img src="<?php echo escape($item['image'] ?? '/assets/images/placeholder.png'); ?>"
                  alt="<?php echo escape($item['name']); ?>"
+                 loading="lazy"
+                 width="70"
+                 height="70"
                  style="width: 70px; height: 70px; object-fit: cover; border-radius: 8px;">
             <div style="flex: 1;">
                 <p style="margin: 0 0 0.25rem 0; font-weight: 500;"><?php echo escape($item['name']); ?></p>

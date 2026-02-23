@@ -32,7 +32,7 @@
                             <?php foreach ($order['items'] as $item): ?>
                                 <div class="order-item">
                                     <div class="item-image">
-                                        <img src="<?php echo escape($item['product_image'] ?? '/assets/images/placeholder.png'); ?>" alt="<?php echo escape($item['product_name'] ?? 'Product'); ?>">
+                                        <img src="<?php echo escape($item['product_image'] ?? '/assets/images/placeholder.png'); ?>" alt="<?php echo escape($item['product_name'] ?? 'Product'); ?>" loading="lazy" width="60" height="60">
                                     </div>
                                     <div class="item-details">
                                         <?php if (!empty($item['product_slug'])): ?>
