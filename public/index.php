@@ -65,6 +65,13 @@ if (!$isInstalled) {
     }
 }
 
+// Bot detection & auto-blocking (runs before session to avoid overhead for bots)
+require_once BASE_PATH . '/app/Core/BotBlocker.php';
+$botBlocker = \App\Core\BotBlocker::getInstance();
+if (!$botBlocker->check()) {
+    exit; // Blocked — BotBlocker already sent 403
+}
+
 // Security headers
 header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: SAMEORIGIN');

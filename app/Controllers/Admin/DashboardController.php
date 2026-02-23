@@ -484,12 +484,20 @@ class DashboardController extends Controller
         $f2bActive = false;
         $f2bDetails = '';
         if ($f2bInstalled) {
+            // Try fail2ban-client first (needs root), fall back to systemctl
             $output = @shell_exec('fail2ban-client status 2>/dev/null');
             if ($output && preg_match('/Number of jail:\s*(\d+)/i', $output, $m)) {
                 $f2bActive = (int)$m[1] > 0;
                 $f2bDetails = $m[1] . ' active jail' . ((int)$m[1] !== 1 ? 's' : '');
             } else {
-                $f2bDetails = 'Installed but not responding';
+                // Fall back to systemctl (works without root)
+                $svcStatus = trim(@shell_exec('systemctl is-active fail2ban 2>/dev/null') ?? '');
+                if ($svcStatus === 'active') {
+                    $f2bActive = true;
+                    $f2bDetails = 'Service running';
+                } else {
+                    $f2bDetails = 'Installed but not responding';
+                }
             }
         }
         $tools[] = [
