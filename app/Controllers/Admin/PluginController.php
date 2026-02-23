@@ -107,7 +107,8 @@ class PluginController extends Controller
         $result = $this->pluginManager->installFromZip($file['tmp_name']);
 
         if ($result['success']) {
-            setFlash('success', "Plugin '{$result['name']}' installed successfully");
+            $action = !empty($result['updated']) ? 'updated' : 'installed';
+            setFlash('success', "Plugin '{$result['name']}' {$action} successfully");
         } else {
             setFlash('error', $result['error']);
         }

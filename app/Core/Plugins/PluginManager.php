@@ -227,11 +227,8 @@ class PluginManager
 
         $slug = $manifest['slug'];
 
-        // Check if plugin already exists
-        if ($this->pluginModel->exists($slug)) {
-            $zip->close();
-            return ['success' => false, 'error' => 'Plugin already installed'];
-        }
+        // Check if plugin already exists (allow re-upload to update files)
+        $isUpdate = $this->pluginModel->exists($slug);
 
         // Extract to plugins directory
         $extractPath = BASE_PATH . '/content/plugins/' . $slug;
@@ -283,19 +280,25 @@ class PluginManager
             }
         }
 
-        // Register in database
-        $pluginId = $this->pluginModel->install($manifest);
+        // Register in database (skip if updating existing plugin)
+        if ($isUpdate) {
+            $existingPlugin = $this->pluginModel->getBySlug($slug);
+            $pluginId = $existingPlugin['id'];
+        } else {
+            $pluginId = $this->pluginModel->install($manifest);
 
-        if (!$pluginId) {
-            $this->removeDirectory($extractPath);
-            return ['success' => false, 'error' => 'Failed to register plugin in database'];
+            if (!$pluginId) {
+                $this->removeDirectory($extractPath);
+                return ['success' => false, 'error' => 'Failed to register plugin in database'];
+            }
         }
 
         return [
             'success' => true,
             'plugin_id' => $pluginId,
             'slug' => $slug,
-            'name' => $manifest['name']
+            'name' => $manifest['name'],
+            'updated' => $isUpdate
         ];
     }
 
