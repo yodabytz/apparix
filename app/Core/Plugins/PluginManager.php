@@ -242,12 +242,16 @@ class PluginManager
             $filename = $zip->getNameIndex($i);
 
             // Skip if not in plugin directory
-            if ($pluginDir && strpos($filename, $pluginDir) !== 0) {
+            if ($pluginDir && $pluginDir !== '.' && strpos($filename, $pluginDir) !== 0) {
                 continue;
             }
 
             // Get relative path
-            $relativePath = $pluginDir ? substr($filename, strlen($pluginDir) + 1) : $filename;
+            if ($pluginDir && $pluginDir !== '.') {
+                $relativePath = substr($filename, strlen($pluginDir) + 1);
+            } else {
+                $relativePath = $filename;
+            }
 
             if (empty($relativePath)) {
                 continue;
