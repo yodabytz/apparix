@@ -37,7 +37,19 @@ class DownloadController extends Controller
         }
 
         $download = $result['download'];
-        $filePath = BASE_PATH . '/storage/downloads/' . $download['download_file'];
+        $safeName = basename($download['download_file']);
+        $filePath = BASE_PATH . '/storage/downloads/' . $safeName;
+
+        // Verify file is within allowed directory (prevent path traversal)
+        $realPath = realpath($filePath);
+        $allowedDir = realpath(BASE_PATH . '/storage/downloads');
+        if ($realPath === false || $allowedDir === false || strpos($realPath, $allowedDir) !== 0) {
+            $this->render('download.error', [
+                'title' => 'Download Error',
+                'error' => 'File not found. Please contact support.'
+            ]);
+            return;
+        }
 
         if (!file_exists($filePath)) {
             $this->render('download.error', [

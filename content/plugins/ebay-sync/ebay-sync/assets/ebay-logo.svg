@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <rect width="100" height="100" rx="12" fill="#ffffff"/>
+  <g font-family="Arial, sans-serif" font-weight="bold" font-size="28">
+    <text x="10" y="58" fill="#e53238">e</text>
+    <text x="28" y="58" fill="#0064d2">b</text>
+    <text x="48" y="58" fill="#f5af02">a</text>
+    <text x="68" y="58" fill="#86b817">y</text>
+  </g>
+</svg>
