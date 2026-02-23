@@ -220,10 +220,11 @@ function installUpdate() {
 
             setTimeout(() => {
                 document.getElementById('installProgress').style.display = 'none';
-                showStatus('Successfully updated to v' + data.version + '! Reloading page...', 'success');
+                showStatus('Successfully updated to v' + data.version + '! Checking for more updates...', 'success');
 
+                // Auto-check for more updates after a successful install
                 setTimeout(() => {
-                    window.location.reload();
+                    checkForUpdates();
                 }, 2000);
             }, 1000);
         } else {

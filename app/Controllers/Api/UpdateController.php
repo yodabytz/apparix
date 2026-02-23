@@ -79,10 +79,10 @@ class UpdateController extends Controller
             }
         }
 
-        // Get latest version available for this edition
-        $latestRelease = $this->getLatestRelease($licenseInfo['edition'], $phpVersion);
+        // Get the next sequential version (step-by-step updates)
+        $nextRelease = $this->getNextRelease($currentVersion, $licenseInfo['edition'], $phpVersion);
 
-        if (!$latestRelease) {
+        if (!$nextRelease) {
             $this->jsonResponse([
                 'success' => true,
                 'update_available' => false,
@@ -92,31 +92,26 @@ class UpdateController extends Controller
             return;
         }
 
-        // Compare versions
-        $updateAvailable = version_compare($latestRelease['version'], $currentVersion, '>');
-
         $response = [
             'success' => true,
-            'update_available' => $updateAvailable,
+            'update_available' => true,
             'current_version' => $currentVersion,
-            'latest_version' => $latestRelease['version'],
+            'latest_version' => $nextRelease['version'],
             'edition' => $licenseInfo['edition'],
             'edition_name' => $this->getEditionName($licenseInfo['edition'])
         ];
 
-        if ($updateAvailable) {
-            $response['update'] = [
-                'version' => $latestRelease['version'],
-                'release_type' => $latestRelease['release_type'],
-                'release_notes' => $latestRelease['release_notes'],
-                'changelog' => $latestRelease['changelog'],
-                'file_size' => $latestRelease['file_size'],
-                'file_size_formatted' => $this->formatBytes($latestRelease['file_size']),
-                'released_at' => $latestRelease['released_at'],
-                'min_php_version' => $latestRelease['min_php_version'],
-                'download_url' => '/api/updates/download'
-            ];
-        }
+        $response['update'] = [
+            'version' => $nextRelease['version'],
+            'release_type' => $nextRelease['release_type'],
+            'release_notes' => $nextRelease['release_notes'],
+            'changelog' => $nextRelease['changelog'],
+            'file_size' => $nextRelease['file_size'],
+            'file_size_formatted' => $this->formatBytes($nextRelease['file_size']),
+            'released_at' => $nextRelease['released_at'],
+            'min_php_version' => $nextRelease['min_php_version'],
+            'download_url' => '/api/updates/download'
+        ];
 
         $this->jsonResponse($response);
     }
@@ -364,18 +359,31 @@ class UpdateController extends Controller
     }
 
     /**
-     * Get latest release for edition
+     * Get the next sequential release after the current version.
+     * Returns one version at a time so customers step through updates
+     * in order and never skip intermediate releases.
      */
-    private function getLatestRelease(string $edition, string $phpVersion): ?array
+    private function getNextRelease(string $currentVersion, string $edition, string $phpVersion): ?array
     {
+        // Parse current version
+        $parts = explode('.', $currentVersion);
+        $curMajor = (int)($parts[0] ?? 0);
+        $curMinor = (int)($parts[1] ?? 0);
+        $curPatch = (int)($parts[2] ?? 0);
+
         return $this->db->selectOne(
             "SELECT * FROM releases
              WHERE is_active = 1
              AND release_type = 'stable'
              AND min_php_version <= ?
-             ORDER BY version_major DESC, version_minor DESC, version_patch DESC
+             AND (
+                 version_major > ? OR
+                 (version_major = ? AND version_minor > ?) OR
+                 (version_major = ? AND version_minor = ? AND version_patch > ?)
+             )
+             ORDER BY version_major ASC, version_minor ASC, version_patch ASC
              LIMIT 1",
-            [$phpVersion]
+            [$phpVersion, $curMajor, $curMajor, $curMinor, $curMajor, $curMinor, $curPatch]
         );
     }
 
