@@ -445,6 +445,22 @@ class DashboardController extends Controller
         // === SECURITY STATUS ===
         $securityStatus = $this->getSecurityStatus();
 
+        // === BACKUP HEALTH ===
+        $backupNotifications = [];
+        try {
+            $backupPluginRow = $db->selectOne(
+                "SELECT * FROM plugins WHERE slug = 'backup' AND is_active = 1"
+            );
+            if ($backupPluginRow) {
+                require_once $basePath . '/content/plugins/backup/BackupPlugin.php';
+                $bkPlugin = new \Plugins\Backup\BackupPlugin();
+                $bkPlugin->initialize();
+                $backupNotifications = $bkPlugin->getNotifications();
+            }
+        } catch (\Exception $e) {
+            // Backup plugin not available — skip silently
+        }
+
         $this->render('admin.dashboard.index', [
             'title' => 'Admin Dashboard',
             'admin' => $this->admin,
@@ -469,6 +485,7 @@ class DashboardController extends Controller
             'systemHealth' => $systemHealth,
             'setupTasks' => $setupTasks,
             'securityStatus' => $securityStatus,
+            'backupNotifications' => $backupNotifications,
         ], 'admin');
     }
 

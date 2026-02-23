@@ -21,6 +21,25 @@
 </div>
 <?php endif; ?>
 
+<?php if (!empty($backupNotifications)): ?>
+<div style="margin-bottom: 24px;">
+    <h3 style="margin: 0 0 12px; font-size: 1rem; display: flex; align-items: center; gap: 8px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Backup Health
+    </h3>
+    <?php foreach ($backupNotifications as $bkn): ?>
+    <div style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; padding: 10px 14px; border-radius: 8px; font-size: 0.875rem; <?php echo $bkn['type'] === 'error' ? 'background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5;' : 'background: #fef3c7; color: #92400e; border: 1px solid #fcd34d;'; ?>">
+        <span style="flex-shrink: 0; margin-top: 1px;"><?php echo $bkn['type'] === 'error' ? '&#10060;' : '&#9888;'; ?></span>
+        <div>
+            <strong><?php echo escape($bkn['title']); ?></strong>
+            <span style="opacity: 0.85;"> &mdash; <?php echo escape($bkn['message']); ?></span>
+            <a href="/admin/plugins/settings?slug=backup" style="margin-left: 6px; font-size: 0.8rem;">Manage Backups &rarr;</a>
+        </div>
+    </div>
+    <?php endforeach; ?>
+</div>
+<?php endif; ?>
+
 <?php if (!empty($setupTasks)): ?>
 <div style="margin-bottom: 24px; background: var(--admin-card-bg, #fff); border-radius: 12px; padding: 20px 24px; border: 1px solid var(--admin-border, #e2e8f0);">
     <h3 style="margin: 0 0 4px; font-size: 1.05rem; display: flex; align-items: center; gap: 8px;">

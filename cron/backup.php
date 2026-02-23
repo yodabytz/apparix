@@ -4,7 +4,7 @@
  * Apparix Backup Cron Job
  *
  * Run every 30 minutes to check if scheduled backup is needed:
- * *!/30 * * * * php /var/www/SITEPATH/cron/backup.php >> /var/log/apparix-backup.log 2>&1
+ * */30 * * * * php /var/www/SITEPATH/cron/backup.php >> /var/log/apparix-backup.log 2>&1
  *
  * This script checks if a scheduled backup should run based on plugin settings.
  * It uses low-priority execution to minimize server impact.
@@ -52,7 +52,8 @@ try {
         exit(0);
     }
 
-    echo "Starting scheduled backup...\n";
+    $tier = $backupPlugin->getEffectiveTier();
+    echo "Starting scheduled backup (tier: {$tier})...\n";
 
     // Create backup (CLI mode allows more time and larger files)
     $result = $backupPlugin->createBackup(true);
@@ -61,7 +62,19 @@ try {
         echo "Backup completed successfully!\n";
         echo "  Filename: {$result['filename']}\n";
         echo "  Size: {$result['size_formatted']}\n";
+        echo "  Tier: {$result['tier']}\n";
         echo "  Duration: {$result['duration']}s\n";
+
+        // Auto-upload to B2 if configured
+        if ($backupPlugin->isB2Configured() && $backupPlugin->getSetting('b2_auto_upload')) {
+            echo "Uploading to Backblaze B2...\n";
+            $uploadResult = $backupPlugin->uploadToB2($result['filepath']);
+            if ($uploadResult['success']) {
+                echo "  Cloud upload successful.\n";
+            } else {
+                echo "  Cloud upload FAILED: " . $uploadResult['error'] . "\n";
+            }
+        }
     } else {
         echo "Backup failed!\n";
         foreach ($result['errors'] as $error) {

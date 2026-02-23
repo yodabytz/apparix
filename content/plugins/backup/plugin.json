@@ -1,11 +1,11 @@
 {
     "slug": "backup",
     "name": "Apparix Backup",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "type": "utility",
-    "description": "Lightweight backup solution for your Apparix store. Backs up database, code, and settings without impacting server performance.",
+    "description": "Full backup solution with Backblaze B2 cloud storage, tiered backup levels, AES-256 encrypted .env, health notifications, and size estimates. Free tier included.",
     "author": "Apparix",
-    "author_url": "https://apparix.com",
+    "author_url": "https://apparix.app",
     "main_class": "BackupPlugin",
     "icon": "backup-icon.svg",
     "requires": {
@@ -14,34 +14,21 @@
     },
     "settings": [
         {
+            "key": "backup_tier",
+            "label": "Backup Tier",
+            "type": "select",
+            "options": { "essential": "Essential", "standard": "Standard", "complete": "Complete" },
+            "default": "essential",
+            "description": "Backup tier determines what is included. Higher tiers require higher license editions."
+        },
+        {
             "key": "retention_count",
-            "label": "Backup Retention",
+            "label": "Local Backup Retention",
             "type": "number",
             "default": 5,
             "min": 1,
             "max": 30,
-            "description": "Number of backups to keep (older backups are automatically deleted)"
-        },
-        {
-            "key": "include_database",
-            "label": "Include Database",
-            "type": "checkbox",
-            "default": true,
-            "description": "Backup all database tables and data"
-        },
-        {
-            "key": "include_code",
-            "label": "Include Code Files",
-            "type": "checkbox",
-            "default": true,
-            "description": "Backup PHP, JS, CSS files (excludes images and uploads)"
-        },
-        {
-            "key": "include_config",
-            "label": "Include Configuration",
-            "type": "checkbox",
-            "default": true,
-            "description": "Backup settings, themes, and plugin configurations"
+            "description": "Number of local backups to keep"
         },
         {
             "key": "auto_backup",
@@ -54,36 +41,96 @@
             "key": "backup_schedule",
             "label": "Backup Schedule",
             "type": "select",
-            "options": {
-                "hourly": "Hourly",
-                "daily": "Daily",
-                "weekly": "Weekly"
-            },
+            "options": { "hourly": "Hourly", "daily": "Daily", "weekly": "Weekly" },
             "default": "daily",
             "description": "How often to create automatic backups"
+        },
+        {
+            "key": "b2_enabled",
+            "label": "Enable Backblaze B2",
+            "type": "checkbox",
+            "default": false,
+            "description": "Enable cloud storage via Backblaze B2 S3-compatible API"
+        },
+        {
+            "key": "b2_key_id",
+            "label": "B2 Key ID",
+            "type": "text",
+            "default": "",
+            "description": "Backblaze B2 Application Key ID"
+        },
+        {
+            "key": "b2_bucket_name",
+            "label": "B2 Bucket Name",
+            "type": "text",
+            "default": "",
+            "description": "Name of the B2 bucket for backups"
+        },
+        {
+            "key": "b2_endpoint",
+            "label": "B2 S3 Endpoint",
+            "type": "text",
+            "default": "",
+            "description": "S3-compatible endpoint (e.g. s3.us-west-004.backblazeb2.com)"
+        },
+        {
+            "key": "b2_auto_upload",
+            "label": "Auto-upload to B2",
+            "type": "checkbox",
+            "default": false,
+            "description": "Automatically upload backups to B2 after creation"
+        },
+        {
+            "key": "b2_retention_count",
+            "label": "Cloud Retention",
+            "type": "number",
+            "default": 10,
+            "min": 1,
+            "max": 100,
+            "description": "Number of cloud backups to keep"
+        },
+        {
+            "key": "notification_stale_days",
+            "label": "Stale Backup Warning",
+            "type": "number",
+            "default": 7,
+            "min": 1,
+            "max": 90,
+            "description": "Warn if no backup within this many days"
         }
     ],
     "features": [
+        "Tiered backups: Essential (free), Standard (Pro+), Complete (Enterprise+)",
+        "Backblaze B2 cloud storage integration (S3-compatible)",
+        "AES-256-CBC encrypted .env backup",
         "Database backup with streaming export (low memory usage)",
-        "Code and configuration backup",
-        "Automatic backup rotation",
-        "One-click manual backup from admin panel",
-        "Download backups directly",
-        "Excludes images and large files to save space",
-        "Resource-friendly with yield control",
-        "Protected backup storage"
-    ],
-    "excluded_from_backup": [
-        "Product images",
-        "Uploaded files",
-        "node_modules",
-        "vendor directory",
-        "Session files",
-        "Log files",
-        "Cache files"
+        "Product image and upload backup (Standard+ tier)",
+        "Full code backup (Complete tier)",
+        "Health notifications and stale backup warnings",
+        "Size estimates per tier before creating backups",
+        "One-click upload to cloud storage",
+        "Cloud backup management (list, download, delete)",
+        "Automatic cloud retention policy",
+        "Automatic local retention policy",
+        "Scheduled backups via cron",
+        "Free Backblaze B2 signup link in settings",
+        "Dashboard health integration"
     ],
     "hooks": ["admin_menu", "cron_backup"],
     "changelog": {
+        "2.0.0": [
+            "Added Backblaze B2 cloud storage integration",
+            "Added tiered backup system (Essential, Standard, Complete)",
+            "Added AES-256-CBC encrypted .env backup",
+            "Added health notifications (stale backup, disk space, B2 errors)",
+            "Added size estimates per backup tier",
+            "Added cloud backup management (upload, download, delete)",
+            "Added auto-upload to B2 after backup creation",
+            "Added cloud retention policy",
+            "Added dashboard health warnings integration",
+            "Fixed settings view rendering (output buffering)",
+            "Redesigned admin settings UI with tier cards and cloud panel"
+        ],
         "1.0.0": [
             "Initial release",
             "Database streaming export",
