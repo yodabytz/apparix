@@ -31,6 +31,10 @@ abstract class Model
      */
     public function findBy(string $field, $value): array|false
     {
+        // Validate field name to prevent SQL injection
+        if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $field)) {
+            throw new \InvalidArgumentException("Invalid field name: {$field}");
+        }
         return $this->db->selectOne(
             "SELECT * FROM {$this->table} WHERE {$field} = ?",
             [$value]
@@ -42,11 +46,17 @@ abstract class Model
      */
     public function getAll(string $orderBy = 'id DESC', ?int $limit = null): array
     {
-        $query = "SELECT * FROM {$this->table} ORDER BY {$orderBy}";
-        if ($limit) {
-            $query .= " LIMIT {$limit}";
+        // Validate orderBy to prevent SQL injection (allow column names, ASC/DESC, commas)
+        if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_,. ]*(ASC|DESC)?$/i', trim($orderBy))) {
+            $orderBy = 'id DESC';
         }
-        return $this->db->select($query);
+        $query = "SELECT * FROM {$this->table} ORDER BY {$orderBy}";
+        $params = [];
+        if ($limit) {
+            $query .= " LIMIT ?";
+            $params[] = $limit;
+        }
+        return $this->db->select($query, $params);
     }
 
     /**
@@ -73,6 +83,12 @@ abstract class Model
      */
     public function create(array $data): int|string
     {
+        // Validate column names to prevent SQL injection
+        foreach (array_keys($data) as $col) {
+            if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $col)) {
+                throw new \InvalidArgumentException("Invalid column name: {$col}");
+            }
+        }
         $columns = implode(', ', array_keys($data));
         $placeholders = implode(', ', array_fill(0, count($data), '?'));
         $query = "INSERT INTO {$this->table} ({$columns}) VALUES ({$placeholders})";
@@ -84,6 +100,12 @@ abstract class Model
      */
     public function update(int $id, array $data): int
     {
+        // Validate column names to prevent SQL injection
+        foreach (array_keys($data) as $col) {
+            if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $col)) {
+                throw new \InvalidArgumentException("Invalid column name: {$col}");
+            }
+        }
         $set = implode(', ', array_map(fn($k) => "{$k} = ?", array_keys($data)));
         $values = array_values($data);
         $values[] = $id;

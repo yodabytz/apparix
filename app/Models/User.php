@@ -237,16 +237,27 @@ class User extends Model
      */
     public function deleteUser(int $id): bool
     {
-        // Delete related data first
-        $this->db->update("DELETE FROM favorites WHERE user_id = ?", [$id]);
-        $this->db->update("DELETE FROM addresses WHERE user_id = ?", [$id]);
-        $this->db->update("DELETE FROM coupon_usage WHERE user_id = ?", [$id]);
-        $this->db->update("DELETE FROM stock_notifications WHERE user_id = ?", [$id]);
+        try {
+            $this->db->beginTransaction();
 
-        // Set orders to have null user_id (keep order history)
-        $this->db->update("UPDATE orders SET user_id = NULL WHERE user_id = ?", [$id]);
+            // Delete related data first
+            $this->db->update("DELETE FROM favorites WHERE user_id = ?", [$id]);
+            $this->db->update("DELETE FROM addresses WHERE user_id = ?", [$id]);
+            $this->db->update("DELETE FROM coupon_usage WHERE user_id = ?", [$id]);
+            $this->db->update("DELETE FROM stock_notifications WHERE user_id = ?", [$id]);
 
-        // Delete the user
-        return $this->db->update("DELETE FROM {$this->table} WHERE id = ?", [$id]) > 0;
+            // Set orders to have null user_id (keep order history)
+            $this->db->update("UPDATE orders SET user_id = NULL WHERE user_id = ?", [$id]);
+
+            // Delete the user
+            $result = $this->db->update("DELETE FROM {$this->table} WHERE id = ?", [$id]) > 0;
+
+            $this->db->commit();
+            return $result;
+        } catch (\Exception $e) {
+            $this->db->rollback();
+            error_log("deleteUser error: " . $e->getMessage());
+            return false;
+        }
     }
 }

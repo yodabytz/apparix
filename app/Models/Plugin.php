@@ -14,11 +14,21 @@ class Plugin extends Model
      */
     public function getAll(string $orderBy = 'type, name', ?int $limit = null): array
     {
-        $query = "SELECT * FROM {$this->table} ORDER BY {$orderBy}";
+        // Whitelist allowed ORDER BY values to prevent SQL injection
+        $allowedOrderBy = [
+            'type, name' => 'type, name',
+            'name' => 'name',
+            'created_at' => 'created_at DESC',
+        ];
+        $safeOrderBy = $allowedOrderBy[$orderBy] ?? 'type, name';
+
+        $query = "SELECT * FROM {$this->table} ORDER BY {$safeOrderBy}";
+        $params = [];
         if ($limit) {
-            $query .= " LIMIT {$limit}";
+            $query .= " LIMIT ?";
+            $params[] = $limit;
         }
-        return $this->db->select($query);
+        return $this->db->select($query, $params);
     }
 
     /**
@@ -171,9 +181,17 @@ class Plugin extends Model
             return false;
         }
 
+        // Validate slug to prevent path traversal
+        if (!preg_match('/^[a-zA-Z0-9_-]+$/', $plugin['slug'])) {
+            error_log("Plugin uninstall blocked: invalid slug '{$plugin['slug']}'");
+            return false;
+        }
+
         if ($removeFiles) {
-            $pluginPath = BASE_PATH . '/content/plugins/' . $plugin['slug'];
-            if (is_dir($pluginPath)) {
+            $pluginPath = realpath(BASE_PATH . '/content/plugins/' . $plugin['slug']);
+            $pluginsDir = realpath(BASE_PATH . '/content/plugins');
+            // Ensure resolved path is within plugins directory
+            if ($pluginPath && $pluginsDir && str_starts_with($pluginPath, $pluginsDir . '/') && is_dir($pluginPath)) {
                 $this->removeDirectory($pluginPath);
             }
         }

@@ -43,24 +43,7 @@ class HomeController extends Controller
     {
         $db = Database::getInstance();
 
-        // Check for test mode (only in dev or with secret param)
-        $testMode = isset($_GET['test']) && $_GET['test'] === 'socialproof2024';
-
-        if ($testMode) {
-            // Return fake test data
-            $this->json([
-                'success' => true,
-                'purchase' => [
-                    'first_name' => 'Sarah',
-                    'last_initial' => 'M',
-                    'product_name' => 'Test Product',
-                    'city' => 'New York',
-                    'state' => 'NY',
-                    'time_ago' => 'just now'
-                ]
-            ]);
-            return;
-        }
+        // Test mode removed for production security
 
         // Get a random recent purchase from last 5 hours only
         // Only completed orders (not cancelled/refunded)

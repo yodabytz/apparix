@@ -291,6 +291,13 @@ function sendEmail(string $to, string $subject, string $body, array $options = [
     $isHtml = $options['html'] ?? true;
     $replyTo = $options['replyTo'] ?? $fromEmail;
 
+    // Sanitize all header values to prevent CRLF injection
+    $to = str_replace(["\r", "\n"], '', $to);
+    $subject = str_replace(["\r", "\n"], '', $subject);
+    $fromEmail = str_replace(["\r", "\n"], '', $fromEmail);
+    $fromName = str_replace(["\r", "\n"], '', $fromName);
+    $replyTo = str_replace(["\r", "\n"], '', $replyTo);
+
     // Check if SMTP is enabled
     $smtpEnabled = setting('smtp_enabled') === '1';
 

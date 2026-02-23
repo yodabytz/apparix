@@ -203,19 +203,39 @@ class Coupon extends Model
     {
         $db = Database::getInstance();
 
-        // Insert usage record
-        $db->insert(
-            "INSERT INTO coupon_usage (discount_code_id, user_id, order_id) VALUES (?, ?, ?)",
-            [$couponId, $userId, $orderId]
-        );
+        try {
+            $db->beginTransaction();
 
-        // Increment uses count
-        $db->update(
-            "UPDATE {$this->table} SET uses = uses + 1 WHERE id = ?",
-            [$couponId]
-        );
+            // Re-check usage limit inside transaction to prevent race condition
+            $coupon = $db->selectOne(
+                "SELECT uses, max_uses FROM {$this->table} WHERE id = ? FOR UPDATE",
+                [$couponId]
+            );
 
-        return true;
+            if ($coupon && $coupon['max_uses'] > 0 && $coupon['uses'] >= $coupon['max_uses']) {
+                $db->rollback();
+                return false;
+            }
+
+            // Insert usage record
+            $db->insert(
+                "INSERT INTO coupon_usage (discount_code_id, user_id, order_id) VALUES (?, ?, ?)",
+                [$couponId, $userId, $orderId]
+            );
+
+            // Increment uses count
+            $db->update(
+                "UPDATE {$this->table} SET uses = uses + 1 WHERE id = ?",
+                [$couponId]
+            );
+
+            $db->commit();
+            return true;
+        } catch (\Exception $e) {
+            $db->rollback();
+            error_log("Coupon recordUsage error: " . $e->getMessage());
+            return false;
+        }
     }
 
     /**

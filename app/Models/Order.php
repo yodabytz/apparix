@@ -290,10 +290,11 @@ class Order extends Model
      */
     public function markDelivered(int $orderId): bool
     {
-        return $this->query(
+        $db = Database::getInstance();
+        return $db->update(
             "UPDATE {$this->table} SET status = 'delivered' WHERE id = ?",
             [$orderId]
-        );
+        ) >= 0;
     }
 
     /**
@@ -357,11 +358,21 @@ class Order extends Model
     {
         $db = Database::getInstance();
 
-        // Delete order items first
-        $db->update("DELETE FROM order_items WHERE order_id = ?", [$orderId]);
+        try {
+            $db->beginTransaction();
 
-        // Delete the order
-        $result = $db->update("DELETE FROM {$this->table} WHERE id = ?", [$orderId]);
-        return $result >= 0;
+            // Delete order items first
+            $db->update("DELETE FROM order_items WHERE order_id = ?", [$orderId]);
+
+            // Delete the order
+            $result = $db->update("DELETE FROM {$this->table} WHERE id = ?", [$orderId]);
+
+            $db->commit();
+            return $result >= 0;
+        } catch (\Exception $e) {
+            $db->rollback();
+            error_log("deleteOrder error: " . $e->getMessage());
+            return false;
+        }
     }
 }

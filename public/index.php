@@ -174,7 +174,8 @@ try {
     Database::getInstance();
 } catch (Exception $e) {
     http_response_code(500);
-    die('Database connection failed: ' . htmlspecialchars($e->getMessage()));
+    error_log('Database connection failed: ' . $e->getMessage());
+    die('Service temporarily unavailable. Please try again later.');
 }
 
 // License validation - check if valid license key exists
@@ -388,9 +389,6 @@ $router->get('/api/updates/version', 'Api\\UpdateController', 'version');
 $router->post('/api/updates/check', 'Api\\UpdateController', 'check');
 $router->post('/api/updates/download', 'Api\\UpdateController', 'download');
 $router->post('/api/updates/report', 'Api\\UpdateController', 'report');
-
-// Help chat test page (temporary - remove after testing)
-$router->get('/test-help-chat', 'PageController', 'testHelpChat');
 
 // Sitemap
 $router->get('/sitemap.xml', 'SitemapController', 'index');

@@ -136,7 +136,9 @@ class CheckoutController extends Controller
         }
 
         // Calculate total (same formula as process())
-        $total = $subtotal + $shippingCost - $autoDiscountTotal - $discountAmount;
+        // Cap discounts so total never goes below zero
+        $totalDiscount = min($autoDiscountTotal + $discountAmount, $subtotal + $shippingCost);
+        $total = $subtotal + $shippingCost - $totalDiscount;
 
         // Handle free orders - no payment needed
         if ($total <= 0) {
@@ -444,7 +446,9 @@ class CheckoutController extends Controller
             $autoDiscountAmount = array_sum(array_column($autoDiscounts, 'amount'));
         }
 
-        $total = $subtotal + $tax + $shippingCost - $autoDiscountAmount - $discountAmount;
+        // Cap discounts so total never goes below zero
+        $totalDiscount = min($autoDiscountAmount + $discountAmount, $subtotal + $tax + $shippingCost);
+        $total = $subtotal + $tax + $shippingCost - $totalDiscount;
 
         // Check if this is a free order
         $isFreeOrder = ($total <= 0);

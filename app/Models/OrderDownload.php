@@ -88,14 +88,14 @@ class OrderDownload extends Model
      */
     public function recordDownload(int $id, ?string $ipAddress = null): bool
     {
-        return $this->query(
+        return $this->db->update(
             "UPDATE {$this->table}
              SET download_count = download_count + 1,
                  last_download_at = NOW(),
                  ip_address = ?
              WHERE id = ?",
             [$ipAddress, $id]
-        ) !== false;
+        ) >= 0;
     }
 
     /**
@@ -134,12 +134,12 @@ class OrderDownload extends Model
      */
     public function extendExpiration(int $id, int $days): bool
     {
-        return $this->query(
+        return $this->db->update(
             "UPDATE {$this->table}
              SET expires_at = DATE_ADD(COALESCE(expires_at, NOW()), INTERVAL ? DAY)
              WHERE id = ?",
             [$days, $id]
-        ) !== false;
+        ) >= 0;
     }
 
     /**
