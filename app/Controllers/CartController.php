@@ -261,7 +261,46 @@ class CartController extends Controller
             return $this->json(['error' => 'Invalid email'], 400);
         }
 
+        // Layer 1: Block disposable/bot email domains
+        $emailDomain = strtolower(substr($email, strpos($email, '@') + 1));
+        $blockedDomains = [
+            'storebotmail.joonix.net', 'joonix.net',
+            'mailinator.com', 'mailnator.com', 'mailnesia.com', 'mailsac.com',
+            'guerrillamail.com', 'guerrillamail.info', 'guerrillamail.net', 'guerrillamail.org', 'guerrillamailblock.com', 'grr.la',
+            'tempmail.com', 'temp-mail.org', 'temp-mail.com', 'temp-mail.de', 'temp-mail.lol', 'tempmail.us', 'tempmail.ninja', 'tempmail.plus', 'tempmail.io.vn', 'tempmail.world', 'tempmail.eu',
+            'yopmail.com', 'yopmail.net',
+            'throwaway.email', 'throwawaymail.com',
+            'sharklasers.com', 'dispostable.com', 'discard.email',
+            '10minutemail.com', '20minutemail.com', '30minutemail.com',
+            'maildrop.cc', 'trashmail.com', 'trashmail.de', 'trash-mail.com', 'mytrashmail.com',
+            'fakeinbox.com', 'spam4.me', 'spam.la', 'spam.ceo',
+            'mail.tm', 'mailbox.zip', 'emailnator.com', 'tempomail.org',
+            'temporary-mail.net', 'disposable.cf',
+        ];
+        if (in_array($emailDomain, $blockedDomains)) {
+            return $this->json(['success' => true]);
+        }
+
+        // Layer 2: reCAPTCHA v3 verification
+        $recaptchaToken = trim($this->post('recaptcha_token', ''));
+        if ($recaptchaToken) {
+            $recaptchaResult = \App\Core\ReCaptcha::verify($recaptchaToken, 'cart_email_capture');
+            if (!$recaptchaResult['success'] || ($recaptchaResult['score'] ?? 1.0) < 0.3) {
+                return $this->json(['success' => true]);
+            }
+        }
+
         $sessionId = session_id();
+        $db = \App\Core\Database::getInstance();
+
+        // Layer 3: One email per session — block bots cycling through emails
+        $existingEmail = $db->selectOne(
+            "SELECT email FROM cart WHERE session_id = ? AND email IS NOT NULL LIMIT 1",
+            [$sessionId]
+        );
+        if ($existingEmail && $existingEmail['email'] !== $email) {
+            return $this->json(['success' => true]);
+        }
 
         // Stamp email on all cart rows for this session
         $abandonedCart = new AbandonedCart();

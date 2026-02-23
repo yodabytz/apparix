@@ -1015,20 +1015,35 @@ async function removeCoupon() {
     }
 }
 
-// Capture email for abandoned cart recovery
+// Capture email for abandoned cart recovery (with reCAPTCHA v3)
 (function() {
     const emailField = document.getElementById('email');
     if (emailField) {
         let lastCaptured = '';
         emailField.addEventListener('blur', function() {
             const email = this.value.trim();
-            if (email && email !== lastCaptured && email.includes('@')) {
+            if (email && email !== lastCaptured && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
                 lastCaptured = email;
-                fetch('/cart/capture-email', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest'},
-                    body: 'email=' + encodeURIComponent(email) + '&csrf_token=' + encodeURIComponent(document.querySelector('input[name="csrf_token"]').value)
-                }).catch(function() {});
+                const sendCapture = function(token) {
+                    let body = '_csrf_token=' + encodeURIComponent(csrfToken)
+                             + '&email=' + encodeURIComponent(email);
+                    if (token) body += '&recaptcha_token=' + encodeURIComponent(token);
+                    fetch('/cart/capture-email', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest'},
+                        body: body
+                    }).catch(function() {});
+                };
+                if (typeof recaptchaSiteKey !== 'undefined' && recaptchaSiteKey
+                    && typeof grecaptcha !== 'undefined') {
+                    grecaptcha.ready(function() {
+                        grecaptcha.execute(recaptchaSiteKey, {action: 'cart_email_capture'})
+                            .then(sendCapture)
+                            .catch(function() { sendCapture(''); });
+                    });
+                } else {
+                    sendCapture('');
+                }
             }
         });
     }

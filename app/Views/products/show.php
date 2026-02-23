@@ -415,7 +415,18 @@
         <?php if ($product['description']): ?>
             <div class="description-section-full">
                 <h2>Description</h2>
-                <div class="description-text"><?php echo str_replace('✤', '<span class="bullet-symbol">✤</span>', nl2br(escape($product['description']))); ?></div>
+                <div class="description-text"><?php
+                    $desc = $product['description'];
+                    // Convert literal \n to real newlines
+                    $desc = str_replace('\n', "\n", $desc);
+                    // Allow safe HTML tags, strip everything dangerous
+                    $desc = strip_tags($desc, '<h2><h3><h4><h5><p><br><ul><ol><li><strong><em><b><i><a><code>');
+                    // Convert remaining plain newlines to <br> for non-HTML descriptions
+                    $desc = nl2br($desc);
+                    // Decorative bullet replacement
+                    $desc = str_replace('✤', '<span class="bullet-symbol">✤</span>', $desc);
+                    echo $desc;
+                ?></div>
             </div>
         <?php endif; ?>
 
