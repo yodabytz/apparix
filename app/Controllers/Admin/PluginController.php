@@ -252,6 +252,13 @@ class PluginController extends Controller
      */
     public function saveSettings(): void
     {
+        // If plugin sends its own custom action (not the generic settings form),
+        // delegate to the settings view which handles POST internally
+        if ($this->post('action') && !$this->post('settings')) {
+            $this->settings();
+            return;
+        }
+
         $this->requireValidCSRF();
 
         $slug = $this->post('slug');
