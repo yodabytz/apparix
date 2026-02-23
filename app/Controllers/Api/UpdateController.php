@@ -190,9 +190,9 @@ class UpdateController extends Controller
             return;
         }
 
-        // Check if file exists
-        $filePath = BASE_PATH . '/storage/updates/' . $release['update_file'];
-        if (!file_exists($filePath)) {
+        // Check if file exists and is readable
+        $filePath = BASE_PATH . '/storage/updates/' . basename($release['update_file']);
+        if (!is_readable($filePath)) {
             header('Content-Type: application/json');
             $this->jsonResponse([
                 'success' => false,
@@ -220,10 +220,10 @@ class UpdateController extends Controller
 
         header('Content-Description: File Transfer');
         header('Content-Type: application/gzip');
-        header('Content-Disposition: attachment; filename="' . $release['update_file'] . '"');
+        header('Content-Disposition: attachment; filename="' . basename($release['update_file']) . '"');
         header('Content-Transfer-Encoding: binary');
         header('Content-Length: ' . $filesize);
-        header('X-File-Hash: ' . $release['file_hash']);
+        header('X-File-Hash: ' . preg_replace('/[^a-fA-F0-9]/', '', $release['file_hash']));
         header('X-Version: ' . $release['version']);
         header('Cache-Control: must-revalidate');
         header('Pragma: public');
@@ -371,11 +371,29 @@ class UpdateController extends Controller
         $curMinor = (int)($parts[1] ?? 0);
         $curPatch = (int)($parts[2] ?? 0);
 
+        // Edition hierarchy for access check
+        $hierarchy = ['S' => 1, 'P' => 2, 'E' => 3, 'D' => 4, 'U' => 5];
+        $userLevel = $hierarchy[$edition] ?? 0;
+        $accessibleEditions = array_keys(array_filter($hierarchy, fn($lvl) => $lvl <= $userLevel));
+
+        if (empty($accessibleEditions)) {
+            return null;
+        }
+
+        $placeholders = implode(',', array_fill(0, count($accessibleEditions), '?'));
+
+        $params = array_merge(
+            [$phpVersion],
+            $accessibleEditions,
+            [$curMajor, $curMajor, $curMinor, $curMajor, $curMinor, $curPatch]
+        );
+
         return $this->db->selectOne(
             "SELECT * FROM releases
              WHERE is_active = 1
              AND release_type = 'stable'
              AND min_php_version <= ?
+             AND min_edition IN ($placeholders)
              AND (
                  version_major > ? OR
                  (version_major = ? AND version_minor > ?) OR
@@ -383,7 +401,7 @@ class UpdateController extends Controller
              )
              ORDER BY version_major ASC, version_minor ASC, version_patch ASC
              LIMIT 1",
-            [$phpVersion, $curMajor, $curMajor, $curMinor, $curMajor, $curMinor, $curPatch]
+            $params
         );
     }
 

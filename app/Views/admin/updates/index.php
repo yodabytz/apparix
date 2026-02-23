@@ -7,7 +7,7 @@
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
         <div>
             <h3 style="margin: 0 0 0.5rem;"><?php echo escape($versionInfo['product'] ?? 'Apparix'); ?></h3>
-            <div style="font-size: 2rem; font-weight: 700; color: var(--admin-primary);">
+            <div style="font-size: 2rem; font-weight: 700; color: var(--admin-primary);" id="currentVersionDisplay">
                 v<?php echo escape($versionInfo['version'] ?? '1.0.0'); ?>
             </div>
             <div style="color: var(--admin-text-light); font-size: 0.875rem; margin-top: 0.25rem;">
@@ -179,6 +179,7 @@ function installUpdate() {
     hideAllStatus();
     document.getElementById('updateAvailable').style.display = 'none';
     document.getElementById('installProgress').style.display = 'block';
+    document.getElementById('installBtn').disabled = true;
 
     const progressBar = document.getElementById('progressBar');
     const progressText = document.getElementById('progressText');
@@ -218,8 +219,14 @@ function installUpdate() {
             progressBar.style.width = '100%';
             progressText.textContent = 'Update complete!';
 
+            // Update the version display immediately
+            if (data.version) {
+                document.getElementById('currentVersionDisplay').textContent = 'v' + data.version;
+            }
+
             setTimeout(() => {
                 document.getElementById('installProgress').style.display = 'none';
+                document.getElementById('installBtn').disabled = false;
                 showStatus('Successfully updated to v' + data.version + '! Checking for more updates...', 'success');
 
                 // Auto-check for more updates after a successful install
@@ -229,12 +236,14 @@ function installUpdate() {
             }, 1000);
         } else {
             document.getElementById('installProgress').style.display = 'none';
+            document.getElementById('installBtn').disabled = false;
             showStatus('Update failed: ' + (data.error || 'Unknown error'), 'error');
         }
     })
     .catch(err => {
         clearInterval(stageInterval);
         document.getElementById('installProgress').style.display = 'none';
+        document.getElementById('installBtn').disabled = false;
         showStatus('Error: ' + err.message, 'error');
     });
 }
@@ -295,6 +304,7 @@ function hideAllStatus() {
     document.getElementById('updateStatus').style.display = 'none';
     document.getElementById('updateAvailable').style.display = 'none';
     document.getElementById('upToDate').style.display = 'none';
+    document.getElementById('installProgress').style.display = 'none';
 }
 
 function ucfirst(str) {

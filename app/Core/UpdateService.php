@@ -136,12 +136,14 @@ class UpdateService
             // Step 1: Create backup
             $backupResult = $this->createBackup();
             if (!$backupResult['success']) {
+                error_reporting($previousErrorReporting);
                 return $backupResult;
             }
 
             // Step 2: Download update
             $downloadResult = $this->downloadUpdate($targetVersion);
             if (!$downloadResult['success']) {
+                error_reporting($previousErrorReporting);
                 return $downloadResult;
             }
 
@@ -149,6 +151,7 @@ class UpdateService
             $extractResult = $this->extractUpdate($downloadResult['file']);
             if (!$extractResult['success']) {
                 $this->cleanupTemp();
+                error_reporting($previousErrorReporting);
                 return $extractResult;
             }
 
@@ -157,6 +160,7 @@ class UpdateService
             if (!$applyResult['success']) {
                 $this->restoreBackup($backupResult['backup_path']);
                 $this->cleanupTemp();
+                error_reporting($previousErrorReporting);
                 return $applyResult;
             }
 
@@ -372,8 +376,8 @@ class UpdateService
     {
         // Detect if update files are nested in a single subdirectory
         // Only descend if that single dir contains typical app structure
-        $dirs = glob($sourcePath . '/*', GLOB_ONLYDIR);
-        $files = glob($sourcePath . '/*');
+        $dirs = glob($sourcePath . '/*', GLOB_ONLYDIR) ?: [];
+        $files = glob($sourcePath . '/*') ?: [];
         if (count($dirs) === 1 && count($files) === 1) {
             // Only one item and it's a directory — likely a wrapper dir
             $sourcePath = $dirs[0];
@@ -633,7 +637,10 @@ class UpdateService
         }
 
         // Get all migration files
-        $files = glob($migrationsDir . '/*.sql');
+        $files = glob($migrationsDir . '/*.sql') ?: [];
+        if (empty($files)) {
+            return;
+        }
         sort($files);
 
         $db = Database::getInstance();
@@ -718,13 +725,17 @@ class UpdateService
             return;
         }
 
-        $files = array_diff(scandir($dir), ['.', '..']);
+        $scan = @scandir($dir);
+        if ($scan === false) {
+            return;
+        }
+        $files = array_diff($scan, ['.', '..']);
         foreach ($files as $file) {
             $path = $dir . '/' . $file;
             if (is_dir($path)) {
                 $this->deleteDirectory($path);
             } else {
-                unlink($path);
+                @unlink($path);
             }
         }
         rmdir($dir);
@@ -812,7 +823,7 @@ class UpdateService
         }
 
         $backups = [];
-        $files = glob($this->backupDir . '/*.tar.gz');
+        $files = glob($this->backupDir . '/*.tar.gz') ?: [];
 
         foreach ($files as $file) {
             $backups[] = [
