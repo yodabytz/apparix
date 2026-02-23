@@ -418,34 +418,74 @@
         <div class="customize-preview">
             <h3>Live Preview</h3>
             <div class="preview-frame" id="preview-frame">
-                <div class="preview-header" id="preview-header">
-                    <div class="preview-logo" id="preview-logo">Your Store</div>
-                    <div class="preview-nav">
-                        <span>Shop</span>
-                        <span>About</span>
-                        <span>Contact</span>
+                <!-- Navbar -->
+                <div class="preview-navbar" id="preview-navbar">
+                    <div class="preview-navbar-left">
+                        <div class="preview-logo" id="preview-logo"><?php echo escape(appName()); ?></div>
+                        <div class="preview-nav-links" id="preview-nav-links">
+                            <span>Shop</span>
+                            <span>About</span>
+                            <span>Contact</span>
+                        </div>
+                    </div>
+                    <div class="preview-navbar-icons" id="preview-navbar-icons">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                        <div class="preview-cart-icon">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                            <span class="preview-cart-badge" id="preview-cart-badge">2</span>
+                        </div>
                     </div>
                 </div>
+
+                <!-- Hero Section -->
                 <div class="preview-hero" id="preview-hero">
-                    <h2>Welcome to Our Store</h2>
-                    <p>Discover amazing products</p>
+                    <h2 id="preview-hero-heading">Welcome to Our Store</h2>
+                    <p>Discover amazing products curated just for you</p>
                     <button class="preview-btn" id="preview-btn">Shop Now</button>
                 </div>
+
+                <!-- Product Grid -->
                 <div class="preview-products" id="preview-products">
                     <div class="preview-product-card">
-                        <div class="preview-product-image"></div>
-                        <div class="preview-product-name">Product Name</div>
-                        <div class="preview-product-price">$29.99</div>
+                        <div class="preview-product-image" style="background: linear-gradient(135deg, #f0f0f0 0%, #e0e0e0 100%);">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#bbb" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+                        </div>
+                        <div class="preview-product-info">
+                            <div class="preview-product-name">Handmade Candle</div>
+                            <div class="preview-product-price">$29.99</div>
+                            <button class="preview-add-to-cart" type="button">Add to Cart</button>
+                        </div>
                     </div>
                     <div class="preview-product-card">
-                        <div class="preview-product-image"></div>
-                        <div class="preview-product-name">Product Name</div>
-                        <div class="preview-product-price">$39.99</div>
+                        <div class="preview-product-image" style="background: linear-gradient(135deg, #f0f0f0 0%, #e0e0e0 100%);">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#bbb" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+                        </div>
+                        <div class="preview-product-info">
+                            <div class="preview-product-name">Gift Box Set</div>
+                            <div class="preview-product-price">$39.99</div>
+                            <button class="preview-add-to-cart" type="button">Add to Cart</button>
+                        </div>
                     </div>
                     <div class="preview-product-card">
-                        <div class="preview-product-image"></div>
-                        <div class="preview-product-name">Product Name</div>
-                        <div class="preview-product-price">$49.99</div>
+                        <div class="preview-product-image" style="background: linear-gradient(135deg, #f0f0f0 0%, #e0e0e0 100%);">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#bbb" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+                        </div>
+                        <div class="preview-product-info">
+                            <div class="preview-product-name">Artisan Soap</div>
+                            <div class="preview-product-price">$19.99</div>
+                            <button class="preview-add-to-cart" type="button">Add to Cart</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="preview-footer" id="preview-footer">
+                    <span id="preview-footer-name">&copy; <?php echo escape(appName()); ?></span>
+                    <div class="preview-footer-links">
+                        <span>Privacy</span>
+                        <span>Terms</span>
+                        <span>Contact</span>
                     </div>
                 </div>
             </div>
@@ -724,79 +764,160 @@
     border: 1px solid var(--admin-border);
 }
 
-.preview-header {
-    padding: 16px 24px;
+/* Navbar */
+.preview-navbar {
+    padding: 12px 20px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.preview-navbar-left {
+    display: flex;
+    align-items: center;
+    gap: 24px;
 }
 
 .preview-logo {
     font-weight: 700;
-    font-size: 1.25rem;
+    font-size: 1.1rem;
+    white-space: nowrap;
 }
 
-.preview-nav {
+.preview-nav-links {
     display: flex;
-    gap: 20px;
-    font-size: 0.875rem;
+    gap: 16px;
+    font-size: 0.75rem;
+    opacity: 0.85;
 }
 
+.preview-navbar-icons {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.preview-navbar-icons svg {
+    opacity: 0.85;
+}
+
+.preview-cart-icon {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.preview-cart-badge {
+    position: absolute;
+    top: -6px;
+    right: -8px;
+    font-size: 9px;
+    font-weight: 700;
+    color: white;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+/* Hero */
 .preview-hero {
-    padding: 48px 24px;
+    padding: 40px 24px;
     text-align: center;
 }
 
 .preview-hero h2 {
     margin: 0 0 8px 0;
-    font-size: 1.75rem;
+    font-size: 1.5rem;
 }
 
 .preview-hero p {
-    margin: 0 0 20px 0;
+    margin: 0 0 16px 0;
+    font-size: 0.8rem;
     color: #666;
 }
 
 .preview-btn {
-    padding: 12px 32px;
+    padding: 10px 28px;
     border: none;
     border-radius: 4px;
     font-weight: 600;
+    font-size: 0.8rem;
     cursor: pointer;
     color: white;
+    letter-spacing: 0.3px;
 }
 
+/* Products */
 .preview-products {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-    padding: 24px;
+    gap: 14px;
+    padding: 20px;
     background: #f9fafb;
 }
 
 .preview-product-card {
     background: white;
     border-radius: 8px;
-    padding: 12px;
+    overflow: hidden;
     box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 
 .preview-product-image {
     aspect-ratio: 1;
-    background: #e5e7eb;
-    border-radius: 4px;
-    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.preview-product-info {
+    padding: 10px;
 }
 
 .preview-product-name {
-    font-size: 0.875rem;
+    font-size: 0.75rem;
     font-weight: 500;
     margin-bottom: 4px;
+    color: #333;
 }
 
 .preview-product-price {
+    font-weight: 700;
+    font-size: 0.85rem;
+    margin-bottom: 8px;
+}
+
+.preview-add-to-cart {
+    width: 100%;
+    padding: 6px 12px;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.7rem;
     font-weight: 600;
+    color: white;
+    cursor: pointer;
+    letter-spacing: 0.3px;
+}
+
+/* Footer */
+.preview-footer {
+    padding: 12px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.65rem;
+    opacity: 0.9;
+}
+
+.preview-footer-links {
+    display: flex;
+    gap: 12px;
+    opacity: 0.7;
 }
 
 @media (max-width: 1024px) {
@@ -895,8 +1016,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         var el;
 
-        // Navigation
-        if ((el = document.getElementById('preview-header'))) {
+        // Navbar
+        if ((el = document.getElementById('preview-navbar'))) {
             el.style.background = navbarBg;
             el.style.borderBottom = '1px solid ' + hexToRgba(navbarText, 0.1);
         }
@@ -904,19 +1025,28 @@ document.addEventListener('DOMContentLoaded', function() {
             el.style.color = navbarText;
             el.style.fontFamily = headingFont + ', serif';
         }
-        if ((el = document.querySelector('.preview-nav'))) el.style.color = navbarText;
+        if ((el = document.getElementById('preview-nav-links'))) {
+            el.style.color = navbarText;
+        }
+        if ((el = document.getElementById('preview-navbar-icons'))) {
+            el.style.color = navbarText;
+        }
+        // Cart badge uses primary color
+        if ((el = document.getElementById('preview-cart-badge'))) {
+            el.style.background = primary;
+        }
 
         // Hero section
         if ((el = document.getElementById('preview-hero'))) {
-            el.style.background = 'linear-gradient(135deg, ' + accent + ' 0%, white 100%)';
+            el.style.background = 'linear-gradient(135deg, ' + hexToRgba(accent, 0.15) + ' 0%, white 100%)';
             el.style.fontFamily = bodyFont + ', sans-serif';
         }
-        if ((el = document.querySelector('.preview-hero h2'))) {
+        if ((el = document.getElementById('preview-hero-heading'))) {
             el.style.fontFamily = headingFont + ', serif';
             el.style.color = secondary;
         }
 
-        // Button
+        // CTA Button
         if ((el = document.getElementById('preview-btn'))) {
             el.style.background = primary;
             el.style.borderRadius = radiusValue;
@@ -925,7 +1055,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Products section background
         if ((el = document.getElementById('preview-products'))) {
-            el.style.background = hexToRgba(accent, 0.08);
+            el.style.background = hexToRgba(accent, 0.06);
         }
 
         // Product cards
@@ -943,6 +1073,18 @@ document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('.preview-product-name').forEach(function(nameEl) {
             nameEl.style.fontFamily = bodyFont + ', sans-serif';
         });
+
+        // Add to Cart buttons
+        document.querySelectorAll('.preview-add-to-cart').forEach(function(btn) {
+            btn.style.background = primary;
+            btn.style.borderRadius = radiusValue;
+        });
+
+        // Footer
+        if ((el = document.getElementById('preview-footer'))) {
+            el.style.background = navbarBg;
+            el.style.color = navbarText;
+        }
     }
 
     // Opacity slider value displays

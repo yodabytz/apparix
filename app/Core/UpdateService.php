@@ -121,7 +121,18 @@ class UpdateService
      */
     public function installUpdate(string $targetVersion): array
     {
+        // Suppress PHP warnings from polluting the response buffer
+        $previousErrorReporting = error_reporting();
+        error_reporting(E_ERROR | E_PARSE);
+
         try {
+            // Step 0: Pre-flight checks
+            $preflightResult = $this->preflightCheck();
+            if (!$preflightResult['success']) {
+                error_reporting($previousErrorReporting);
+                return $preflightResult;
+            }
+
             // Step 1: Create backup
             $backupResult = $this->createBackup();
             if (!$backupResult['success']) {
@@ -164,6 +175,8 @@ class UpdateService
             // Step 9: Report success
             $this->reportUpdateStatus($targetVersion, 'installed');
 
+            error_reporting($previousErrorReporting);
+
             return [
                 'success' => true,
                 'message' => 'Successfully updated to version ' . $targetVersion,
@@ -171,12 +184,74 @@ class UpdateService
             ];
 
         } catch (\Exception $e) {
+            error_reporting($previousErrorReporting);
             $this->reportUpdateStatus($targetVersion, 'failed', $e->getMessage());
             return [
                 'success' => false,
                 'error' => 'Update failed: ' . $e->getMessage()
             ];
         }
+    }
+
+    /**
+     * Pre-flight checks to ensure the environment is ready for updates
+     */
+    private function preflightCheck(): array
+    {
+        $errors = [];
+
+        // Check BASE_PATH is writable
+        if (!is_writable(BASE_PATH)) {
+            $errors[] = 'Application directory is not writable';
+        }
+
+        // Check key subdirectories are writable
+        $writableDirs = ['app', 'public', 'public/assets/css', 'public/assets/js'];
+        foreach ($writableDirs as $dir) {
+            $fullPath = BASE_PATH . '/' . $dir;
+            if (is_dir($fullPath) && !is_writable($fullPath)) {
+                $errors[] = $dir . '/ is not writable';
+            }
+        }
+
+        // Ensure required storage directories exist
+        $storageDirs = [
+            $this->tempDir,
+            $this->backupDir,
+            BASE_PATH . '/storage/cache',
+        ];
+        foreach ($storageDirs as $dir) {
+            if (!is_dir($dir)) {
+                if (!@mkdir($dir, 0755, true)) {
+                    $errors[] = 'Cannot create directory: ' . basename($dir);
+                }
+            } elseif (!is_writable($dir)) {
+                $errors[] = basename($dir) . '/ is not writable';
+            }
+        }
+
+        // Check PHP extensions
+        if (!class_exists('PharData')) {
+            $errors[] = 'PHP Phar extension is required but not available';
+        }
+        if (!function_exists('curl_init')) {
+            $errors[] = 'PHP cURL extension is required but not available';
+        }
+
+        // Check disk space (need at least 100MB free)
+        $freeSpace = @disk_free_space(BASE_PATH);
+        if ($freeSpace !== false && $freeSpace < 104857600) {
+            $errors[] = 'Insufficient disk space (need at least 100MB free)';
+        }
+
+        if (!empty($errors)) {
+            return [
+                'success' => false,
+                'error' => 'Pre-flight check failed: ' . implode('; ', $errors)
+            ];
+        }
+
+        return ['success' => true];
     }
 
     /**
@@ -295,9 +370,12 @@ class UpdateService
      */
     private function applyUpdate(string $sourcePath): array
     {
-        // Find the actual source directory (might be nested)
+        // Detect if update files are nested in a single subdirectory
+        // Only descend if that single dir contains typical app structure
         $dirs = glob($sourcePath . '/*', GLOB_ONLYDIR);
-        if (count($dirs) === 1) {
+        $files = glob($sourcePath . '/*');
+        if (count($dirs) === 1 && count($files) === 1) {
+            // Only one item and it's a directory — likely a wrapper dir
             $sourcePath = $dirs[0];
         }
 
@@ -339,21 +417,52 @@ class UpdateService
             'node_modules',
         ];
 
-        // Recursively copy files
-        $this->copyDirectory($sourcePath, BASE_PATH, $exclude);
+        // Pre-flight: check that BASE_PATH is writable
+        if (!is_writable(BASE_PATH)) {
+            return [
+                'success' => false,
+                'error' => 'Installation directory is not writable. Please check file permissions.'
+            ];
+        }
+
+        // Recursively copy files, collecting any failures
+        $failures = [];
+        $this->copyDirectory($sourcePath, BASE_PATH, $exclude, $failures);
+
+        if (!empty($failures)) {
+            $count = count($failures);
+            $sample = array_slice($failures, 0, 3);
+            $msg = "Failed to update {$count} file(s) due to permissions: " . implode(', ', $sample);
+            if ($count > 3) {
+                $msg .= " and " . ($count - 3) . " more";
+            }
+            $msg .= ". Please ensure the web server has write access to the application directory.";
+            return [
+                'success' => false,
+                'error' => $msg
+            ];
+        }
 
         return ['success' => true];
     }
 
     /**
-     * Recursively copy directory
+     * Recursively copy directory, tracking failures instead of emitting warnings
      */
-    private function copyDirectory(string $source, string $dest, array $exclude = []): void
+    private function copyDirectory(string $source, string $dest, array $exclude = [], array &$failures = []): void
     {
-        $dir = opendir($source);
+        $dir = @opendir($source);
+        if (!$dir) {
+            $failures[] = str_replace(BASE_PATH . '/', '', $dest) . '/ (cannot read source)';
+            return;
+        }
 
         if (!is_dir($dest)) {
-            mkdir($dest, 0755, true);
+            if (!@mkdir($dest, 0755, true)) {
+                $failures[] = str_replace(BASE_PATH . '/', '', $dest) . '/ (cannot create directory)';
+                closedir($dir);
+                return;
+            }
         }
 
         while (($file = readdir($dir)) !== false) {
@@ -379,10 +488,13 @@ class UpdateService
             }
 
             if (is_dir($srcPath)) {
-                $this->copyDirectory($srcPath, $destPath, $exclude);
+                $this->copyDirectory($srcPath, $destPath, $exclude, $failures);
             } else {
-                copy($srcPath, $destPath);
-                chmod($destPath, 0644);
+                if (!@copy($srcPath, $destPath)) {
+                    $failures[] = $relativePath;
+                } else {
+                    @chmod($destPath, 0644);
+                }
             }
         }
 
