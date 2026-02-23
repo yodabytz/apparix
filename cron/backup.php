@@ -1,14 +1,12 @@
 #!/usr/bin/env php
 <?php
-/**
- * Apparix Backup Cron Job
- *
- * Run every 30 minutes to check if scheduled backup is needed:
- * */30 * * * * php /var/www/SITEPATH/cron/backup.php >> /var/log/apparix-backup.log 2>&1
- *
- * This script checks if a scheduled backup should run based on plugin settings.
- * It uses low-priority execution to minimize server impact.
- */
+// Apparix Backup Cron Job
+//
+// Run every 30 minutes to check if scheduled backup is needed:
+// */30 * * * * php /var/www/SITEPATH/cron/backup.php >> /var/log/apparix-backup.log 2>&1
+//
+// This script checks if a scheduled backup should run based on plugin settings.
+// It uses low-priority execution to minimize server impact.
 
 // Only run via CLI
 if (php_sapi_name() !== 'cli') {
