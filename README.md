@@ -48,40 +48,166 @@ composer install --no-dev --optimize-autoloader
 
 ### 4. Configure Web Server
 
-**For Nginx** (recommended), create a site configuration:
+**For Nginx** (recommended), you need two configuration files: a global `nginx.conf` snippet for bot blocking, and a per-site server block.
+
+#### 4a. Global Bot Blocking (nginx.conf)
+
+Add these maps inside the `http {}` block in `/etc/nginx/nginx.conf`, **before** any `server` blocks or `include` directives:
 
 ```nginx
+# Bot & Scraper Blocking
+# Layer 1: User Agent blocking
+map $http_user_agent $limit_bots {
+    default 0;
+    ~*(ahrefsbot|semrushbot|mj12bot|dotbot|rogerbot|ccbot|bytespider|petalbot) 1;
+    ~*(python|curl|wget|go-http-client|perl|lwp-trivial|httrack|harvest|libwww) 1;
+    ~*(nikto|sqlmap|nmap|masscan|zgrab|nuclei|httpx|wpscan|dirbuster|gobuster) 1;
+    ~*(HeadlessChrome|aiohttp|censys|ZmEu|Havij|w3af|openvas) 1;
+    ~*(GPTBot|ChatGPT-User|CCBot|anthropic-ai|Claude-Web|Google-Extended) 1;
+    ~*(spider|scraper|crawler|extractor|stripper|sucker|webzip|offline) 1;
+}
+
+# Layer 2: Rate limiting zones
+limit_req_zone $binary_remote_addr zone=global_login:10m rate=5r/m;
+limit_req_zone $binary_remote_addr zone=global_checkout:10m rate=10r/m;
+```
+
+#### 4b. Site Server Block
+
+Create `/etc/nginx/sites-available/yourdomain.com`:
+
+```nginx
+# HTTP to HTTPS redirect
 server {
     listen 80;
-    listen 443 ssl http2;
+    listen [::]:80;
     server_name yourdomain.com www.yourdomain.com;
-    root /var/www/yourdomain.com/public;
-    index index.php;
 
-    # SSL (use Let's Encrypt)
-    ssl_certificate /etc/letsencrypt/live/yourdomain.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/yourdomain.com/privkey.pem;
+    # Bot blocking
+    if ($limit_bots) { return 403; }
 
-    # Redirect HTTP to HTTPS
-    if ($scheme != "https") {
-        return 301 https://$host$request_uri;
+    # Allow Let's Encrypt validation
+    location ^~ /.well-known/acme-challenge/ {
+        default_type text/plain;
+        root /var/www/certbot;
+        try_files $uri =404;
     }
 
     location / {
+        return 301 https://yourdomain.com$request_uri;
+    }
+}
+
+# Main HTTPS server
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name yourdomain.com www.yourdomain.com;
+
+    root /var/www/yourdomain.com/public;
+    index index.php;
+
+    # SSL (use Let's Encrypt — see Security section below)
+    ssl_certificate /etc/letsencrypt/live/yourdomain.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/yourdomain.com/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers off;
+
+    # Bot blocking
+    if ($limit_bots) { return 403; }
+
+    # Security headers
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+
+    # File upload size
+    client_max_body_size 50M;
+
+    # Deny access to sensitive/hidden files
+    location ~ /\.(env|git|htaccess|gitignore|ssh|aws)$ {
+        deny all;
+        access_log off;
+        log_not_found off;
+    }
+    location ~ /\. {
+        deny all;
+        access_log off;
+        log_not_found off;
+    }
+
+    # Block WordPress vulnerability scanners (return 410 Gone)
+    location ~* ^/(wp-admin|wp-login\.php|wp-content|wp-includes|xmlrpc\.php|wp-config|wordpress|wp-json|wp-cron\.php|wp-signup\.php|wp-trackback\.php|wlwmanifest\.xml)(/|$) {
+        access_log off;
+        log_not_found off;
+        return 410;
+    }
+
+    # Block other common CMS/vulnerability scans
+    location ~* ^/(phpmyadmin|pma|myadmin|mysql|admin\.php|administrator|joomla|drupal|magento|config\.php|install\.php|setup\.php|shell\.php)(/|$) {
+        access_log off;
+        log_not_found off;
+        return 410;
+    }
+
+    # Custom 404 page
+    error_page 404 /404.php;
+    location = /404.php {
+        internal;
+        include fastcgi_params;
+        fastcgi_pass unix:/run/php/php8.3-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+    }
+
+    # Static files caching
+    location ~* \.(jpg|jpeg|png|gif|ico|css|js|svg|woff|woff2|ttf|eot)$ {
+        expires 1y;
+        add_header Cache-Control "public, max-age=31536000";
+        access_log off;
+    }
+
+    # PHP-FPM handling
+    location ~ \.php$ {
+        try_files $uri =404;
+        fastcgi_split_path_info ^(.+\.php)(/.+)$;
+        fastcgi_pass unix:/run/php/php8.3-fpm.sock;
+        fastcgi_index index.php;
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_param PATH_INFO $fastcgi_path_info;
+        fastcgi_param HTTPS on;
+        fastcgi_param SERVER_PORT 443;
+        fastcgi_buffer_size 32k;
+        fastcgi_buffers 16 16k;
+    }
+
+    # Rate limiting on sensitive endpoints
+    location /login {
+        limit_req zone=global_login burst=3 nodelay;
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+    location /checkout {
+        limit_req zone=global_checkout burst=5 nodelay;
         try_files $uri $uri/ /index.php?$query_string;
     }
 
-    location ~ \.php$ {
-        fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
-        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
-        include fastcgi_params;
-    }
-
-    location ~ /\.(?!well-known).* {
-        deny all;
+    # Front controller — route all requests to index.php
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
     }
 }
 ```
+
+Enable the site and test:
+
+```bash
+sudo ln -s /etc/nginx/sites-available/yourdomain.com /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+> **Note:** Adjust `php8.3-fpm.sock` to match your PHP version (e.g., `php8.1-fpm.sock`, `php8.2-fpm.sock`).
 
 ### 5. Run the Installer
 
@@ -158,15 +284,38 @@ From Name: Your Store Name
 
 ---
 
-## Security Recommendations
+## Security Setup
 
-### Web Application Firewall (Required)
+Apparix includes multiple layers of security. The **BotBlocker** (PHP-level) works out of the box with zero configuration. The server-level protections below are strongly recommended for production deployments.
 
-We strongly recommend using a Web Application Firewall (WAF) to protect against common attacks.
+### Layer 1: Built-in BotBlocker (Automatic)
 
-#### ModSecurity
+Apparix ships with an automatic bot detection system (`app/Core/BotBlocker.php`) that runs on every request:
 
-ModSecurity is an open-source WAF that integrates with Nginx and Apache:
+- **Honeypot traps**: Bots probing WordPress, `.env`, phpMyAdmin, shell backdoors, and 40+ other scanner paths are instantly blocked
+- **Malicious user agents**: Known attack tools (sqlmap, nikto, zgrab, masscan, HeadlessChrome, etc.) are auto-blocked
+- **Auto-ban**: Blocked IPs are banned for 7 days and stored in `storage/security/blocked_ips.json`
+- **Legitimate bot whitelist**: Googlebot, Bingbot, Applebot, facebookexternalhit, Twitterbot, LinkedInBot, UptimeRobot, Let's Encrypt, and other legitimate services are never blocked
+
+**No configuration required** — this works automatically after installation.
+
+Block logs are written to `storage/security/bot_blocks.log` for auditing.
+
+### Layer 2: SSL/TLS Certificate (Required)
+
+SSL is required for Stripe payments and strongly recommended for all traffic.
+
+```bash
+sudo apt install certbot python3-certbot-nginx
+sudo certbot --nginx -d yourdomain.com -d www.yourdomain.com
+
+# Auto-renew (certbot installs a systemd timer by default)
+sudo certbot renew --dry-run
+```
+
+### Layer 3: ModSecurity WAF (Recommended)
+
+ModSecurity is an open-source Web Application Firewall that blocks SQL injection, XSS, and other OWASP Top 10 attacks at the Nginx level:
 
 ```bash
 # Ubuntu/Debian with Nginx
@@ -180,56 +329,163 @@ sudo sed -i 's/SecRuleEngine DetectionOnly/SecRuleEngine On/' /etc/modsecurity/m
 sudo apt install modsecurity-crs
 ```
 
-#### SecuNX Web Firewall (Recommended)
+Add to your Nginx server block:
 
-**SecuNX** is a lightweight, high-performance IP blocklist firewall specifically designed for Nginx. It provides real-time protection against malicious IPs using curated threat intelligence feeds.
+```nginx
+modsecurity on;
+modsecurity_rules_file /etc/nginx/modsecurity_includes.conf;
+```
 
-**Features:**
-- Automatic blocklist updates from multiple threat feeds
-- Minimal performance impact
-- Easy integration with Nginx
-- Detailed logging and monitoring
+### Layer 4: SecuNX IP Blocklist (Recommended)
 
-**Installation:**
+**SecuNX** is a lightweight IP blocklist firewall for Nginx that automatically blocks 30,000+ known malicious IPs using curated threat intelligence feeds.
+
 ```bash
 git clone https://github.com/yodabytz/secunx.git
 cd secunx
 sudo ./install.sh
 ```
 
+Add to your Nginx server block:
+
+```nginx
+include snippets/secunx.conf;
+```
+
 GitHub: https://github.com/yodabytz/secunx
 
-### Additional Security Measures
+### Layer 5: Fail2Ban Intrusion Prevention (Recommended)
 
-1. **SSL/TLS Certificate**: Required for Stripe. Use Let's Encrypt:
-   ```bash
-   sudo apt install certbot python3-certbot-nginx
-   sudo certbot --nginx -d yourdomain.com -d www.yourdomain.com
-   ```
+Fail2Ban monitors log files and automatically bans IPs that show malicious behavior (brute-force login attempts, vulnerability scanning, etc.).
 
-2. **File Permissions**:
-   ```bash
-   # Web files owned by www-data
-   sudo chown -R www-data:www-data /var/www/yourdomain.com
+#### Install Fail2Ban
 
-   # Restrict .env file
-   chmod 600 /var/www/yourdomain.com/.env
-   ```
+```bash
+sudo apt install fail2ban
+sudo systemctl enable fail2ban
+sudo systemctl start fail2ban
+```
 
-3. **Security Headers** (already configured in the application):
-   - X-Content-Type-Options
-   - X-Frame-Options
-   - X-XSS-Protection
-   - Content-Security-Policy
+#### Login Brute-Force Protection
 
-4. **Database Security**:
-   - Use a dedicated MySQL user with limited privileges
-   - Strong password (16+ characters)
-   - Disable remote root access
+Create `/etc/fail2ban/filter.d/apparix-admin.conf`:
 
-5. **Regular Updates**:
-   - Keep PHP and MySQL updated
-   - Monitor for Apparix updates in Admin > Updates
+```ini
+[Definition]
+failregex = client: <HOST>.*"POST /admin/login
+```
+
+Create `/etc/fail2ban/jail.d/apparix-admin.conf`:
+
+```ini
+[apparix-admin]
+enabled  = true
+filter   = apparix-admin
+logpath  = /var/log/nginx/yourdomain.com.error.log
+maxretry = 5
+findtime = 600
+bantime  = 3600
+action   = iptables-multiport[name=apparix-admin, port="http,https", protocol=tcp]
+```
+
+#### Honeypot Scanner Protection
+
+This jail auto-bans any IP that probes WordPress, phpMyAdmin, `.env`, or other paths that no real user would visit. One hit = 7-day ban.
+
+Create `/etc/fail2ban/filter.d/nginx-honeypot.conf`:
+
+```ini
+[Definition]
+failregex = ^<HOST> \- \S+ \[.*?\] \"(GET|POST|HEAD) \S*(wp-admin|wp-login|wp-content|wp-includes|xmlrpc\.php|wp-config|wordpress|wp-json|wp-cron|wp-signup|wp-trackback|wlwmanifest)\S* \S+\" (410|403|444) .+$
+            ^<HOST> \- \S+ \[.*?\] \"(GET|POST|HEAD) \S*(phpmyadmin|pma|myadmin|mysql|admin\.php|administrator|joomla|drupal|magento)\S* \S+\" (410|403|444) .+$
+            ^<HOST> \- \S+ \[.*?\] \"(GET|POST|HEAD) \S*\.env\S* \S+\" (403|444) .+$
+            ^<HOST> \- \S+ \[.*?\] \"(GET|POST|HEAD) \S*cmd_sco\S* \S+\" \d+ .+$
+            ^<HOST> \- \S+ \[.*?\] \"(GET|POST|HEAD) \S*\.git\S* \S+\" (403|444) .+$
+            ^<HOST> \- \S+ \[.*?\] \"(GET|POST|HEAD) \S*(\.aws|\.ssh|shell\.php|setup\.php|install\.php|config\.php)\S* \S+\" (403|410|444) .+$
+
+ignoreregex =
+
+datepattern = {^LN-BEG}%%ExY(?P<_sep>[-/.])%%m(?P=_sep)%%d[T ]%%H:%%M:%%S(?:[.,]%%f)?(?:\s*%%z)?
+              ^[^\[]*\[({DATE})
+              {^LN-BEG}
+```
+
+Create `/etc/fail2ban/jail.d/nginx-honeypot.conf`:
+
+```ini
+[nginx-honeypot]
+enabled  = true
+filter   = nginx-honeypot
+logpath  = /var/log/nginx/yourdomain.com.access.log
+maxretry = 1
+findtime = 86400
+bantime  = 604800
+action   = iptables-multiport[name=nginx-honeypot, port="http,https", protocol=tcp]
+```
+
+Reload Fail2Ban:
+
+```bash
+sudo fail2ban-client reload
+sudo fail2ban-client status
+```
+
+### Layer 6: File Permissions
+
+```bash
+# Web files owned by www-data
+sudo chown -R www-data:www-data /var/www/yourdomain.com
+
+# Restrict .env file (contains database passwords and API keys)
+chmod 600 /var/www/yourdomain.com/.env
+
+# Storage directories need write access
+chmod -R 775 /var/www/yourdomain.com/storage
+chmod -R 775 /var/www/yourdomain.com/public/assets/images
+```
+
+### Layer 7: Database Security
+
+```bash
+# Create a dedicated MySQL user (don't use root)
+mysql -u root -p
+```
+
+```sql
+CREATE DATABASE apparix_ecommerce CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'apparix'@'localhost' IDENTIFIED BY 'your-strong-password-here';
+GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, INDEX, DROP ON apparix_ecommerce.* TO 'apparix'@'localhost';
+FLUSH PRIVILEGES;
+```
+
+- Use a strong password (16+ characters with mixed case, numbers, symbols)
+- Never grant `ALL PRIVILEGES` — only grant what's needed
+- Disable remote root access: `bind-address = 127.0.0.1` in `/etc/mysql/mysql.conf.d/mysqld.cnf`
+
+### Security Summary
+
+| Layer | Protection | Type | Setup |
+|-------|-----------|------|-------|
+| BotBlocker | Honeypot traps, bad user agents, auto-ban | PHP (built-in) | Automatic |
+| Nginx Bot Map | Known scraper/attack user agents | Nginx | Manual config |
+| Nginx Location Blocks | WordPress/CMS scanner traps (410 Gone) | Nginx | Manual config |
+| Nginx Rate Limiting | Login/checkout brute-force prevention | Nginx | Manual config |
+| SSL/TLS | Encrypted traffic, required for payments | Certbot | Manual setup |
+| ModSecurity | SQL injection, XSS, OWASP Top 10 | Nginx WAF | Manual install |
+| SecuNX | 30,000+ known malicious IPs | Nginx blocklist | Manual install |
+| Fail2Ban (admin) | Login brute-force auto-ban | Log monitor | Manual install |
+| Fail2Ban (honeypot) | Scanner auto-ban (1 hit = 7-day ban) | Log monitor | Manual install |
+| Security Headers | Clickjacking, MIME sniffing, XSS | PHP + Nginx | Automatic |
+| CSRF Protection | Cross-site request forgery | PHP (built-in) | Automatic |
+| Argon2id Hashing | Secure password storage | PHP (built-in) | Automatic |
+
+### Regular Maintenance
+
+- **Update Apparix**: Check Admin > Updates regularly
+- **Update system packages**: `sudo apt update && sudo apt upgrade`
+- **Monitor Fail2Ban**: `sudo fail2ban-client status` to check banned IPs
+- **Review bot logs**: Check `storage/security/bot_blocks.log` periodically
+- **Renew SSL**: Certbot auto-renews, but verify with `sudo certbot renew --dry-run`
 
 ---
 
