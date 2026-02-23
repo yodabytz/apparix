@@ -130,6 +130,16 @@ class Database
     }
 
     /**
+     * Execute a generic query (CREATE TABLE, INSERT, UPDATE, etc.)
+     */
+    public function query(string $query, array $params = []): \PDOStatement
+    {
+        $stmt = $this->pdo->prepare($query);
+        $stmt->execute($params);
+        return $stmt;
+    }
+
+    /**
      * Check if currently in a transaction
      */
     public function inTransaction(): bool
