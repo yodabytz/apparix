@@ -41,7 +41,7 @@ try {
     // Load the backup plugin
     require_once dirname(__DIR__) . '/content/plugins/backup/BackupPlugin.php';
 
-    $backupPlugin = new \Plugins\Backup\BackupPlugin();
+    $backupPlugin = new \App\Plugins\BackupPlugin();
     $backupPlugin->initialize();
 
     // Check if scheduled backup should run

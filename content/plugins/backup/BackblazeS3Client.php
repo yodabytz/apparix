@@ -8,7 +8,7 @@
  * @version 2.0.0
  */
 
-namespace Plugins\Backup;
+namespace App\Plugins;
 
 class BackblazeS3Client
 {

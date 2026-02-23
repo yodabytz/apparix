@@ -453,7 +453,7 @@ class DashboardController extends Controller
             );
             if ($backupPluginRow) {
                 require_once $basePath . '/content/plugins/backup/BackupPlugin.php';
-                $bkPlugin = new \Plugins\Backup\BackupPlugin();
+                $bkPlugin = new \App\Plugins\BackupPlugin();
                 $bkPlugin->initialize();
                 $backupNotifications = $bkPlugin->getNotifications();
             }

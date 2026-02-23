@@ -8,7 +8,7 @@
  * @version 2.0.0
  */
 
-namespace Plugins\Backup;
+namespace App\Plugins;
 
 use App\Core\Plugins\PluginInterface;
 use App\Core\Database;
