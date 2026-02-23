@@ -230,7 +230,7 @@ class BackupPlugin implements PluginInterface
             $db = Database::getInstance();
             $this->settings = array_merge($this->settings, $settings);
 
-            $db->query(
+            $db->update(
                 "UPDATE plugins SET settings = ? WHERE slug = ?",
                 [json_encode($this->settings), $this->getSlug()]
             );
