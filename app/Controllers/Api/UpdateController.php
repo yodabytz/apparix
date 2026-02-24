@@ -388,7 +388,7 @@ class UpdateController extends Controller
             [$curMajor, $curMajor, $curMinor, $curMajor, $curMinor, $curPatch]
         );
 
-        return $this->db->selectOne(
+        $result = $this->db->selectOne(
             "SELECT * FROM releases
              WHERE is_active = 1
              AND release_type = 'stable'
@@ -403,6 +403,8 @@ class UpdateController extends Controller
              LIMIT 1",
             $params
         );
+
+        return $result ?: null;
     }
 
     /**
