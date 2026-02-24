@@ -147,6 +147,57 @@ class Visitor extends Model
             }
         }
 
+        if ($this->isSuspiciousUserAgent($userAgent)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Detect clearly fake or impossible user agent strings.
+     * Bot farms use outdated Chrome versions, fabricated future versions,
+     * malformed headers, or obsolete OS+browser combos.
+     */
+    private function isSuspiciousUserAgent(string $ua): bool
+    {
+        // Malformed UA with literal "User-Agent:" prefix (header name leaked into value)
+        if (stripos($ua, 'user-agent:') !== false) {
+            return true;
+        }
+
+        // Chrome version check — auto-updates make very old/future versions impossible
+        if (preg_match('/Chrome\/(\d+)\./', $ua, $m)) {
+            $ver = (int)$m[1];
+            if ($ver > 0 && ($ver < 90 || $ver > 135)) {
+                return true;
+            }
+        }
+
+        // Edge version check (same auto-update logic as Chrome)
+        if (preg_match('/Edg\/(\d+)\./', $ua, $m)) {
+            $ver = (int)$m[1];
+            if ($ver > 0 && ($ver < 90 || $ver > 135)) {
+                return true;
+            }
+        }
+
+        // iOS version < 14 with Safari/WebKit (iOS 14: Sep 2020, 5+ years old)
+        if (preg_match('/OS (\d+)[_.]/', $ua, $m) &&
+            (stripos($ua, 'iphone') !== false || stripos($ua, 'ipad') !== false)) {
+            if ((int)$m[1] < 14) {
+                return true;
+            }
+        }
+
+        // Windows 7 or older (NT 6.1-) running Chrome — Chrome dropped Win7 in Jan 2023
+        if (preg_match('/Windows NT ([\d.]+)/', $ua, $m) &&
+            stripos($ua, 'chrome') !== false) {
+            if ((float)$m[1] <= 6.1) {
+                return true;
+            }
+        }
+
         return false;
     }
 
@@ -561,6 +612,56 @@ class Visitor extends Model
             return 'is_bot = 0';
         }
         return '1=1'; // null means all
+    }
+
+    /**
+     * Flag bot-farm visitors using behavioral analysis.
+     * Finds user agents that appear across 3+ different countries among non-bot visitors.
+     * Real users don't share the exact same UA string across many countries.
+     */
+    public function flagBehavioralBots(int $daysBack = 30, int $minCountries = 3): int
+    {
+        $sql = "
+            UPDATE visitors v
+            INNER JOIN (
+                SELECT user_agent
+                FROM visitors
+                WHERE is_bot = 0
+                  AND created_at > DATE_SUB(NOW(), INTERVAL ? DAY)
+                  AND user_agent IS NOT NULL
+                  AND user_agent != ''
+                GROUP BY user_agent
+                HAVING COUNT(DISTINCT country_code) >= ?
+            ) bot_uas ON v.user_agent = bot_uas.user_agent
+            SET v.is_bot = 1
+            WHERE v.is_bot = 0
+        ";
+
+        return $this->db->update($sql, [$daysBack, $minCountries]);
+    }
+
+    /**
+     * Flag visitors with suspicious user agents that were missed by earlier detection.
+     * Retroactively applies isSuspiciousUserAgent() logic via SQL.
+     */
+    public function flagSuspiciousUABots(): int
+    {
+        $sql = "
+            UPDATE visitors SET is_bot = 1
+            WHERE is_bot = 0
+              AND (
+                  user_agent LIKE 'User-Agent:%'
+                  OR user_agent REGEXP 'Chrome/([1-8][0-9]|[1-9])\\\\.'
+                  OR user_agent REGEXP 'Chrome/(1[3-9][6-9]|[2-9][0-9]{2})\\\\.'
+                  OR user_agent REGEXP 'Edg/([1-8][0-9]|[1-9])\\\\.'
+                  OR (user_agent REGEXP 'OS (([1-9]|1[0-3])_)' AND (user_agent LIKE '%iPhone%' OR user_agent LIKE '%iPad%'))
+                  OR (user_agent REGEXP 'Windows NT [3-5]\\\\.' AND user_agent LIKE '%Chrome%')
+                  OR (user_agent LIKE '%Windows NT 6.0%' AND user_agent LIKE '%Chrome%')
+                  OR (user_agent LIKE '%Windows NT 6.1%' AND user_agent LIKE '%Chrome%')
+              )
+        ";
+
+        return $this->db->update($sql, []);
     }
 
     /**
