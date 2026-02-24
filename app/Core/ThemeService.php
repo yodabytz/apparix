@@ -492,7 +492,7 @@ class ThemeService
     /**
      * Convert hex color to RGB array
      */
-    private function hexToRgb(string $hex): ?array
+    public function hexToRgb(string $hex): ?array
     {
         $hex = ltrim($hex, '#');
 
@@ -525,6 +525,75 @@ class ThemeService
             'secondary' => $this->activeTheme['secondary_color'] ?? '#FF94C8',
             'accent' => $this->activeTheme['accent_color'] ?? '#FFF0F7'
         ];
+    }
+
+    /**
+     * Get all branding values needed for email templates
+     * Centralizes theme colors, logo, tagline for consistent emails
+     */
+    public static function getEmailBranding(): array
+    {
+        $instance = self::getInstance();
+        $colors = $instance->getColors();
+        $primary = $colors['primary'];
+        $secondary = $colors['secondary'];
+        $accent = $colors['accent'];
+
+        $darkPrimary = $instance->adjustBrightness($primary, -20);
+        $rgb = $instance->hexToRgb($primary);
+        $rgbStr = $rgb ? "{$rgb['r']}, {$rgb['g']}, {$rgb['b']}" : '255, 104, 197';
+
+        $logoPath = setting('store_logo') ?: setting('logo') ?: '/assets/images/branding/logo.png';
+        $logoUrl = appUrl() . $logoPath;
+
+        return [
+            'primary' => $primary,
+            'secondary' => $secondary,
+            'accent' => $accent,
+            'primaryDark' => $darkPrimary,
+            'primaryRgb' => $rgbStr,
+            'shadowRgba' => "rgba({$rgbStr}, 0.15)",
+            'btnShadowRgba' => "rgba({$rgbStr}, 0.4)",
+            'logoUrl' => $logoUrl,
+            'tagline' => htmlspecialchars(setting('store_tagline') ?: ''),
+            'siteName' => appName(),
+            'siteUrl' => appUrl(),
+            'year' => date('Y'),
+            'storeEmail' => storeEmail(),
+        ];
+    }
+
+    /**
+     * Generate social links HTML for email templates
+     */
+    public static function getEmailSocialLinks(?string $color = null): string
+    {
+        $color = $color ?: self::getInstance()->getColors()['primary'];
+        $links = [];
+
+        if ($val = setting('social_instagram')) {
+            $links[] = '<a href="' . htmlspecialchars($val) . '" style="color: ' . $color . '; font-size: 14px; text-decoration: none; font-weight: 500;">Instagram</a>';
+        }
+        if ($val = setting('social_facebook')) {
+            $links[] = '<a href="' . htmlspecialchars($val) . '" style="color: ' . $color . '; font-size: 14px; text-decoration: none; font-weight: 500;">Facebook</a>';
+        }
+        if ($val = setting('social_twitter')) {
+            $links[] = '<a href="' . htmlspecialchars($val) . '" style="color: ' . $color . '; font-size: 14px; text-decoration: none; font-weight: 500;">Twitter</a>';
+        }
+        if ($val = setting('social_pinterest')) {
+            $links[] = '<a href="' . htmlspecialchars($val) . '" style="color: ' . $color . '; font-size: 14px; text-decoration: none; font-weight: 500;">Pinterest</a>';
+        }
+
+        if (empty($links)) {
+            return '';
+        }
+
+        $sep = '</td><td style="color: ' . $color . '; opacity: 0.4; font-size: 14px;">&bull;</td><td style="padding: 0 12px;">';
+        return '<table role="presentation" cellpadding="0" cellspacing="0" style="margin-bottom: 20px;">
+            <tr>
+                <td style="padding: 0 12px;">' . implode($sep, $links) . '</td>
+            </tr>
+        </table>';
     }
 
     /**

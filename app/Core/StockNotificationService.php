@@ -97,6 +97,18 @@ class StockNotificationService
         ?string $variantName,
         int $notificationId
     ): bool {
+        // Get dynamic theme branding
+        $b = ThemeService::getEmailBranding();
+        $primary = $b['primary'];
+        $secondary = $b['secondary'];
+        $accent = $b['accent'];
+        $primaryDark = $b['primaryDark'];
+        $shadowRgba = $b['shadowRgba'];
+        $btnShadowRgba = $b['btnShadowRgba'];
+        $logoUrl = $b['logoUrl'];
+        $tagline = $b['tagline'];
+        $socialHtml = ThemeService::getEmailSocialLinks();
+
         $productUrl = $this->siteUrl . '/products/' . $product['slug'];
         $imageUrl = $imagePath ? $this->siteUrl . $imagePath : $this->siteUrl . '/assets/images/placeholder.png';
         $price = $product['sale_price'] ?: $product['price'];
@@ -135,25 +147,25 @@ class StockNotificationService
             <td align="center" class="wrapper" style="padding: 40px 20px;">
 
                 <!-- Main Container -->
-                <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(255, 104, 197, 0.15);">
+                <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px {$shadowRgba};">
 
                     <!-- HEADER with decorative background -->
                     <tr>
-                        <td style="background: linear-gradient(135deg, #FFE4F3 0%, #FFFFFF 40%, #FFFFFF 60%, #FFE4F3 100%); padding: 0;">
+                        <td style="background: linear-gradient(135deg, {$accent} 0%, #FFFFFF 40%, #FFFFFF 60%, {$accent} 100%); padding: 0;">
                             <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                                 <!-- Logo area -->
                                 <tr>
                                     <td align="center" style="padding: 40px 40px 20px 40px;">
                                         <a href="{$this->siteUrl}" style="text-decoration: none;">
-                                            <img src="{$this->siteUrl}/assets/images/placeholder.png" alt="{$this->siteName}" width="280" class="header-logo" style="max-width: 280px; width: 100%; height: auto; display: block;">
+                                            <img src="{$logoUrl}" alt="{$this->siteName}" width="280" class="header-logo" style="max-width: 280px; width: 100%; height: auto; display: block;">
                                         </a>
                                     </td>
                                 </tr>
                                 <!-- Tagline -->
                                 <tr>
                                     <td align="center" style="padding: 0 40px 30px 40px;">
-                                        <p style="margin: 0; font-family: 'Playfair Display', Georgia, serif; font-size: 14px; font-style: italic; color: #FF68C5; letter-spacing: 0.5px;">
-                                            {$this->getTagline()}
+                                        <p style="margin: 0; font-family: 'Playfair Display', Georgia, serif; font-size: 14px; font-style: italic; color: {$primary}; letter-spacing: 0.5px;">
+                                            {$tagline}
                                         </p>
                                     </td>
                                 </tr>
@@ -163,7 +175,7 @@ class StockNotificationService
 
                     <!-- Pink divider line -->
                     <tr>
-                        <td style="height: 3px; background: linear-gradient(90deg, #FFE4F3, #FF68C5, #FFE4F3);"></td>
+                        <td style="height: 3px; background: linear-gradient(90deg, {$accent}, {$primary}, {$accent});"></td>
                     </tr>
 
                     <!-- MAIN CONTENT -->
@@ -173,7 +185,7 @@ class StockNotificationService
                             <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                                 <tr>
                                     <td align="center" style="padding-bottom: 20px;">
-                                        <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #FF68C5 0%, #ff4db8 100%); border-radius: 50%; display: inline-block; text-align: center; line-height: 60px;">
+                                        <div style="width: 60px; height: 60px; background: linear-gradient(135deg, {$primary} 0%, {$primaryDark} 100%); border-radius: 50%; display: inline-block; text-align: center; line-height: 60px;">
                                             <img src="{$this->siteUrl}/assets/images/bell-icon.png" alt="" width="28" style="vertical-align: middle;" onerror="this.style.display='none'">
                                         </div>
                                     </td>
@@ -187,12 +199,12 @@ class StockNotificationService
                             </p>
 
                             <!-- Product Card -->
-                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, #fdf2f8 0%, #fff0f7 100%); border-radius: 12px; overflow: hidden; margin-bottom: 30px; border: 1px solid #fce7f3;">
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, {$accent} 0%, #fff0f7 100%); border-radius: 12px; overflow: hidden; margin-bottom: 30px; border: 1px solid {$accent};">
                                 <tr>
                                     <td style="padding: 25px; text-align: center;">
                                         <img src="{$imageUrl}" alt="{$product['name']}" style="max-width: 180px; height: auto; border-radius: 10px; margin-bottom: 18px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
                                         <h2 style="margin: 0 0 10px; font-family: 'Playfair Display', Georgia, serif; color: #1f2937; font-size: 20px;">{$productName}</h2>
-                                        <p style="margin: 0; color: #FF68C5; font-size: 22px; font-weight: 700;">{$formattedPrice}</p>
+                                        <p style="margin: 0; color: {$primary}; font-size: 22px; font-weight: 700;">{$formattedPrice}</p>
                                     </td>
                                 </tr>
                             </table>
@@ -201,7 +213,7 @@ class StockNotificationService
                             <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                                 <tr>
                                     <td align="center">
-                                        <a href="{$productUrl}" style="display: inline-block; padding: 16px 45px; background: linear-gradient(135deg, #FF68C5 0%, #ff4db8 100%); color: #ffffff !important; text-decoration: none !important; font-size: 16px; font-weight: 600; border-radius: 50px; box-shadow: 0 4px 15px rgba(255, 104, 197, 0.4);">
+                                        <a href="{$productUrl}" style="display: inline-block; padding: 16px 45px; background: linear-gradient(135deg, {$primary} 0%, {$primaryDark} 100%); color: #ffffff !important; text-decoration: none !important; font-size: 16px; font-weight: 600; border-radius: 50px; box-shadow: 0 4px 15px {$btnShadowRgba};">
                                             Shop Now
                                         </a>
                                     </td>
@@ -219,7 +231,7 @@ class StockNotificationService
                         <td style="padding: 0 40px;">
                             <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                                 <tr>
-                                    <td style="height: 1px; background: linear-gradient(90deg, transparent, #fce7f3, #FF68C5, #fce7f3, transparent);"></td>
+                                    <td style="height: 1px; background: linear-gradient(90deg, transparent, {$accent}, {$primary}, {$accent}, transparent);"></td>
                                 </tr>
                             </table>
                         </td>
@@ -227,15 +239,15 @@ class StockNotificationService
 
                     <!-- FOOTER -->
                     <tr>
-                        <td style="background-color: #fdf2f8; padding: 0;">
+                        <td style="background-color: {$accent}; padding: 0;">
                             <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                                 <tr>
                                     <td align="center" style="padding: 35px 40px;">
 
                                         <!-- Social Links -->
-                                        {$this->getSocialLinksHtml()}
+                                        {$socialHtml}
 
-                                        <p style="margin: 0 0 15px 0; font-family: 'Playfair Display', Georgia, serif; font-size: 15px; font-style: italic; color: #FF68C5;">
+                                        <p style="margin: 0 0 15px 0; font-family: 'Playfair Display', Georgia, serif; font-size: 15px; font-style: italic; color: {$primary};">
                                             Crafted with love, just for you
                                         </p>
 
@@ -257,7 +269,7 @@ class StockNotificationService
                                         <!-- Unsubscribe -->
                                         <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                                             <tr>
-                                                <td style="border-top: 1px solid #fce7f3; padding-top: 20px;">
+                                                <td style="border-top: 1px solid {$accent}; padding-top: 20px;">
                                                     <p style="margin: 0; font-size: 12px; color: #9ca3af; line-height: 1.6;">
                                                         You received this email because you signed up for back-in-stock notifications.<br>
                                                         &copy; " . date('Y') . " {$this->siteName}. All rights reserved.
@@ -348,45 +360,4 @@ TEXT;
         return [['variant_id' => null, 'sent' => $sent]];
     }
 
-    /**
-     * Get store tagline from settings
-     */
-    private function getTagline(): string
-    {
-        return setting('store_tagline') ?: 'Quality Products, Great Prices';
-    }
-
-    /**
-     * Generate social links HTML for email footer
-     */
-    private function getSocialLinksHtml(): string
-    {
-        $links = [];
-
-        if ($instagram = setting('social_instagram')) {
-            $links[] = '<a href="' . htmlspecialchars($instagram) . '" style="color: #FF68C5; font-size: 14px; text-decoration: none; font-weight: 500;">Instagram</a>';
-        }
-
-        if ($facebook = setting('social_facebook')) {
-            $links[] = '<a href="' . htmlspecialchars($facebook) . '" style="color: #FF68C5; font-size: 14px; text-decoration: none; font-weight: 500;">Facebook</a>';
-        }
-
-        if ($twitter = setting('social_twitter')) {
-            $links[] = '<a href="' . htmlspecialchars($twitter) . '" style="color: #FF68C5; font-size: 14px; text-decoration: none; font-weight: 500;">Twitter</a>';
-        }
-
-        if ($pinterest = setting('social_pinterest')) {
-            $links[] = '<a href="' . htmlspecialchars($pinterest) . '" style="color: #FF68C5; font-size: 14px; text-decoration: none; font-weight: 500;">Pinterest</a>';
-        }
-
-        if (empty($links)) {
-            return '';
-        }
-
-        return '<table role="presentation" cellpadding="0" cellspacing="0" style="margin-bottom: 20px;">
-            <tr>
-                <td style="padding: 0 12px;">' . implode('</td><td style="color: #fce7f3; font-size: 14px;">•</td><td style="padding: 0 12px;">', $links) . '</td>
-            </tr>
-        </table>';
-    }
 }

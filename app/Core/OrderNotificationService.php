@@ -116,6 +116,7 @@ class OrderNotificationService
      */
     private function sendEmailNotification(array $order, array $items, array $shippingAddress): void
     {
+        $b = ThemeService::getEmailBranding();
         $adminEmail = adminNotificationEmail();
         $siteName = appName();
         $siteUrl = appUrl();
@@ -166,13 +167,13 @@ class OrderNotificationService
     <meta name='viewport' content='width=device-width, initial-scale=1.0'>
 </head>
 <body style='margin: 0; padding: 0; background-color: #1a1a2e; font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif;'>
-    <table width='100%' cellpadding='0' cellspacing='0' style='background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%); padding: 40px 20px;'>
+    <table width='100%' cellpadding='0' cellspacing='0' style='background: linear-gradient(135deg, {$b['accent']} 0%, {$b['accent']} 100%); padding: 40px 20px;'>
         <tr>
             <td align='center'>
                 <table width='600' cellpadding='0' cellspacing='0' style='background: #ffffff; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); overflow: hidden;'>
                     <!-- Header -->
                     <tr>
-                        <td style='background: linear-gradient(135deg, #ec4899 0%, #f472b6 100%); padding: 30px; text-align: center;'>
+                        <td style='background: linear-gradient(135deg, {$b['primary']} 0%, {$b['secondary']} 100%); padding: 30px; text-align: center;'>
                             <h1 style='margin: 0; color: #ffffff; font-size: 28px;'>New Order!</h1>
                             <p style='margin: 10px 0 0; color: rgba(255,255,255,0.9); font-size: 16px;'>{$order['order_number']}</p>
                         </td>
@@ -193,14 +194,14 @@ class OrderNotificationService
                             </table>
 
                             <!-- Customer Info -->
-                            <h3 style='margin: 0 0 15px; color: #333; border-bottom: 2px solid #ec4899; padding-bottom: 8px;'>Customer</h3>
+                            <h3 style='margin: 0 0 15px; color: #333; border-bottom: 2px solid {$b['primary']}; padding-bottom: 8px;'>Customer</h3>
                             <p style='margin: 0 0 20px; color: #333;'>
                                 <strong>{$customerName}</strong><br>
-                                <a href='mailto:{$order['customer_email']}' style='color: #ec4899;'>{$order['customer_email']}</a>
+                                <a href='mailto:{$order['customer_email']}' style='color: {$b['primary']};'>{$order['customer_email']}</a>
                             </p>
 
                             <!-- Items -->
-                            <h3 style='margin: 0 0 15px; color: #333; border-bottom: 2px solid #ec4899; padding-bottom: 8px;'>Items Ordered</h3>
+                            <h3 style='margin: 0 0 15px; color: #333; border-bottom: 2px solid {$b['primary']}; padding-bottom: 8px;'>Items Ordered</h3>
                             <table width='100%' cellpadding='0' cellspacing='0' style='margin-bottom: 25px;'>
                                 <tr style='background: #f9fafb;'>
                                     <th style='padding: 10px; text-align: left; font-size: 13px; color: #666;'>Product</th>
@@ -228,7 +229,7 @@ class OrderNotificationService
                                             </tr>
                                             <tr style='border-top: 2px solid #333;'>
                                                 <td style='padding: 12px 0; font-weight: bold; font-size: 18px;'>Total:</td>
-                                                <td style='padding: 12px 0; text-align: right; font-weight: bold; font-size: 18px; color: #ec4899;'>$" . number_format($order['total'], 2) . "</td>
+                                                <td style='padding: 12px 0; text-align: right; font-weight: bold; font-size: 18px; color: {$b['primary']};'>$" . number_format($order['total'], 2) . "</td>
                                             </tr>
                                         </table>
                                     </td>
@@ -236,7 +237,7 @@ class OrderNotificationService
                             </table>
 
                             <!-- Shipping Address -->
-                            <h3 style='margin: 0 0 15px; color: #333; border-bottom: 2px solid #ec4899; padding-bottom: 8px;'>Ship To</h3>
+                            <h3 style='margin: 0 0 15px; color: #333; border-bottom: 2px solid {$b['primary']}; padding-bottom: 8px;'>Ship To</h3>
                             <p style='margin: 0 0 20px; color: #333; line-height: 1.6;'>
                                 {$addressHtml}
                             </p>
@@ -245,7 +246,7 @@ class OrderNotificationService
                             <table width='100%' cellpadding='0' cellspacing='0'>
                                 <tr>
                                     <td align='center' style='padding: 20px 0;'>
-                                        <a href='{$siteUrl}/admin/orders/view?id={$order['id']}' style='display: inline-block; background: linear-gradient(135deg, #ec4899 0%, #f472b6 100%); color: #ffffff; text-decoration: none; padding: 14px 35px; border-radius: 25px; font-weight: 600; font-size: 16px;'>View Order in Admin</a>
+                                        <a href='{$siteUrl}/admin/orders/view?id={$order['id']}' style='display: inline-block; background: linear-gradient(135deg, {$b['primary']} 0%, {$b['secondary']} 100%); color: #ffffff; text-decoration: none; padding: 14px 35px; border-radius: 25px; font-weight: 600; font-size: 16px;'>View Order in Admin</a>
                                     </td>
                                 </tr>
                             </table>
@@ -254,7 +255,7 @@ class OrderNotificationService
 
                     <!-- Footer -->
                     <tr>
-                        <td style='background: #fdf2f8; padding: 20px; text-align: center;'>
+                        <td style='background: {$b['accent']}; padding: 20px; text-align: center;'>
                             <p style='margin: 0; color: #666; font-size: 14px;'>{$siteName}</p>
                         </td>
                     </tr>

@@ -57,7 +57,7 @@
         }
 
         a {
-            color: #FF68C5;
+            color: {{PRIMARY_COLOR}};
             text-decoration: none;
         }
 
@@ -80,34 +80,34 @@
             <td align="center" class="wrapper" style="padding: 40px 20px;">
 
                 <!-- Main Container -->
-                <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(255, 104, 197, 0.15);">
+                <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px {{SHADOW_RGBA}};">
 
                     <!-- HEADER - Email-safe version -->
                     <tr>
-                        <td align="center" style="background-color: #FFF5FA; padding: 30px 40px 20px 40px;">
-                            <a href="https://apparix.app" style="text-decoration: none;">
-                                <img src="https://apparix.app/assets/images/placeholder.png" alt="Apparix" width="240" class="header-logo" style="max-width: 240px; width: 100%; height: auto; display: block;">
+                        <td align="center" style="background-color: {{ACCENT_COLOR}}; padding: 30px 40px 20px 40px;">
+                            <a href="{{SITE_URL}}" style="text-decoration: none;">
+                                <img src="{{LOGO_URL}}" alt="{{SITE_NAME}}" width="240" class="header-logo" style="max-width: 240px; width: 100%; height: auto; display: block;">
                             </a>
                         </td>
                     </tr>
                     <tr>
-                        <td align="center" style="background-color: #FFF5FA; padding: 0 40px 25px 40px;">
-                            <p style="margin: 0; font-family: Georgia, 'Times New Roman', serif; font-size: 14px; font-style: italic; color: #FF68C5; letter-spacing: 0.5px;">
-                                Unique Handmade Gifts &amp; Custom Creations
+                        <td align="center" style="background-color: {{ACCENT_COLOR}}; padding: 0 40px 25px 40px;">
+                            <p style="margin: 0; font-family: Georgia, 'Times New Roman', serif; font-size: 14px; font-style: italic; color: {{PRIMARY_COLOR}}; letter-spacing: 0.5px;">
+                                {{TAGLINE}}
                             </p>
                         </td>
                     </tr>
 
-                    <!-- Pink divider line -->
+                    <!-- Divider line -->
                     <tr>
-                        <td style="height: 3px; background: linear-gradient(90deg, #FFE4F3, #FF68C5, #FFE4F3);"></td>
+                        <td style="height: 3px; background: linear-gradient(90deg, {{ACCENT_COLOR}}, {{PRIMARY_COLOR}}, {{ACCENT_COLOR}});"></td>
                     </tr>
 
                     <!-- GREETING -->
                     <tr>
                         <td style="padding: 35px 40px 0 40px;">
                             <p style="margin: 0; font-size: 18px; color: #1f2937; line-height: 1.5;">
-                                Hi <strong style="color: #FF68C5;">{{SUBSCRIBER_NAME}}</strong>,
+                                Hi <strong style="color: {{PRIMARY_COLOR}};">{{SUBSCRIBER_NAME}}</strong>,
                             </p>
                         </td>
                     </tr>
@@ -122,7 +122,7 @@
                     <!-- CTA BUTTON -->
                     <tr>
                         <td align="center" style="padding: 0 40px 40px 40px;">
-                            <a href="https://apparix.app/products" style="display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #FF68C5 0%, #ff4db8 100%); color: #ffffff !important; text-decoration: none !important; border-radius: 50px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 15px rgba(255, 104, 197, 0.4);">
+                            <a href="{{SITE_URL}}/products" style="display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, {{PRIMARY_COLOR}} 0%, {{PRIMARY_DARK}} 100%); color: #ffffff !important; text-decoration: none !important; border-radius: 50px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 15px {{BTN_SHADOW_RGBA}};">
                                 Shop Now
                             </a>
                         </td>
@@ -133,7 +133,7 @@
                         <td style="padding: 0 40px;">
                             <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                                 <tr>
-                                    <td style="height: 1px; background: linear-gradient(90deg, transparent, #fce7f3, #FF68C5, #fce7f3, transparent);"></td>
+                                    <td style="height: 1px; background: linear-gradient(90deg, transparent, {{ACCENT_COLOR}}, {{PRIMARY_COLOR}}, {{ACCENT_COLOR}}, transparent);"></td>
                                 </tr>
                             </table>
                         </td>
@@ -141,7 +141,7 @@
 
                     <!-- FOOTER -->
                     <tr>
-                        <td style="background-color: #fdf2f8; padding: 0;">
+                        <td style="background-color: {{ACCENT_COLOR}}; padding: 0;">
                             <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                                 <tr>
                                     <td class="footer-content" align="center" style="padding: 35px 40px;">
@@ -149,21 +149,21 @@
                                         <!-- Social Links -->
                                         {{SOCIAL_LINKS}}
 
-                                        <p style="margin: 0 0 15px 0; font-family: 'Playfair Display', Georgia, serif; font-size: 15px; font-style: italic; color: #FF68C5;">
-                                            Crafted with love, just for you
+                                        <p style="margin: 0 0 15px 0; font-family: 'Playfair Display', Georgia, serif; font-size: 15px; font-style: italic; color: {{PRIMARY_COLOR}};">
+                                            {{TAGLINE}}
                                         </p>
 
                                         <!-- Footer Links -->
                                         <table role="presentation" cellpadding="0" cellspacing="0" style="margin-bottom: 25px;">
                                             <tr>
                                                 <td style="padding: 0 10px;">
-                                                    <a href="https://apparix.app" style="color: #6b7280; font-size: 13px; text-decoration: none;">Website</a>
+                                                    <a href="{{SITE_URL}}" style="color: #6b7280; font-size: 13px; text-decoration: none;">Website</a>
                                                 </td>
                                                 <td style="padding: 0 10px;">
-                                                    <a href="https://apparix.app/products" style="color: #6b7280; font-size: 13px; text-decoration: none;">Shop</a>
+                                                    <a href="{{SITE_URL}}/products" style="color: #6b7280; font-size: 13px; text-decoration: none;">Shop</a>
                                                 </td>
                                                 <td style="padding: 0 10px;">
-                                                    <a href="https://apparix.app/contact" style="color: #6b7280; font-size: 13px; text-decoration: none;">Contact</a>
+                                                    <a href="{{SITE_URL}}/contact" style="color: #6b7280; font-size: 13px; text-decoration: none;">Contact</a>
                                                 </td>
                                             </tr>
                                         </table>
@@ -171,7 +171,7 @@
                                         <!-- Unsubscribe -->
                                         <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                                             <tr>
-                                                <td style="border-top: 1px solid #fce7f3; padding-top: 20px;">
+                                                <td style="border-top: 1px solid {{SECONDARY_COLOR}}; padding-top: 20px;">
                                                     <p style="margin: 0; font-size: 12px; color: #9ca3af; line-height: 1.6;">
                                                         You received this email because you subscribed to our newsletter.<br>
                                                         <a href="{{UNSUBSCRIBE_URL}}" style="color: #9ca3af; text-decoration: underline;">Unsubscribe</a>

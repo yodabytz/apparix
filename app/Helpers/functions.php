@@ -306,12 +306,14 @@ function sendEmail(string $to, string $subject, string $body, array $options = [
     }
 
     // Use PHP mail()
+    $domain = explode('@', $fromEmail)[1] ?? 'localhost';
     $headers = [
         'MIME-Version: 1.0',
         'Content-Type: ' . ($isHtml ? 'text/html' : 'text/plain') . '; charset=UTF-8',
         'From: ' . $fromName . ' <' . $fromEmail . '>',
         'Reply-To: ' . $replyTo,
-        'X-Mailer: PHP'
+        'Message-ID: <' . bin2hex(random_bytes(16)) . '@' . $domain . '>',
+        'Date: ' . date('r')
     ];
 
     if (!empty($options['headers'])) {

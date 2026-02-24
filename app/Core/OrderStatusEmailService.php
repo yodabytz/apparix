@@ -188,6 +188,8 @@ class OrderStatusEmailService
      */
     private function buildEmailTemplate(array $data): string
     {
+        $b = ThemeService::getEmailBranding();
+
         // Build details table rows
         $detailsHtml = '';
         foreach ($data['details'] as $index => $detail) {
@@ -237,30 +239,30 @@ class OrderStatusEmailService
             <td align="center" class="wrapper" style="padding: 40px 20px;">
 
                 <!-- Main Container -->
-                <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(255, 104, 197, 0.15);">
+                <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px ' . $b['shadowRgba'] . ';">
 
                     <!-- HEADER with decorative circles -->
                     <tr>
-                        <td style="position: relative; background: linear-gradient(135deg, #FFE4F3 0%, #FFFFFF 40%, #FFFFFF 60%, #FFE4F3 100%); padding: 0; overflow: hidden;">
+                        <td style="position: relative; background: linear-gradient(135deg, ' . $b['accent'] . ' 0%, #FFFFFF 40%, #FFFFFF 60%, ' . $b['accent'] . ' 100%); padding: 0; overflow: hidden;">
                             <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                                 <tr>
                                     <td style="position: relative; height: 0;">
-                                        <div style="position: absolute; width: 150px; height: 150px; background: #FF68C5; opacity: 0.08; border-radius: 50%; top: -50px; left: -30px;"></div>
-                                        <div style="position: absolute; width: 100px; height: 100px; background: #FF94C8; opacity: 0.08; border-radius: 50%; top: 20px; right: -20px;"></div>
-                                        <div style="position: absolute; width: 80px; height: 80px; background: #FF68C5; opacity: 0.06; border-radius: 50%; bottom: -40px; left: 40%;"></div>
+                                        <div style="position: absolute; width: 150px; height: 150px; background: ' . $b['primary'] . '; opacity: 0.08; border-radius: 50%; top: -50px; left: -30px;"></div>
+                                        <div style="position: absolute; width: 100px; height: 100px; background: ' . $b['secondary'] . '; opacity: 0.08; border-radius: 50%; top: 20px; right: -20px;"></div>
+                                        <div style="position: absolute; width: 80px; height: 80px; background: ' . $b['primary'] . '; opacity: 0.06; border-radius: 50%; bottom: -40px; left: 40%;"></div>
                                     </td>
                                 </tr>
                                 <tr>
                                     <td align="center" style="padding: 40px 40px 20px 40px;">
                                         <a href="' . $this->siteUrl . '" style="text-decoration: none;">
-                                            <img src="' . $this->siteUrl . '/assets/images/placeholder.png" alt="' . htmlspecialchars($this->siteName) . '" width="280" class="header-logo" style="max-width: 280px; width: 100%; height: auto; display: block;">
+                                            <img src="' . $b['logoUrl'] . '" alt="' . htmlspecialchars($this->siteName) . '" width="280" class="header-logo" style="max-width: 280px; width: 100%; height: auto; display: block;">
                                         </a>
                                     </td>
                                 </tr>
                                 <tr>
                                     <td align="center" style="padding: 0 40px 30px 40px;">
-                                        <p style="margin: 0; font-family: \'Playfair Display\', Georgia, serif; font-size: 14px; font-style: italic; color: #FF68C5; letter-spacing: 0.5px;">
-                                            ' . htmlspecialchars($this->getTagline()) . '
+                                        <p style="margin: 0; font-family: \'Playfair Display\', Georgia, serif; font-size: 14px; font-style: italic; color: ' . $b['primary'] . '; letter-spacing: 0.5px;">
+                                            ' . $b['tagline'] . '
                                         </p>
                                     </td>
                                 </tr>
@@ -270,7 +272,7 @@ class OrderStatusEmailService
 
                     <!-- Pink divider line -->
                     <tr>
-                        <td style="height: 3px; background: linear-gradient(90deg, #FFE4F3, #FF68C5, #FFE4F3);"></td>
+                        <td style="height: 3px; background: linear-gradient(90deg, ' . $b['accent'] . ', ' . $b['primary'] . ', ' . $b['accent'] . ');"></td>
                     </tr>
 
                     <!-- STATUS ICON & TITLE -->
@@ -287,7 +289,7 @@ class OrderStatusEmailService
                     <tr>
                         <td class="main-content" style="padding: 0 40px 30px 40px;">
                             <p style="margin: 0 0 20px 0; font-size: 18px; color: #1f2937; line-height: 1.5;">
-                                Hi <strong style="color: #FF68C5;">' . htmlspecialchars($data['customer_name']) . '</strong>,
+                                Hi <strong style="color: ' . $b['primary'] . ';">' . htmlspecialchars($data['customer_name']) . '</strong>,
                             </p>
                             <p style="margin: 0 0 15px 0; font-size: 16px; color: #4b5563; line-height: 1.7;">
                                 ' . htmlspecialchars($data['greeting']) . '
@@ -303,7 +305,7 @@ class OrderStatusEmailService
                         <td style="padding: 0 40px 30px 40px;">
                             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;">
                                 <tr>
-                                    <td style="padding: 20px 25px; border-bottom: 2px solid #FF68C5;">
+                                    <td style="padding: 20px 25px; border-bottom: 2px solid ' . $b['primary'] . ';">
                                         <h2 style="margin: 0; font-family: \'Playfair Display\', Georgia, serif; font-size: 18px; font-weight: 600; color: #1f2937;">
                                             Order Details
                                         </h2>
@@ -323,7 +325,7 @@ class OrderStatusEmailService
                     <!-- CTA BUTTON -->
                     <tr>
                         <td align="center" style="padding: 0 40px 40px 40px;">
-                            <a href="' . htmlspecialchars($data['cta_url']) . '" style="display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #FF68C5 0%, #ff4db8 100%); color: #ffffff !important; text-decoration: none !important; border-radius: 50px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 15px rgba(255, 104, 197, 0.4);">
+                            <a href="' . htmlspecialchars($data['cta_url']) . '" style="display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, ' . $b['primary'] . ' 0%, ' . $b['primaryDark'] . ' 100%); color: #ffffff !important; text-decoration: none !important; border-radius: 50px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 15px ' . $b['btnShadowRgba'] . ';">
                                 ' . htmlspecialchars($data['cta_text']) . '
                             </a>
                         </td>
@@ -335,12 +337,12 @@ class OrderStatusEmailService
                             <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                                 <tr>
                                     <td align="center" style="padding: 35px 40px;">
-                                        <p style="margin: 0 0 15px 0; font-family: \'Playfair Display\', Georgia, serif; font-size: 15px; font-style: italic; color: #FF68C5;">
+                                        <p style="margin: 0 0 15px 0; font-family: \'Playfair Display\', Georgia, serif; font-size: 15px; font-style: italic; color: ' . $b['primary'] . ';">
                                             ' . htmlspecialchars($data['footer_message']) . '
                                         </p>
-                                        ' . $this->getSocialLinksHtml() . '
+                                        ' . ThemeService::getEmailSocialLinks() . '
                                         <p style="margin: 0; font-size: 13px; color: #9ca3af; line-height: 1.6;">
-                                            Questions? Contact us at <a href="mailto:' . $this->fromEmail . '" style="color: #FF68C5; text-decoration: none;">' . $this->fromEmail . '</a>
+                                            Questions? Contact us at <a href="mailto:' . $b['storeEmail'] . '" style="color: ' . $b['primary'] . '; text-decoration: none;">' . $b['storeEmail'] . '</a>
                                         </p>
                                     </td>
                                 </tr>
@@ -358,41 +360,4 @@ class OrderStatusEmailService
 </html>';
     }
 
-    /**
-     * Get store tagline from settings
-     */
-    private function getTagline(): string
-    {
-        return setting('store_tagline') ?: 'Quality Products, Great Prices';
-    }
-
-    /**
-     * Generate social links HTML for email footer
-     */
-    private function getSocialLinksHtml(): string
-    {
-        $links = [];
-
-        if ($instagram = setting('social_instagram')) {
-            $links[] = '<a href="' . htmlspecialchars($instagram) . '" style="color: #FF68C5; font-size: 14px; text-decoration: none; font-weight: 500;">Instagram</a>';
-        }
-
-        if ($facebook = setting('social_facebook')) {
-            $links[] = '<a href="' . htmlspecialchars($facebook) . '" style="color: #FF68C5; font-size: 14px; text-decoration: none; font-weight: 500;">Facebook</a>';
-        }
-
-        if ($twitter = setting('social_twitter')) {
-            $links[] = '<a href="' . htmlspecialchars($twitter) . '" style="color: #FF68C5; font-size: 14px; text-decoration: none; font-weight: 500;">Twitter</a>';
-        }
-
-        if (empty($links)) {
-            return '';
-        }
-
-        return '<table role="presentation" cellpadding="0" cellspacing="0" style="margin-bottom: 20px;">
-            <tr>
-                <td style="padding: 0 12px;">' . implode('</td><td style="color: #fce7f3; font-size: 14px;">•</td><td style="padding: 0 12px;">', $links) . '</td>
-            </tr>
-        </table>';
-    }
 }

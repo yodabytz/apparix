@@ -279,9 +279,12 @@ class OrderController extends Controller
      */
     private function getShippingEmailTemplate(array $data): string
     {
+        $b = \App\Core\ThemeService::getEmailBranding();
+        $socialHtml = \App\Core\ThemeService::getEmailSocialLinks();
+
         $trackButton = '';
         if ($data['tracking_url']) {
-            $trackButton = '<a href="' . htmlspecialchars($data['tracking_url']) . '" style="display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #FF68C5 0%, #ff4db8 100%); color: #ffffff !important; text-decoration: none !important; border-radius: 50px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 15px rgba(255, 104, 197, 0.4);">Track Your Package</a>';
+            $trackButton = '<a href="' . htmlspecialchars($data['tracking_url']) . '" style="display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, ' . $b['primary'] . ' 0%, ' . $b['primaryDark'] . ' 100%); color: #ffffff !important; text-decoration: none !important; border-radius: 50px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 15px ' . $b['btnShadowRgba'] . ';">Track Your Package</a>';
         }
 
         $deliveryInfo = '';
@@ -316,41 +319,41 @@ class OrderController extends Controller
         img { border: 0; }
     </style>
 </head>
-<body style="margin: 0; padding: 0; background-color: #fdf2f8; font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, Helvetica, Arial, sans-serif;">
+<body style="margin: 0; padding: 0; background-color: ' . $b['accent'] . '; font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, Helvetica, Arial, sans-serif;">
 
     <!-- Wrapper Table -->
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #fdf2f8;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: ' . $b['accent'] . ';">
         <tr>
             <td align="center" style="padding: 40px 20px;">
 
                 <!-- Main Container -->
-                <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(255, 104, 197, 0.15);">
+                <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px ' . $b['shadowRgba'] . ';">
 
                     <!-- HEADER with decorative circles -->
                     <tr>
-                        <td style="position: relative; background: linear-gradient(135deg, #FFE4F3 0%, #FFFFFF 40%, #FFFFFF 60%, #FFE4F3 100%); padding: 0; overflow: hidden;">
+                        <td style="position: relative; background: linear-gradient(135deg, ' . $b['accent'] . ' 0%, #FFFFFF 40%, #FFFFFF 60%, ' . $b['accent'] . ' 100%); padding: 0; overflow: hidden;">
                             <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                                 <!-- Decorative circles (using positioned divs) -->
                                 <tr>
                                     <td style="position: relative; height: 0;">
-                                        <div style="position: absolute; width: 150px; height: 150px; background: #FF68C5; opacity: 0.08; border-radius: 50%; top: -50px; left: -30px;"></div>
-                                        <div style="position: absolute; width: 100px; height: 100px; background: #FF94C8; opacity: 0.08; border-radius: 50%; top: 20px; right: -20px;"></div>
-                                        <div style="position: absolute; width: 80px; height: 80px; background: #FF68C5; opacity: 0.06; border-radius: 50%; bottom: -40px; left: 40%;"></div>
+                                        <div style="position: absolute; width: 150px; height: 150px; background: ' . $b['primary'] . '; opacity: 0.08; border-radius: 50%; top: -50px; left: -30px;"></div>
+                                        <div style="position: absolute; width: 100px; height: 100px; background: ' . $b['secondary'] . '; opacity: 0.08; border-radius: 50%; top: 20px; right: -20px;"></div>
+                                        <div style="position: absolute; width: 80px; height: 80px; background: ' . $b['primary'] . '; opacity: 0.06; border-radius: 50%; bottom: -40px; left: 40%;"></div>
                                     </td>
                                 </tr>
                                 <!-- Logo area -->
                                 <tr>
                                     <td align="center" style="padding: 40px 40px 20px 40px;">
                                         <a href="' . appUrl() . '" style="text-decoration: none;">
-                                            <img src="' . appUrl() . '/assets/images/placeholder.png" alt="' . htmlspecialchars(appName()) . '" width="280" style="max-width: 280px; width: 100%; height: auto; display: block;">
+                                            <img src="' . $b['logoUrl'] . '" alt="' . htmlspecialchars(appName()) . '" width="280" style="max-width: 280px; width: 100%; height: auto; display: block;">
                                         </a>
                                     </td>
                                 </tr>
                                 <!-- Tagline -->
                                 <tr>
                                     <td align="center" style="padding: 0 40px 30px 40px;">
-                                        <p style="margin: 0; font-family: \'Playfair Display\', Georgia, serif; font-size: 14px; font-style: italic; color: #FF68C5; letter-spacing: 0.5px;">
-                                            ' . htmlspecialchars(setting('store_tagline') ?: 'Quality Products, Great Prices') . '
+                                        <p style="margin: 0; font-family: \'Playfair Display\', Georgia, serif; font-size: 14px; font-style: italic; color: ' . $b['primary'] . '; letter-spacing: 0.5px;">
+                                            ' . $b['tagline'] . '
                                         </p>
                                     </td>
                                 </tr>
@@ -360,12 +363,12 @@ class OrderController extends Controller
 
                     <!-- Pink divider line -->
                     <tr>
-                        <td style="height: 3px; background: linear-gradient(90deg, #FFE4F3, #FF68C5, #FFE4F3);"></td>
+                        <td style="height: 3px; background: linear-gradient(90deg, ' . $b['accent'] . ', ' . $b['primary'] . ', ' . $b['accent'] . ');"></td>
                     </tr>
 
                     <!-- TITLE BANNER -->
                     <tr>
-                        <td style="background: linear-gradient(135deg, #FF68C5 0%, #ff4db8 100%); padding: 22px 40px; text-align: center;">
+                        <td style="background: linear-gradient(135deg, ' . $b['primary'] . ' 0%, ' . $b['primaryDark'] . ' 100%); padding: 22px 40px; text-align: center;">
                             <h1 style="margin: 0; font-family: \'Playfair Display\', Georgia, serif; font-size: 26px; font-weight: 600; color: #ffffff; letter-spacing: 0.5px;">
                                 Your Order Has Shipped!
                             </h1>
@@ -378,7 +381,7 @@ class OrderController extends Controller
 
                             <!-- Greeting -->
                             <p style="margin: 0 0 20px 0; font-size: 18px; color: #1f2937; line-height: 1.5;">
-                                Hi <strong style="color: #FF68C5;">' . htmlspecialchars($data['customer_name']) . '</strong>,
+                                Hi <strong style="color: ' . $b['primary'] . ';">' . htmlspecialchars($data['customer_name']) . '</strong>,
                             </p>
 
                             <p style="margin: 0 0 30px 0; font-size: 16px; color: #4b5563; line-height: 1.7;">
@@ -388,7 +391,7 @@ class OrderController extends Controller
                             <!-- Shipping Details Box -->
                             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb; margin-bottom: 30px;">
                                 <tr>
-                                    <td style="padding: 20px 25px; border-bottom: 2px solid #FF68C5;">
+                                    <td style="padding: 20px 25px; border-bottom: 2px solid ' . $b['primary'] . ';">
                                         <h2 style="margin: 0; font-family: \'Playfair Display\', Georgia, serif; font-size: 18px; font-weight: 600; color: #1f2937;">
                                             Shipping Details
                                         </h2>
@@ -429,12 +432,13 @@ class OrderController extends Controller
 
                     <!-- FOOTER -->
                     <tr>
-                        <td style="background-color: #fdf2f8; padding: 30px 40px; text-align: center; border-top: 1px solid #fce7f3;">
-                            <p style="margin: 0 0 15px 0; font-family: \'Playfair Display\', Georgia, serif; font-size: 16px; font-style: italic; color: #FF68C5;">
+                        <td style="background-color: ' . $b['accent'] . '; padding: 30px 40px; text-align: center; border-top: 1px solid ' . $b['accent'] . ';">
+                            <p style="margin: 0 0 15px 0; font-family: \'Playfair Display\', Georgia, serif; font-size: 16px; font-style: italic; color: ' . $b['primary'] . ';">
                                 Thank you for shopping with us!
                             </p>
+                            ' . $socialHtml . '
                             <p style="margin: 0; font-size: 13px; color: #9ca3af; line-height: 1.6;">
-                                Questions? Contact us at <a href="mailto:' . storeEmail() . '" style="color: #FF68C5; text-decoration: none;">' . storeEmail() . '</a>
+                                Questions? Contact us at <a href="mailto:' . storeEmail() . '" style="color: ' . $b['primary'] . '; text-decoration: none;">' . storeEmail() . '</a>
                             </p>
                         </td>
                     </tr>

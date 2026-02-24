@@ -66,7 +66,7 @@ class Newsletter
         $name = $firstName ?: $this->extractNameFromEmail($email);
         $unsubscribeUrl = '' . appUrl() . '/newsletter/unsubscribe?token=' . $token;
 
-        $subject = "Welcome to Apparix!";
+        $subject = "Welcome to " . appName() . "!";
 
         // Load template
         $templatePath = BASE_PATH . '/newsletter/templates/newsletter.html';
@@ -80,6 +80,7 @@ class Newsletter
             $html = str_replace('{{UNSUBSCRIBE_URL}}', $unsubscribeUrl, $html);
             $html = str_replace('{{SUBSCRIBER_NAME}}', htmlspecialchars($name), $html);
             $html = str_replace('{{SOCIAL_LINKS}}', $this->generateSocialLinksHtml(), $html);
+            $html = $this->applyBrandingPlaceholders($html);
         } else {
             $html = $this->getBasicTemplate('<h2>Welcome!</h2><p>Thank you for subscribing to our newsletter!</p>', $unsubscribeUrl);
         }
@@ -373,6 +374,7 @@ class Newsletter
             $html = str_replace('{{UNSUBSCRIBE_URL}}', $unsubscribeUrl, $html);
             $html = str_replace('{{SUBSCRIBER_NAME}}', htmlspecialchars($subscriberName), $html);
             $html = str_replace('{{SOCIAL_LINKS}}', $this->generateSocialLinksHtml(), $html);
+            $html = $this->applyBrandingPlaceholders($html);
         }
 
         return sendEmail($subscriber['email'], $newsletter['subject'], $html, ['html' => true]);
@@ -383,6 +385,7 @@ class Newsletter
      */
     private function getBasicTemplate(string $content, string $unsubscribeUrl): string
     {
+        $b = \App\Core\ThemeService::getEmailBranding();
         return '<!DOCTYPE html>
 <html>
 <head>
@@ -391,14 +394,14 @@ class Newsletter
 </head>
 <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
     <div style="text-align: center; margin-bottom: 20px;">
-        <img src="' . appUrl() . '/assets/images/placeholder.png" alt="' . appName() . '" style="max-width: 200px;">
+        <img src="' . $b['logoUrl'] . '" alt="' . $b['siteName'] . '" style="max-width: 200px;">
     </div>
     <div style="padding: 20px; background: #fff; border-radius: 8px;">
         ' . $content . '
     </div>
     <div style="text-align: center; margin-top: 20px; font-size: 12px; color: #666;">
         <p>You received this email because you subscribed to our newsletter.</p>
-        <p><a href="' . $unsubscribeUrl . '" style="color: #FF68C5;">Unsubscribe</a></p>
+        <p><a href="' . $unsubscribeUrl . '" style="color: ' . $b['primary'] . ';">Unsubscribe</a></p>
     </div>
 </body>
 </html>';
@@ -409,33 +412,20 @@ class Newsletter
      */
     private function generateSocialLinksHtml(): string
     {
-        $links = [];
-        $socialPlatforms = [
-            'social_facebook' => 'Facebook',
-            'social_instagram' => 'Instagram',
-            'social_twitter' => 'X',
-            'social_tiktok' => 'TikTok',
-            'social_youtube' => 'YouTube',
-            'social_etsy' => 'Etsy',
-            'social_pinterest' => 'Pinterest',
-            'social_linkedin' => 'LinkedIn',
-        ];
+        return \App\Core\ThemeService::getEmailSocialLinks();
+    }
 
-        foreach ($socialPlatforms as $key => $label) {
-            $url = setting($key);
-            if (!empty($url)) {
-                $links[] = '<td style="padding: 0 12px;"><a href="' . htmlspecialchars($url) . '" style="color: #FF68C5; font-size: 14px; text-decoration: none; font-weight: 500;">' . $label . '</a></td>';
-            }
-        }
+    /**
+     * Replace branding placeholders in newsletter template with dynamic theme values
+     */
+    private function applyBrandingPlaceholders(string $html): string
+    {
+        $b = \App\Core\ThemeService::getEmailBranding();
 
-        if (empty($links)) {
-            return '';
-        }
-
-        // Join with bullet separators
-        $separator = '<td style="color: #fce7f3; font-size: 14px;">•</td>';
-        $linksHtml = implode($separator, $links);
-
-        return '<table role="presentation" cellpadding="0" cellspacing="0" style="margin-bottom: 20px;"><tr>' . $linksHtml . '</tr></table>';
+        return str_replace(
+            ['{{PRIMARY_COLOR}}', '{{SECONDARY_COLOR}}', '{{ACCENT_COLOR}}', '{{PRIMARY_DARK}}', '{{SHADOW_RGBA}}', '{{BTN_SHADOW_RGBA}}', '{{LOGO_URL}}', '{{TAGLINE}}', '{{SITE_URL}}', '{{SITE_NAME}}'],
+            [$b['primary'], $b['secondary'], $b['accent'], $b['primaryDark'], $b['shadowRgba'], $b['btnShadowRgba'], $b['logoUrl'], $b['tagline'], $b['siteUrl'], $b['siteName']],
+            $html
+        );
     }
 }

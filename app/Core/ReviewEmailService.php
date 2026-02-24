@@ -18,6 +18,7 @@ class ReviewEmailService
         $fromName = $_ENV['MAIL_FROM_NAME'] ?? "Apparix";
         $siteName = $_ENV['SITE_NAME'] ?? "Apparix";
         $siteUrl = $_ENV['SITE_URL'] ?? '' . appUrl() . '';
+        $b = ThemeService::getEmailBranding();
 
         // Get product image
         $db = Database::getInstance();
@@ -25,7 +26,7 @@ class ReviewEmailService
             "SELECT image_path FROM product_images WHERE product_id = ? ORDER BY is_primary DESC, sort_order ASC LIMIT 1",
             [$request['product_id']]
         );
-        $productImage = $image ? $siteUrl . $image['image_path'] : $siteUrl . '/assets/images/placeholder.png';
+        $productImage = $image ? $siteUrl . $image['image_path'] : $b['logoUrl'];
 
         $reviewUrl = $siteUrl . '/review/' . $request['token'];
         $productUrl = $siteUrl . '/products/' . $request['product_slug'];
@@ -40,7 +41,8 @@ class ReviewEmailService
             'reviewUrl' => $reviewUrl,
             'siteName' => $siteName,
             'siteUrl' => $siteUrl,
-            'socialLinksHtml' => $this->getSocialLinksHtml()
+            'branding' => $b,
+            'socialLinksHtml' => ThemeService::getEmailSocialLinks()
         ]);
 
         $sent = sendEmail($request['email'], $subject, $html, ['html' => true]);
@@ -59,6 +61,14 @@ class ReviewEmailService
      */
     private function buildEmailHtml(array $data): string
     {
+        $b = $data['branding'];
+        $primary = $b['primary'];
+        $primaryDark = $b['primaryDark'];
+        $accent = $b['accent'];
+        $btnShadowRgba = $b['btnShadowRgba'];
+        $logoUrl = $b['logoUrl'];
+        $tagline = $b['tagline'];
+
         return <<<HTML
 <!DOCTYPE html>
 <html>
@@ -67,7 +77,7 @@ class ReviewEmailService
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body style="margin: 0; padding: 0; background-color: #1a1a2e; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
-    <table width="100%" cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%); padding: 40px 20px;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, {$accent} 0%, {$accent} 100%); padding: 40px 20px;">
         <tr>
             <td align="center">
                 <table width="600" cellpadding="0" cellspacing="0" style="background: #ffffff; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); overflow: hidden;">
@@ -75,16 +85,16 @@ class ReviewEmailService
                     <tr>
                         <td style="padding: 30px 40px 20px; text-align: center;">
                             <a href="{$data['siteUrl']}" style="text-decoration: none;">
-                                <img src="{$data['siteUrl']}/assets/images/placeholder.png" alt="{$data['siteName']}" style="max-width: 180px; height: auto;">
+                                <img src="{$logoUrl}" alt="{$data['siteName']}" style="max-width: 180px; height: auto;">
                             </a>
-                            <p style="color: #ec4899; font-size: 14px; margin: 10px 0 0; font-style: italic;">Crafted with love, just for you</p>
+                            <p style="color: {$primary}; font-size: 14px; margin: 10px 0 0; font-style: italic;">{$tagline}</p>
                         </td>
                     </tr>
 
-                    <!-- Pink Divider -->
+                    <!-- Divider -->
                     <tr>
                         <td style="padding: 0 40px;">
-                            <div style="height: 3px; background: linear-gradient(90deg, transparent, #ec4899, transparent);"></div>
+                            <div style="height: 3px; background: linear-gradient(90deg, transparent, {$primary}, transparent);"></div>
                         </td>
                     </tr>
 
@@ -100,7 +110,7 @@ class ReviewEmailService
                             </p>
 
                             <!-- Product Card -->
-                            <table width="100%" cellpadding="0" cellspacing="0" style="background: #fdf2f8; border-radius: 12px; overflow: hidden; margin-bottom: 30px;">
+                            <table width="100%" cellpadding="0" cellspacing="0" style="background: {$accent}; border-radius: 12px; overflow: hidden; margin-bottom: 30px;">
                                 <tr>
                                     <td style="padding: 20px; text-align: center;">
                                         <a href="{$data['productUrl']}" style="text-decoration: none;">
@@ -127,7 +137,7 @@ class ReviewEmailService
                             <table width="100%" cellpadding="0" cellspacing="0">
                                 <tr>
                                     <td align="center">
-                                        <a href="{$data['reviewUrl']}" style="display: inline-block; background: linear-gradient(135deg, #ec4899 0%, #f472b6 100%); color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 30px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 15px rgba(236, 72, 153, 0.3);">
+                                        <a href="{$data['reviewUrl']}" style="display: inline-block; background: linear-gradient(135deg, {$primary} 0%, {$primaryDark} 100%); color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 30px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 15px {$btnShadowRgba};">
                                             Write Your Review
                                         </a>
                                     </td>
@@ -140,22 +150,22 @@ class ReviewEmailService
                         </td>
                     </tr>
 
-                    <!-- Pink Divider -->
+                    <!-- Divider -->
                     <tr>
                         <td style="padding: 0 40px;">
-                            <div style="height: 3px; background: linear-gradient(90deg, transparent, #ec4899, transparent);"></div>
+                            <div style="height: 3px; background: linear-gradient(90deg, transparent, {$primary}, transparent);"></div>
                         </td>
                     </tr>
 
                     <!-- Footer -->
                     <tr>
-                        <td style="padding: 30px 40px; text-align: center; background: #fdf2f8;">
+                        <td style="padding: 30px 40px; text-align: center; background: {$accent};">
                             <!-- Social Links -->
                             {$data['socialLinksHtml']}
 
-                            <p style="margin: 0 0 10px; color: #ec4899; font-style: italic;">Crafted with love, just for you</p>
+                            <p style="margin: 0 0 10px; color: {$primary}; font-style: italic;">{$tagline}</p>
                             <p style="margin: 0; color: #999; font-size: 12px;">
-                                &copy; {$data['siteName']} | <a href="{$data['siteUrl']}" style="color: #ec4899;">Shop Now</a>
+                                &copy; {$data['siteName']} | <a href="{$data['siteUrl']}" style="color: {$primary};">Shop Now</a>
                             </p>
                         </td>
                     </tr>
@@ -190,33 +200,4 @@ HTML;
         return $sent;
     }
 
-    /**
-     * Generate social links HTML for email footer
-     */
-    private function getSocialLinksHtml(): string
-    {
-        $links = [];
-
-        if ($instagram = setting('social_instagram')) {
-            $links[] = '<a href="' . htmlspecialchars($instagram) . '" style="display: inline-block; margin: 0 8px; color: #ec4899; text-decoration: none;">Instagram</a>';
-        }
-
-        if ($facebook = setting('social_facebook')) {
-            $links[] = '<a href="' . htmlspecialchars($facebook) . '" style="display: inline-block; margin: 0 8px; color: #ec4899; text-decoration: none;">Facebook</a>';
-        }
-
-        if ($twitter = setting('social_twitter')) {
-            $links[] = '<a href="' . htmlspecialchars($twitter) . '" style="display: inline-block; margin: 0 8px; color: #ec4899; text-decoration: none;">Twitter</a>';
-        }
-
-        if ($pinterest = setting('social_pinterest')) {
-            $links[] = '<a href="' . htmlspecialchars($pinterest) . '" style="display: inline-block; margin: 0 8px; color: #ec4899; text-decoration: none;">Pinterest</a>';
-        }
-
-        if (empty($links)) {
-            return '';
-        }
-
-        return '<p style="margin: 0 0 15px; text-align: center;">' . implode(' | ', $links) . '</p>';
-    }
 }

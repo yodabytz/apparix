@@ -1475,7 +1475,7 @@ body.layout-full-width .container {
 
 .btn-add-cart:hover {
     background-color: var(--primary-pink);
-    color: var(--dark-gray);
+    color: var(--white);
     transform: translateY(-1px);
 }
 

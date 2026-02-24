@@ -97,6 +97,14 @@ class NewsletterController extends Controller
             $html = str_replace('{{SUBJECT}}', htmlspecialchars($subject), $html);
             $html = str_replace('{{UNSUBSCRIBE_URL}}', '#', $html);
             $html = str_replace('{{SUBSCRIBER_NAME}}', 'Preview User', $html);
+            $html = str_replace('{{SOCIAL_LINKS}}', \App\Core\ThemeService::getEmailSocialLinks(), $html);
+            // Apply branding placeholders
+            $b = \App\Core\ThemeService::getEmailBranding();
+            $html = str_replace(
+                ['{{PRIMARY_COLOR}}', '{{SECONDARY_COLOR}}', '{{ACCENT_COLOR}}', '{{PRIMARY_DARK}}', '{{SHADOW_RGBA}}', '{{BTN_SHADOW_RGBA}}', '{{LOGO_URL}}', '{{TAGLINE}}', '{{SITE_URL}}', '{{SITE_NAME}}'],
+                [$b['primary'], $b['secondary'], $b['accent'], $b['primaryDark'], $b['shadowRgba'], $b['btnShadowRgba'], $b['logoUrl'], $b['tagline'], $b['siteUrl'], $b['siteName']],
+                $html
+            );
         } else {
             $html = $this->getBasicTemplate($content);
         }
@@ -320,6 +328,8 @@ class NewsletterController extends Controller
      */
     private function getBasicTemplate(string $content): string
     {
+        $b = \App\Core\ThemeService::getEmailBranding();
+
         return '<!DOCTYPE html>
 <html>
 <head>
@@ -328,14 +338,14 @@ class NewsletterController extends Controller
 </head>
 <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f5f5f5;">
     <div style="text-align: center; margin-bottom: 20px;">
-        <img src="' . appUrl() . '/assets/images/placeholder.png" alt="' . appName() . '" style="max-width: 200px;">
+        <img src="' . $b['logoUrl'] . '" alt="' . appName() . '" style="max-width: 200px;">
     </div>
     <div style="padding: 30px; background: #fff; border-radius: 8px;">
         ' . $content . '
     </div>
     <div style="text-align: center; margin-top: 20px; font-size: 12px; color: #666;">
         <p>You received this email because you subscribed to our newsletter.</p>
-        <p><a href="#" style="color: #FF68C5;">Unsubscribe</a></p>
+        <p><a href="#" style="color: ' . $b['primary'] . ';">Unsubscribe</a></p>
     </div>
 </body>
 </html>';
