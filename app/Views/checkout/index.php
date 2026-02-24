@@ -30,6 +30,18 @@ foreach ($items as $item) {
                                    value="<?php echo auth() ? escape(auth()['email']) : ''; ?>"
                                    placeholder="your@email.com">
                         </div>
+                        <?php if ($isDigitalOnly): ?>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="shipping_first_name">First Name *</label>
+                                <input type="text" id="shipping_first_name" name="shipping_first_name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="shipping_last_name">Last Name *</label>
+                                <input type="text" id="shipping_last_name" name="shipping_last_name" required>
+                            </div>
+                        </div>
+                        <?php endif; ?>
                     </div>
 
                     <!-- Shipping Address (hidden for digital-only orders) -->
@@ -203,8 +215,8 @@ foreach ($items as $item) {
                     </div>
                     <?php endif; ?>
 
-                    <!-- Billing Address -->
-                    <div class="checkout-card">
+                    <!-- Billing Address (hidden for free digital orders) -->
+                    <div class="checkout-card" id="billingSection" <?php if ($isDigitalOnly && $cartTotal <= 0): ?>style="display: none;"<?php endif; ?>>
                         <h2>Billing Address</h2>
                         <div class="form-group checkbox-group">
                             <label>
@@ -270,7 +282,7 @@ foreach ($items as $item) {
                     <!-- Continue to Payment Button (shown before payment is initialized) -->
                     <div id="continueToPaymentSection" class="checkout-card">
                         <button type="button" id="continueToPaymentBtn" class="btn btn-primary btn-large checkout-btn" onclick="initializePayment()">
-                            Continue to Payment
+                            <?php echo ($isDigitalOnly && $cartTotal <= 0) ? 'Continue' : 'Continue to Payment'; ?>
                         </button>
                         <div id="continueError" class="payment-message" style="display: none; margin-top: 1rem;"></div>
                     </div>
@@ -483,9 +495,15 @@ async function initializePayment() {
             return;
         }
     } else {
-        // For digital orders, only email is required
+        // For digital orders, email and name are required
         if (!email) {
             showContinueError('Please enter your email address.');
+            return;
+        }
+        const firstName = document.getElementById('shipping_first_name').value.trim();
+        const lastName = document.getElementById('shipping_last_name').value.trim();
+        if (!firstName || !lastName) {
+            showContinueError('Please enter your first and last name.');
             return;
         }
     }
@@ -543,6 +561,10 @@ async function initializePayment() {
 
             document.getElementById('submitBtn').style.display = 'block';
             document.getElementById('submitBtn').textContent = 'Complete Free Order';
+
+            // Hide billing section for free orders
+            const billingSection = document.getElementById('billingSection');
+            if (billingSection) billingSection.style.display = 'none';
 
             window.isFreeOrder = true;
             paymentInitialized = true;
@@ -827,9 +849,16 @@ document.getElementById('checkoutForm').addEventListener('submit', async functio
             return;
         }
     } else {
-        // For digital orders, only email is required
+        // For digital orders, email and name are required
         if (!email) {
             showMessage('Please enter your email address.');
+            setLoading(false);
+            return;
+        }
+        const firstName = document.getElementById('shipping_first_name').value.trim();
+        const lastName = document.getElementById('shipping_last_name').value.trim();
+        if (!firstName || !lastName) {
+            showMessage('Please enter your first and last name.');
             setLoading(false);
             return;
         }

@@ -94,7 +94,10 @@ class CheckoutController extends Controller
         $subtotal = $this->cartModel->getTotal($sessionId, $userId);
 
         if ($subtotal <= 0) {
-            $this->json(['error' => 'Invalid cart total'], 400);
+            $this->json([
+                'freeOrder' => true,
+                'total' => 0
+            ]);
             return;
         }
 
@@ -294,6 +297,16 @@ class CheckoutController extends Controller
                 $this->json(['error' => 'Please enter your email address'], 400);
             } else {
                 setFlash('error', 'Please enter your email address');
+                $this->redirect('/checkout');
+            }
+            return;
+        }
+
+        if ($isDigitalOnly && (empty($shippingFirstName) || empty($shippingLastName))) {
+            if ($this->isAjaxRequest()) {
+                $this->json(['error' => 'Please enter your first and last name'], 400);
+            } else {
+                setFlash('error', 'Please enter your first and last name');
                 $this->redirect('/checkout');
             }
             return;
