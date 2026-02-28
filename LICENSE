@@ -8,43 +8,48 @@ DEFINITIONS
 "Software" means the Apparix e-commerce platform and all associated files,
 documentation, and assets.
 
-"Standard Edition" means the Software used under the Standard license tier.
+"Free Edition" means the Software used under the free license tier.
 
-"Commercial Edition" means the Software used with a paid license that
-unlocks additional features and removes limitations.
+"Paid Edition" means the Software used with a purchased license key
+(Standard, Professional, Enterprise, or Unlimited).
 
 "You" means the individual or entity using the Software.
 
 GRANT OF LICENSE
 
-1. STANDARD EDITION LICENSE
+1. FREE EDITION LICENSE
 
-   Subject to the terms of this Agreement, upon purchasing a Standard
-   license ($49 one-time) you are granted a non-exclusive, worldwide license to:
+   Subject to the terms of this Agreement, you are granted a non-exclusive,
+   worldwide, royalty-free license to:
 
    a) Download, install, and use the Software for personal or commercial
-      purposes within the limitations of the Standard Edition.
+      purposes within the limitations of the Free Edition.
 
    b) Modify the Software for your own use.
 
-   c) The Standard Edition includes the following limitations:
-      - Maximum 500 orders per month
-      - Maximum 100 products
-      - Maximum 1 admin user
-      - Custom themes, coupons & discounts, newsletter
-      - Community support
+   c) The Free Edition includes the following limitations:
+      - Maximum 25 products
+      - Maximum 50 orders per month
+      - 1 admin user
+      - Core features only
+      - Apparix branding displayed
 
-2. COMMERCIAL EDITION LICENSE
+2. PAID EDITION LICENSE
 
    Upon purchasing a valid license key from https://apparix.app, you are
-   granted additional rights including:
+   granted additional rights based on your license tier:
 
-   a) Removal of order, product, and user limitations based on your
-      license tier (Professional, Business, or Enterprise).
+   a) Standard ($99) — Up to 100 products, 500 orders/month, 1 admin user,
+      custom themes, coupons & discounts, newsletter, remove branding.
 
-   b) Access to premium features as specified in your license tier.
+   b) Professional ($199) — Up to 1,000 products, 5,000 orders/month,
+      5 admin users, API access, advanced analytics, bulk import/export.
 
-   c) Priority support based on your license tier.
+   c) Enterprise ($299) — Unlimited products, orders, and admin users,
+      abandoned cart recovery, multi-currency support, priority support.
+
+   d) Unlimited ($499) — All Enterprise features plus use on unlimited
+      domains, developer license, and white-label rights.
 
    d) License keys are issued per-domain and are non-transferable without
       written consent from Apparix.
