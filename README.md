@@ -688,16 +688,20 @@ Access the admin panel at: `https://yourdomain.com/admin`
 
 ## License Tiers
 
-| Feature | Standard (Free) | Professional | Business | Enterprise |
-|---------|----------------|--------------|----------|------------|
-| Orders/Month | 50 | 500 | Unlimited | Unlimited |
-| Products | 100 | 1,000 | Unlimited | Unlimited |
-| Admin Users | 5 | 15 | 50 | Unlimited |
-| Digital Products | ✓ | ✓ | ✓ | ✓ |
-| Themes | Basic | All | All | All + Custom |
-| Plugins | Community | All | All | All + Custom |
-| Support | Community | Email | Priority | Dedicated |
-| Price | **Free** | $99/year | $249/year | Contact Us |
+| Feature | Standard | Professional | Enterprise |
+|---------|----------|--------------|------------|
+| Products | 100 | 1,000 | Unlimited |
+| Orders/Month | 500 | 5,000 | Unlimited |
+| Admin Users | 1 | 5 | Unlimited |
+| Custom Themes | ✓ | ✓ | ✓ |
+| Coupons & Discounts | ✓ | ✓ | ✓ |
+| Newsletter | ✓ | ✓ | ✓ |
+| API Access | — | ✓ | ✓ |
+| Advanced Analytics | — | ✓ | ✓ |
+| Abandoned Cart Recovery | — | — | ✓ |
+| Multi-Currency | — | — | ✓ |
+| Support | Community | Email | Priority |
+| Price | **$49** | **$99** | **$249** |
 
 **Purchase your license at: [https://apparix.app/pricing](https://apparix.app/pricing)**
 
@@ -731,8 +735,10 @@ Download plugins at: [https://apparix.app/plugins](https://apparix.app/plugins)
 
 Apparix is released under the [Apparix License](LICENSE).
 
-- **Free** for personal and small business use (with limitations)
-- **Commercial licenses** available for larger deployments and premium features
+- **Standard** ($49) for small business use
+- **Professional** ($99) for growing businesses with API access and advanced analytics
+- **Enterprise** ($249) for large deployments with unlimited products, orders, and priority support
+- All licenses are one-time purchases with lifetime updates for the purchased version
 
 Purchase licenses at: [https://apparix.app/pricing](https://apparix.app/pricing)
 

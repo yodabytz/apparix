@@ -8,8 +8,7 @@ DEFINITIONS
 "Software" means the Apparix e-commerce platform and all associated files,
 documentation, and assets.
 
-"Free Edition" means the Software used under the limitations of the free
-license tier (Standard license).
+"Standard Edition" means the Software used under the Standard license tier.
 
 "Commercial Edition" means the Software used with a paid license that
 unlocks additional features and removes limitations.
@@ -18,21 +17,22 @@ unlocks additional features and removes limitations.
 
 GRANT OF LICENSE
 
-1. FREE EDITION LICENSE
+1. STANDARD EDITION LICENSE
 
-   Subject to the terms of this Agreement, you are granted a non-exclusive,
-   worldwide, royalty-free license to:
+   Subject to the terms of this Agreement, upon purchasing a Standard
+   license ($49 one-time) you are granted a non-exclusive, worldwide license to:
 
    a) Download, install, and use the Software for personal or commercial
-      purposes within the limitations of the Free Edition.
+      purposes within the limitations of the Standard Edition.
 
    b) Modify the Software for your own use.
 
-   c) The Free Edition includes the following limitations:
-      - Maximum 50 orders per month
+   c) The Standard Edition includes the following limitations:
+      - Maximum 500 orders per month
       - Maximum 100 products
-      - Maximum 5 admin users
-      - Standard support via community forums
+      - Maximum 1 admin user
+      - Custom themes, coupons & discounts, newsletter
+      - Community support
 
 2. COMMERCIAL EDITION LICENSE
 
