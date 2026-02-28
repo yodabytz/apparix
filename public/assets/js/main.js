@@ -19,14 +19,43 @@ document.addEventListener('DOMContentLoaded', function() {
 function initVideoHover() {
     const productCards = document.querySelectorAll('.product-card[data-has-video="true"]');
 
+    // Lazy-load video src via IntersectionObserver
+    if ('IntersectionObserver' in window) {
+        const videoObserver = new IntersectionObserver(function(entries) {
+            entries.forEach(function(entry) {
+                if (entry.isIntersecting) {
+                    const video = entry.target.querySelector('video.product-video[data-src]');
+                    if (video) {
+                        video.src = video.getAttribute('data-src');
+                        video.removeAttribute('data-src');
+                    }
+                    videoObserver.unobserve(entry.target);
+                }
+            });
+        }, { rootMargin: '200px' });
+
+        productCards.forEach(function(card) { videoObserver.observe(card); });
+    } else {
+        // Fallback: load all videos immediately
+        productCards.forEach(function(card) {
+            const video = card.querySelector('video.product-video[data-src]');
+            if (video) {
+                video.src = video.getAttribute('data-src');
+                video.removeAttribute('data-src');
+            }
+        });
+    }
+
     productCards.forEach(card => {
         const video = card.querySelector('video.product-video');
         if (!video) return;
 
         card.addEventListener('mouseenter', function() {
-            video.play().catch(() => {
-                // Autoplay may be blocked, ignore
-            });
+            if (!video.src && video.getAttribute('data-src')) {
+                video.src = video.getAttribute('data-src');
+                video.removeAttribute('data-src');
+            }
+            video.play().catch(() => {});
         });
 
         card.addEventListener('mouseleave', function() {

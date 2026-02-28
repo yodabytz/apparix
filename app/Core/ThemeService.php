@@ -76,6 +76,22 @@ class ThemeService
             $css .= "    --glow-color-rgb: {$glowRgb['r']}, {$glowRgb['g']}, {$glowRgb['b']};\n";
         }
 
+        // Hero gradient colors
+        $heroBgStart = $theme['hero_bg_start'] ?? '#0d0d1a';
+        $heroBgEnd = $theme['hero_bg_end'] ?? '#1a1a2e';
+        $css .= "    --hero-bg-start: {$heroBgStart};\n";
+        $css .= "    --hero-bg-end: {$heroBgEnd};\n";
+        // Generate hero midpoint (blend of start and end)
+        $hRgbS = $this->hexToRgb($heroBgStart);
+        $hRgbE = $this->hexToRgb($heroBgEnd);
+        if ($hRgbS && $hRgbE) {
+            $midR = round(($hRgbS['r'] + $hRgbE['r']) / 2);
+            $midG = round(($hRgbS['g'] + $hRgbE['g']) / 2);
+            $midB = round(($hRgbS['b'] + $hRgbE['b']) / 2);
+            $heroBgMid = sprintf('#%02x%02x%02x', $midR, $midG, $midB);
+            $css .= "    --hero-bg-mid: {$heroBgMid};\n";
+        }
+
         // Color variants
         if (!empty($variants['primary_light'])) {
             $css .= "    --primary-light: {$variants['primary_light']};\n";
@@ -329,6 +345,34 @@ class ThemeService
     }
 
     /**
+     * Get sidebar menu mode (click, hover, expanded)
+     */
+    public function getSidebarMenuMode(): string
+    {
+        return $this->activeTheme['sidebar_menu_mode'] ?? 'hover';
+    }
+
+    /**
+     * Check if holiday effects are enabled in theme
+     */
+    public function isHolidayEffectsEnabled(): bool
+    {
+        $effects = $this->getEffectSettings();
+        return !empty($effects['holiday_effects']['enabled']);
+    }
+
+    /**
+     * Get the holiday preview key from theme settings (for admin testing)
+     * Returns null if no preview is active, or the holiday key (e.g. 'christmas')
+     */
+    public function getHolidayPreview(): ?string
+    {
+        $effects = $this->getEffectSettings();
+        $preview = $effects['holiday_effects']['preview'] ?? '';
+        return ($preview && $preview !== 'none') ? $preview : null;
+    }
+
+    /**
      * Get number of product grid columns
      */
     public function getProductGridColumns(): int
@@ -387,10 +431,12 @@ class ThemeService
         $effects = $this->getEffectSettings();
         $style = $effects['header_effect']['style'] ?? 'swirl';
         $opacity = $effects['header_effect']['opacity'] ?? 0.5;
+        $location = $effects['header_effect']['location'] ?? 'navbar';
 
         return [
             'effect' => $style,
             'opacity' => $opacity,
+            'location' => $location,
             'color1' => $this->activeTheme['glow_color'] ?? $this->activeTheme['secondary_color'] ?? '#c9a84c',
             'color2' => $this->activeTheme['accent_color'] ?? '#ffffff',
         ];

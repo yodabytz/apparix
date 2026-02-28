@@ -1,0 +1,77 @@
+# Apparix E-Commerce - Apache Rewrite Rules
+# This file routes all requests through the front controller (index.php)
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Redirect www to non-www (adjust if you prefer www)
+    # RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
+    # RewriteRule ^(.*)$ https://%1/$1 [R=301,L]
+
+    # Force HTTPS
+    RewriteCond %{HTTPS} !=on
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+
+    # Deny access to hidden files (.env, .git, .htaccess, etc.)
+    RewriteCond %{REQUEST_URI} (^|/)\.(?!well-known) [NC]
+    RewriteRule ^ - [F,L]
+
+    # Block WordPress vulnerability scanners
+    RewriteCond %{REQUEST_URI} ^/(wp-admin|wp-login\.php|wp-content|wp-includes|xmlrpc\.php|wp-config|wordpress|wp-json|wp-cron\.php) [NC]
+    RewriteRule ^ - [G,L]
+
+    # Block common CMS/vulnerability scans
+    RewriteCond %{REQUEST_URI} ^/(phpmyadmin|pma|myadmin|mysql|admin\.php|administrator|joomla|drupal|magento|config\.php|setup\.php|shell\.php) [NC]
+    RewriteRule ^ - [G,L]
+
+    # Serve existing files and directories directly
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+
+    # Route everything else to the front controller
+    RewriteRule ^(.*)$ index.php?$1 [QSA,L]
+</IfModule>
+
+# Security headers
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+    # Prevent .env and sensitive files from being served
+    <FilesMatch "^\.">
+        Require all denied
+    </FilesMatch>
+</IfModule>
+
+# Disable directory listing
+Options -Indexes
+
+# Set default charset
+AddDefaultCharset UTF-8
+
+# File upload limit (50MB)
+<IfModule mod_php.c>
+    php_value upload_max_filesize 50M
+    php_value post_max_size 55M
+</IfModule>
+
+# Cache static assets
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+    ExpiresByType image/x-icon "access plus 1 year"
+    ExpiresByType text/css "access plus 1 year"
+    ExpiresByType application/javascript "access plus 1 year"
+    ExpiresByType font/woff2 "access plus 1 year"
+    ExpiresByType font/woff "access plus 1 year"
+</IfModule>
+
+# Compress text-based assets
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/css application/javascript application/json text/xml image/svg+xml
+</IfModule>

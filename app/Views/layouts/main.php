@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <?php
     // Initialize theme service early (needed for theme-color meta tag)
     $themeService = new \App\Core\ThemeService();
@@ -18,9 +18,16 @@
     $seoOgImage = setting('seo_og_image');
     $storeUrl = rtrim(setting('store_url') ?: 'https://' . ($_SERVER['HTTP_HOST'] ?? 'localhost'), '/');
 
+    // Get store tagline for use in title and meta
+    $storeTagline = setting('store_tagline');
+
     // Determine page title
+    // Tagline takes priority on homepage (it's what the user sets as their store identity)
+    // SEO title is the fallback for homepage when no tagline is set
     if (isset($title)) {
         $pageTitle = escape($title) . ' | ' . appName();
+    } elseif ($isHomePage && $storeTagline) {
+        $pageTitle = appName() . ' - ' . escape($storeTagline);
     } elseif ($isHomePage && $seoTitle) {
         $pageTitle = escape($seoTitle);
     } else {
@@ -32,6 +39,8 @@
         $pageDescription = escape($metaDescription);
     } elseif ($isHomePage && $seoDescription) {
         $pageDescription = escape($seoDescription);
+    } elseif ($storeTagline) {
+        $pageDescription = escape($storeTagline);
     } else {
         $pageDescription = appName() . ' - Premium products and unique designs. Shop our collection.';
     }
@@ -96,8 +105,9 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="<?php echo $themeService->getGoogleFontsUrl(); ?>" rel="stylesheet">
-    <link rel="stylesheet" href="/assets/css/main.css?v=105">
+    <link rel="preload" href="<?php echo $themeService->getGoogleFontsUrl(); ?>" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link href="<?php echo $themeService->getGoogleFontsUrl(); ?>" rel="stylesheet"></noscript>
+    <link rel="stylesheet" href="/assets/css/main.css?v=108">
     <?php
     // Load installed theme CSS (if any)
     $installedThemeCss = \App\Core\ThemeLoader::getThemeCss();
@@ -112,9 +122,13 @@
     if ($themeCss): ?>
     <style id="theme-variables"><?php echo $themeCss; ?></style>
     <?php endif; ?>
-    <?php $activeHoliday = \App\Core\HolidayEffects::getActiveHoliday(); ?>
+    <?php
+    $holidayPreview = $themeService->getHolidayPreview();
+    $activeHoliday = \App\Core\HolidayEffects::getActiveHoliday($holidayPreview);
+    ?>
     <?php if ($activeHoliday): ?>
-    <link rel="stylesheet" href="/assets/css/holidays.css?v=10">
+    <link rel="preload" href="/assets/css/holidays.css?v=13" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="/assets/css/holidays.css?v=13"></noscript>
     <?php endif; ?>
 
     <!-- Google Analytics -->
@@ -166,380 +180,7 @@
     <?php echo $jsonLd; ?>
     </script>
     <?php endif; ?>
-</head>
-<?php
-$bodyClasses = $themeService->getBodyClasses();
-if ($activeHoliday) {
-    $bodyClasses .= ' ' . $activeHoliday['class'];
-}
-$bodyClasses = trim($bodyClasses);
-?>
-<body<?php echo $bodyClasses ? ' class="' . escape($bodyClasses) . '"' : ''; ?>>
-    <!-- Google Tag Manager (noscript) -->
-    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-MK6Z5DFB"
-    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
-    <!-- End Google Tag Manager (noscript) -->
-
-    <!-- Animated background shapes (body) -->
-    <?php if ($bgAnimationEnabled): ?>
-    <?php $bgOpacity = $themeService->getBackgroundOpacity(); ?>
-    <div class="bg-shapes <?php echo $bgAnimationClass; ?>" aria-hidden="true"<?php if ($bgOpacity != 0.5): ?> style="opacity: <?php echo $bgOpacity; ?>"<?php endif; ?>>
-        <div class="shape"></div>
-        <div class="shape"></div>
-        <div class="shape"></div>
-        <div class="shape"></div>
-        <div class="shape"></div>
-        <div class="shape"></div>
-        <div class="shape"></div>
-        <div class="shape"></div>
-    </div>
-    <?php endif; ?>
-
-    <!-- Header canvas effect -->
-    <?php if ($themeService->isHeaderEffectEnabled()): ?>
-    <?php $headerConfig = $themeService->getHeaderEffectConfig(); ?>
-    <script>window.ambientBgConfig = <?php echo json_encode($headerConfig); ?>;</script>
-    <?php endif; ?>
-    <!-- Navigation -->
-    <?php
-    // Check if theme overrides the navbar partial
-    $navbarPartial = \App\Core\ThemeLoader::getPartial('navbar');
-    if ($navbarPartial && \App\Core\ThemeLoader::hasOverride('partial', 'navbar')):
-        include $navbarPartial;
-    else:
-    ?>
-    <nav class="navbar">
-        <div class="container">
-            <div class="navbar-brand">
-                <a href="/" class="logo"><img src="<?php echo setting('store_logo') ?: '/assets/images/apparix-logo.png'; ?>" alt="<?php echo appName(); ?>"></a>
-            </div>
-            <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Toggle menu" aria-expanded="false">
-                <span></span>
-                <span></span>
-                <span></span>
-            </button>
-            <?php
-            $navMenuItems = setting('navbar_menu', [
-                ['label' => 'Home', 'url' => '/'],
-                ['label' => 'Shop', 'url' => '/products'],
-            ]);
-            if (is_string($navMenuItems)) $navMenuItems = json_decode($navMenuItems, true) ?: [];
-            ?>
-            <ul class="navbar-menu" id="navbarMenu">
-                <?php foreach ($navMenuItems as $navItem): ?>
-                <li><a href="<?php echo escape($navItem['url']); ?>"><?php echo escape($navItem['label']); ?></a></li>
-                <?php endforeach; ?>
-                <li class="nav-search">
-                    <form action="/search" method="GET" class="nav-search-form">
-                        <input type="text" name="q" placeholder="Search..." class="nav-search-input" autocomplete="off">
-                        <button type="submit" class="nav-search-btn" aria-label="Search">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="11" cy="11" r="8"/>
-                                <path d="m21 21-4.35-4.35"/>
-                            </svg>
-                        </button>
-                    </form>
-                </li>
-                <li><a href="/favorites" class="nav-favorites" title="My Favorites"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></a></li>
-                <?php
-                $cartModel = new \App\Models\Cart();
-                $cartCount = $cartModel->getCount(session_id(), auth() ? auth()['id'] : null);
-                ?>
-                <li><a href="/cart" class="nav-cart">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
-                        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
-                    </svg>
-                    <span>Cart</span>
-                    <?php if ($cartCount > 0): ?>
-                    <span class="cart-badge" id="cartBadge"><?php echo $cartCount; ?></span>
-                    <?php else: ?>
-                    <span class="cart-badge" id="cartBadge" style="display: none;">0</span>
-                    <?php endif; ?>
-                </a></li>
-                <?php if (auth()): ?>
-                    <li><a href="/account">Account</a></li>
-                    <li><a href="/logout">Logout</a></li>
-                <?php else: ?>
-                    <li><a href="/login">Login</a></li>
-                <?php endif; ?>
-            </ul>
-        </div>
-    </nav>
-    <?php endif; // End navbar theme override check ?>
-
-    <!-- Main Content -->
-    <main class="main-content">
-        <?php if ($flash = getFlash('success')): ?>
-            <div class="alert alert-success"><?php echo escape($flash); ?></div>
-        <?php endif; ?>
-        <?php if ($flash = getFlash('error')): ?>
-            <div class="alert alert-error"><?php echo escape($flash); ?></div>
-        <?php endif; ?>
-
-        <?php echo $content; ?>
-    </main>
-
-    <!-- Newsletter Section -->
-    <?php
-    // Check if theme overrides the newsletter partial
-    $newsletterPartial = \App\Core\ThemeLoader::getPartial('newsletter');
-    if ($newsletterPartial && \App\Core\ThemeLoader::hasOverride('partial', 'newsletter')):
-        include $newsletterPartial;
-    else:
-    ?>
-    <section class="newsletter-section">
-        <div class="container">
-            <div class="newsletter-content">
-                <h3>Stay in the Loop!</h3>
-                <p>Subscribe for exclusive offers, new product announcements, and creative inspiration.</p>
-                <form id="newsletterForm" class="newsletter-form" onsubmit="subscribeNewsletter(event)">
-                    <input type="hidden" name="_csrf_token" value="<?php echo csrfToken(); ?>">
-                    <input type="hidden" name="recaptcha_token" id="newsletter_recaptcha_token">
-                    <div class="newsletter-input-group">
-                        <input type="email" name="email" id="newsletterEmail" placeholder="Your email address" required>
-                        <button type="submit" class="btn btn-primary" id="newsletterBtn">Subscribe</button>
-                    </div>
-                    <div id="newsletterMessage" class="newsletter-message" style="display: none;"></div>
-                </form>
-            </div>
-        </div>
-    </section>
-    <?php endif; // End newsletter theme override check ?>
-
-    <!-- Footer -->
-    <?php
-    // Check if theme overrides the footer partial
-    $footerPartial = \App\Core\ThemeLoader::getPartial('footer');
-    if ($footerPartial && \App\Core\ThemeLoader::hasOverride('partial', 'footer')):
-        include $footerPartial;
-    else:
-    ?>
-    <footer class="footer">
-        <div class="container">
-            <!-- Social Media Links -->
-            <?php
-            $hasSocialLinks = !empty(setting('social_facebook')) || !empty(setting('social_instagram')) ||
-                              !empty(setting('social_twitter')) || !empty(setting('social_tiktok')) ||
-                              !empty(setting('social_youtube')) || !empty(setting('social_etsy')) ||
-                              !empty(setting('social_pinterest')) || !empty(setting('social_linkedin'));
-            if ($hasSocialLinks): ?>
-            <div class="social-links">
-                <?php if (!empty(setting('social_facebook'))): ?>
-                <a href="<?php echo escape(setting('social_facebook')); ?>" target="_blank" rel="noopener" class="social-link" title="Facebook">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-                </a>
-                <?php endif; ?>
-                <?php if (!empty(setting('social_instagram'))): ?>
-                <a href="<?php echo escape(setting('social_instagram')); ?>" target="_blank" rel="noopener" class="social-link" title="Instagram">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
-                </a>
-                <?php endif; ?>
-                <?php if (!empty(setting('social_twitter'))): ?>
-                <a href="<?php echo escape(setting('social_twitter')); ?>" target="_blank" rel="noopener" class="social-link" title="X (Twitter)">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-                </a>
-                <?php endif; ?>
-                <?php if (!empty(setting('social_tiktok'))): ?>
-                <a href="<?php echo escape(setting('social_tiktok')); ?>" target="_blank" rel="noopener" class="social-link" title="TikTok">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg>
-                </a>
-                <?php endif; ?>
-                <?php if (!empty(setting('social_youtube'))): ?>
-                <a href="<?php echo escape(setting('social_youtube')); ?>" target="_blank" rel="noopener" class="social-link" title="YouTube">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
-                </a>
-                <?php endif; ?>
-                <?php if (!empty(setting('social_etsy'))): ?>
-                <a href="<?php echo escape(setting('social_etsy')); ?>" target="_blank" rel="noopener" class="social-link" title="Etsy Shop">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M8.559 3.89c0-.308.032-.6.06-.861.631-.054 1.647-.109 2.721-.109 2.005 0 4.178.243 4.995.392.198.034.314.104.326.316.063 1.104.249 2.396.376 3.426l-.81.125c-.323-1.282-.764-2.618-2.152-2.966-.698-.175-1.676-.21-2.303-.206-.524.003-1.148.014-1.213.014v6.639c1.134.009 2.291-.078 2.875-.134.635-.062.914-.263 1.043-.989l.217-1.217h.77c-.02.929-.064 2.035-.073 3.2.009 1.073.053 2.253.073 3.151h-.77l-.217-1.178c-.128-.766-.393-.94-1.043-1.037-.584-.088-1.741-.108-2.875-.117v4.94c0 1.553.204 1.966.726 2.146.521.18 1.327.195 2.234.195 1.855 0 3.073-.181 3.888-.769.84-.605 1.476-1.781 2.036-3.365l.836.249c-.236 1.121-.772 3.386-.961 4.281-.108.51-.205.682-.741.805-1.156.267-4.088.393-5.842.393-1.617 0-2.842-.025-3.813-.08-.506-.03-.813-.086-.813-.579 0-.449.05-1.393.05-3.886v-8.52c0-2.491-.05-3.434-.05-3.884z"/></svg>
-                </a>
-                <?php endif; ?>
-                <?php if (!empty(setting('social_pinterest'))): ?>
-                <a href="<?php echo escape(setting('social_pinterest')); ?>" target="_blank" rel="noopener" class="social-link" title="Pinterest">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0a12 12 0 0 0-4.373 23.178c-.07-.634-.134-1.606.028-2.298.146-.625.938-3.977.938-3.977s-.239-.479-.239-1.187c0-1.113.645-1.943 1.448-1.943.682 0 1.012.512 1.012 1.127 0 .687-.437 1.712-.663 2.663-.188.796.4 1.446 1.185 1.446 1.422 0 2.515-1.5 2.515-3.664 0-1.915-1.377-3.254-3.342-3.254-2.276 0-3.612 1.707-3.612 3.471 0 .688.265 1.425.595 1.826a.24.24 0 0 1 .056.23c-.061.252-.196.796-.222.907-.035.146-.116.177-.268.107-1-.465-1.624-1.926-1.624-3.1 0-2.523 1.834-4.84 5.286-4.84 2.775 0 4.932 1.977 4.932 4.62 0 2.757-1.739 4.976-4.151 4.976-.811 0-1.573-.421-1.834-.919l-.498 1.902c-.181.695-.669 1.566-.995 2.097A12 12 0 1 0 12 0z"/></svg>
-                </a>
-                <?php endif; ?>
-                <?php if (!empty(setting('social_linkedin'))): ?>
-                <a href="<?php echo escape(setting('social_linkedin')); ?>" target="_blank" rel="noopener" class="social-link" title="LinkedIn">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
-                </a>
-                <?php endif; ?>
-            </div>
-            <?php endif; ?>
-
-            <p class="footer-copy">&copy; <?php echo date('Y'); ?> <?php echo appName(); ?>. All rights reserved.</p>
-            <?php
-            $footMenuItems = setting('footer_menu', [
-                ['label' => 'Privacy', 'url' => '/privacy'],
-                ['label' => 'Terms', 'url' => '/terms'],
-                ['label' => 'Contact', 'url' => '/contact'],
-            ]);
-            if (is_string($footMenuItems)) $footMenuItems = json_decode($footMenuItems, true) ?: [];
-            ?>
-            <p class="footer-links"><?php echo implode(' | ', array_map(function($item) {
-                return '<a href="' . escape($item['url']) . '">' . escape($item['label']) . '</a>';
-            }, $footMenuItems)); ?></p>
-            <?php
-            // Show "Powered by Apparix" if enabled in settings OR if on free tier (can't disable on free)
-            $showPoweredBy = setting('show_powered_by', false) || \App\Core\License::isFree();
-            if ($showPoweredBy): ?>
-            <p class="footer-powered-by"><a href="https://apparix.app" target="_blank" rel="noopener">Powered by Apparix</a></p>
-            <?php endif; ?>
-        </div>
-    </footer>
-    <?php endif; // End footer theme override check ?>
-
-    <script>
-    const recaptchaSiteKey = '<?php echo \App\Core\ReCaptcha::getSiteKey(); ?>';
-
-    async function subscribeNewsletter(e) {
-        e.preventDefault();
-        const form = document.getElementById('newsletterForm');
-        const btn = document.getElementById('newsletterBtn');
-        const msg = document.getElementById('newsletterMessage');
-        const email = document.getElementById('newsletterEmail').value;
-
-        if (!email) {
-            msg.style.display = 'block';
-            msg.className = 'newsletter-message error';
-            msg.textContent = 'Please enter your email address.';
-            return;
-        }
-
-        btn.disabled = true;
-        btn.textContent = 'Subscribing...';
-        msg.style.display = 'none';
-
-        try {
-            // Get reCAPTCHA token first (wrapped in ready check)
-            if (recaptchaSiteKey && typeof grecaptcha !== 'undefined') {
-                try {
-                    await new Promise((resolve, reject) => {
-                        grecaptcha.ready(() => {
-                            grecaptcha.execute(recaptchaSiteKey, {action: 'newsletter_subscribe'})
-                                .then(token => {
-                                    document.getElementById('newsletter_recaptcha_token').value = token;
-                                    resolve();
-                                })
-                                .catch(reject);
-                        });
-                    });
-                } catch (recaptchaError) {
-                    console.warn('reCAPTCHA failed, continuing without it:', recaptchaError);
-                }
-            }
-
-            const formData = new FormData(form);
-            formData.append('source', 'footer');
-
-            const response = await fetch('/newsletter/subscribe', {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            });
-
-            const data = await response.json();
-
-            msg.style.display = 'block';
-            if (data.success) {
-                msg.className = 'newsletter-message success';
-                msg.textContent = data.message || 'Thank you for subscribing!';
-                document.getElementById('newsletterEmail').value = '';
-            } else {
-                msg.className = 'newsletter-message error';
-                msg.textContent = data.error || 'Failed to subscribe. Please try again.';
-            }
-        } catch (error) {
-            console.error('Newsletter subscribe error:', error);
-            msg.style.display = 'block';
-            msg.className = 'newsletter-message error';
-            msg.textContent = 'An error occurred. Please try again.';
-        }
-
-        btn.disabled = false;
-        btn.textContent = 'Subscribe';
-    }
-    </script>
-
-    <script src="/assets/js/main.js?v=13"></script>
-    <?php if ($themeService->isHeaderEffectEnabled()): ?>
-    <script src="/assets/js/ambient-bg.js?v=3"></script>
-    <?php endif; ?>
-    <?php if ($activeHoliday): ?>
-    <script src="/assets/js/holidays.js?v=10"></script>
-    <?php endif; ?>
-
-    <!-- Mobile Menu Toggle -->
-    <script>
-    (function() {
-        const toggle = document.getElementById('mobileMenuToggle');
-        const menu = document.getElementById('navbarMenu');
-
-        if (toggle && menu) {
-            toggle.addEventListener('click', function() {
-                toggle.classList.toggle('active');
-                menu.classList.toggle('active');
-                toggle.setAttribute('aria-expanded', menu.classList.contains('active'));
-                document.body.style.overflow = menu.classList.contains('active') ? 'hidden' : '';
-            });
-
-            // Close menu when clicking a link
-            menu.querySelectorAll('a').forEach(function(link) {
-                link.addEventListener('click', function() {
-                    toggle.classList.remove('active');
-                    menu.classList.remove('active');
-                    toggle.setAttribute('aria-expanded', 'false');
-                    document.body.style.overflow = '';
-                });
-            });
-
-            // Close menu on resize to desktop
-            window.addEventListener('resize', function() {
-                if (window.innerWidth > 768) {
-                    toggle.classList.remove('active');
-                    menu.classList.remove('active');
-                    toggle.setAttribute('aria-expanded', 'false');
-                    document.body.style.overflow = '';
-                }
-            });
-        }
-    })();
-    </script>
-
-    <!-- Exit-Intent Discount Popup -->
-    <div id="exitIntentPopup" class="exit-intent-popup" style="display: none;">
-        <div class="exit-popup-overlay"></div>
-        <div class="exit-popup-content">
-            <button type="button" class="exit-popup-close" onclick="closeExitPopup()" aria-label="Close">&times;</button>
-            <div class="exit-popup-badge">WAIT!</div>
-            <h3>Don't Leave Empty-Handed!</h3>
-            <p>Get <strong>10% OFF</strong> your first order when you enter your email below.</p>
-            <p class="exit-popup-exclusion">*Excludes items already on sale</p>
-            <div class="exit-popup-timer" id="exitPopupTimer">
-                <span class="timer-label">Offer expires in:</span>
-                <span class="timer-value" id="exitTimerValue">48:00:00</span>
-            </div>
-            <form id="exitIntentForm" class="exit-popup-form" onsubmit="submitExitIntent(event)">
-                <input type="hidden" name="_csrf_token" value="<?php echo csrfToken(); ?>">
-                <input type="email" name="email" id="exitEmail" placeholder="Enter your email" required>
-                <button type="submit" class="btn btn-primary" id="exitSubmitBtn">Get My 10% Off</button>
-            </form>
-            <div id="exitCouponResult" class="exit-coupon-result" style="display: none;">
-                <div class="coupon-success-icon">🎉</div>
-                <p>Your exclusive discount code:</p>
-                <div class="coupon-code" id="exitCouponCode"></div>
-                <p class="coupon-expires">Expires in <span id="couponExpiresIn"></span></p>
-                <p class="coupon-note">*Cannot be combined with other offers or applied to sale items</p>
-                <a href="/products" class="btn btn-primary">Start Shopping</a>
-            </div>
-            <div id="exitMessage" class="exit-popup-message" style="display: none;"></div>
-            <p class="exit-popup-dismiss"><a href="#" onclick="closeExitPopup(); return false;">No thanks, I'll pay full price</a></p>
-        </div>
-    </div>
-
+    <!-- Popup & Banner Styles -->
     <style>
     .exit-intent-popup {
         position: fixed;
@@ -856,7 +497,574 @@ $bodyClasses = trim($bodyClasses);
         color: #9ca3af;
         font-style: italic;
     }
+    .mobile-newsletter-banner {
+        display: none;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: linear-gradient(135deg, #fff5f9 0%, #ffffff 100%);
+        padding: 1rem;
+        box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
+        z-index: 9999;
+        transform: translateY(100%);
+        transition: transform 0.4s ease;
+        border-top: 2px solid #FF68C5;
+    }
+    .mobile-newsletter-banner.visible {
+        transform: translateY(0);
+    }
+    .mobile-newsletter-close {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.75rem;
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        color: #9ca3af;
+        cursor: pointer;
+        padding: 0.25rem;
+        line-height: 1;
+    }
+    .mobile-newsletter-content {
+        padding-right: 2rem;
+    }
+    .mobile-newsletter-text {
+        margin: 0 0 0.75rem 0;
+        font-size: 0.9rem;
+        color: #374151;
+    }
+    .mobile-newsletter-text strong {
+        color: #1f2937;
+    }
+    .mobile-newsletter-form {
+        display: flex;
+        gap: 0.5rem;
+    }
+    .mobile-newsletter-form input[type="email"] {
+        flex: 1;
+        padding: 0.625rem 0.875rem;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 0.9rem;
+    }
+    .mobile-newsletter-form input[type="email"]:focus {
+        outline: none;
+        border-color: #FF68C5;
+    }
+    .mobile-newsletter-form .btn {
+        padding: 0.625rem 1rem;
+        font-size: 0.9rem;
+        white-space: nowrap;
+    }
+    .mobile-newsletter-success {
+        color: #059669;
+        font-size: 0.9rem;
+        padding: 0.5rem 0;
+    }
+    .mobile-newsletter-success span::before {
+        content: '✓ ';
+    }
+    /* Only show on mobile */
+    @media (min-width: 769px) {
+        .mobile-newsletter-banner {
+            display: none !important;
+        }
+    }
+    .social-proof-popup {
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+        padding: 1rem 1.25rem;
+        display: none;
+        align-items: flex-start;
+        gap: 0.75rem;
+        max-width: 320px;
+        z-index: 9998;
+        border-left: 4px solid #FF68C5;
+    }
+    .social-proof-popup.visible {
+        display: flex;
+        animation: socialProofSlideIn 0.4s ease forwards;
+    }
+    @keyframes socialProofSlideIn {
+        from { opacity: 0; transform: translateX(-30px); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+    .social-proof-close {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        background: #f3f4f6;
+        border: none;
+        border-radius: 50%;
+        font-size: 1.25rem;
+        color: #6b7280;
+        cursor: pointer;
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+        z-index: 10;
+    }
+    .social-proof-close:hover,
+    .social-proof-close:active {
+        background: #e5e7eb;
+        color: #1f2937;
+    }
+    .social-proof-icon {
+        font-size: 1.75rem;
+        flex-shrink: 0;
+    }
+    .social-proof-content {
+        flex: 1;
+        padding-right: 1.5rem;
+    }
+    .social-proof-text {
+        margin: 0;
+        font-size: 0.875rem;
+        color: #4b5563;
+        line-height: 1.4;
+    }
+    .social-proof-text strong {
+        color: #1f2937;
+    }
+    .social-proof-product {
+        margin: 0.25rem 0 0 0;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #1f2937;
+    }
+    .social-proof-time {
+        margin: 0.25rem 0 0 0;
+        font-size: 0.75rem;
+        color: #9ca3af;
+    }
+    @media (max-width: 480px) {
+        .social-proof-popup {
+            left: 10px;
+            right: 10px;
+            bottom: 80px;
+            max-width: none;
+        }
+        .social-proof-popup.visible {
+            animation: socialProofSlideUp 0.4s ease forwards;
+        }
+        @keyframes socialProofSlideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .social-proof-close {
+            width: 36px;
+            height: 36px;
+            font-size: 1.5rem;
+            top: 8px;
+            right: 8px;
+        }
+    }
     </style>
+</head>
+<?php
+$bodyClasses = $themeService->getBodyClasses();
+if ($activeHoliday) {
+    $bodyClasses .= ' ' . $activeHoliday['class'];
+}
+$bodyClasses = trim($bodyClasses);
+?>
+<?php $holidayEffectsEnabled = $activeHoliday && ($themeService->isHolidayEffectsEnabled() || $holidayPreview); ?>
+<body<?php echo $bodyClasses ? ' class="' . escape($bodyClasses) . '"' : ''; ?><?php if ($activeHoliday): ?> data-holiday-effects="<?php echo $holidayEffectsEnabled ? 'enabled' : 'disabled'; ?>"<?php endif; ?>>
+    <!-- Google Tag Manager (noscript) -->
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-MK6Z5DFB"
+    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <!-- End Google Tag Manager (noscript) -->
+
+    <!-- Animated background shapes (body) -->
+    <?php if ($bgAnimationEnabled): ?>
+    <?php $bgOpacity = $themeService->getBackgroundOpacity(); ?>
+    <div class="bg-shapes <?php echo $bgAnimationClass; ?>" aria-hidden="true"<?php if ($bgOpacity != 0.5): ?> style="opacity: <?php echo $bgOpacity; ?>"<?php endif; ?>>
+        <div class="shape"></div>
+        <div class="shape"></div>
+        <div class="shape"></div>
+        <div class="shape"></div>
+        <div class="shape"></div>
+        <div class="shape"></div>
+        <div class="shape"></div>
+        <div class="shape"></div>
+    </div>
+    <?php endif; ?>
+
+    <!-- Header canvas effect -->
+    <?php
+    // Holidays override the canvas effect with themed animations
+    $holidayCanvasOverride = false;
+    $holidayCanvasEffects = [
+        'christmas'    => ['effect' => 'snowfall',    'opacity' => 1, 'location' => 'hero', 'color1' => '#ffffff', 'color2' => '#c8e8ff'],
+        'valentines'   => ['effect' => 'bokeh',       'opacity' => 1, 'location' => 'hero', 'color1' => '#ff4d6d', 'color2' => '#ff8fa3'],
+        'stpatricks'   => ['effect' => 'stars',        'opacity' => 1, 'location' => 'hero', 'color1' => '#2ecc71', 'color2' => '#a8e6cf'],
+        'halloween'    => ['effect' => 'haunted',      'opacity' => 1, 'location' => 'hero', 'color1' => '#ff6b1a', 'color2' => '#9b59b6'],
+        'easter'       => ['effect' => 'bokeh',       'opacity' => 1, 'location' => 'hero', 'color1' => '#c9a0dc', 'color2' => '#f8b4d9'],
+        'independence' => ['effect' => 'fireworks',   'opacity' => 1, 'location' => 'hero', 'color1' => '#ff3c3c', 'color2' => '#5078ff'],
+        'newyear'      => ['effect' => 'fireworks',   'opacity' => 1, 'location' => 'hero', 'color1' => '#ffd700', 'color2' => '#c0c0c0'],
+    ];
+    if ($holidayEffectsEnabled && $activeHoliday && isset($holidayCanvasEffects[$activeHoliday['key']])):
+        $holidayCanvasOverride = true; ?>
+    <script>window.ambientBgConfig = <?php echo json_encode($holidayCanvasEffects[$activeHoliday['key']]); ?>;</script>
+    <?php elseif ($themeService->isHeaderEffectEnabled()):
+        $headerConfig = $themeService->getHeaderEffectConfig(); ?>
+    <script>window.ambientBgConfig = <?php echo json_encode($headerConfig); ?>;</script>
+    <?php endif; ?>
+    <!-- Navigation -->
+    <?php
+    // Check if theme overrides the navbar partial
+    $navbarPartial = \App\Core\ThemeLoader::getPartial('navbar');
+    if ($navbarPartial && \App\Core\ThemeLoader::hasOverride('partial', 'navbar')):
+        include $navbarPartial;
+    else:
+    ?>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-brand">
+                <a href="/" class="logo"><img src="<?php echo setting('store_logo') ?: '/assets/images/apparix-logo.png'; ?>?v=2" alt="<?php echo appName(); ?>"></a>
+            </div>
+            <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Toggle menu" aria-expanded="false">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <?php
+            $navMenuItems = setting('navbar_menu', [
+                ['label' => 'Home', 'url' => '/'],
+                ['label' => 'Shop', 'url' => '/products'],
+            ]);
+            if (is_string($navMenuItems)) $navMenuItems = json_decode($navMenuItems, true) ?: [];
+            ?>
+            <ul class="navbar-menu" id="navbarMenu">
+                <?php foreach ($navMenuItems as $navItem): ?>
+                <li><a href="<?php echo escape($navItem['url']); ?>"><?php echo escape($navItem['label']); ?></a></li>
+                <?php endforeach; ?>
+                <li class="nav-search">
+                    <form action="/search" method="GET" class="nav-search-form">
+                        <input type="text" name="q" placeholder="Search..." class="nav-search-input" autocomplete="off">
+                        <button type="submit" class="nav-search-btn" aria-label="Search">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="8"/>
+                                <path d="m21 21-4.35-4.35"/>
+                            </svg>
+                        </button>
+                    </form>
+                </li>
+                <li><a href="/favorites" class="nav-favorites" title="My Favorites"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></a></li>
+                <?php
+                $cartModel = new \App\Models\Cart();
+                $cartCount = $cartModel->getCount(session_id(), auth() ? auth()['id'] : null);
+                ?>
+                <li><a href="/cart" class="nav-cart">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+                        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+                    </svg>
+                    <span>Cart</span>
+                    <?php if ($cartCount > 0): ?>
+                    <span class="cart-badge" id="cartBadge"><?php echo $cartCount; ?></span>
+                    <?php else: ?>
+                    <span class="cart-badge" id="cartBadge" style="display: none;">0</span>
+                    <?php endif; ?>
+                </a></li>
+                <?php if (auth()): ?>
+                    <li><a href="/account">Account</a></li>
+                    <li><a href="/logout">Logout</a></li>
+                <?php else: ?>
+                    <li><a href="/login">Login</a></li>
+                <?php endif; ?>
+            </ul>
+        </div>
+    </nav>
+    <?php endif; // End navbar theme override check ?>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <?php if ($flash = getFlash('success')): ?>
+            <div class="alert alert-success"><?php echo escape($flash); ?></div>
+        <?php endif; ?>
+        <?php if ($flash = getFlash('error')): ?>
+            <div class="alert alert-error"><?php echo escape($flash); ?></div>
+        <?php endif; ?>
+
+        <?php echo $content; ?>
+    </main>
+
+    <!-- Newsletter Section -->
+    <?php
+    // Check if theme overrides the newsletter partial
+    $newsletterPartial = \App\Core\ThemeLoader::getPartial('newsletter');
+    if ($newsletterPartial && \App\Core\ThemeLoader::hasOverride('partial', 'newsletter')):
+        include $newsletterPartial;
+    else:
+    ?>
+    <section class="newsletter-section">
+        <div class="container">
+            <div class="newsletter-content">
+                <h3>Stay in the Loop!</h3>
+                <p>Subscribe for exclusive offers, new product announcements, and creative inspiration.</p>
+                <form id="newsletterForm" class="newsletter-form" onsubmit="subscribeNewsletter(event)">
+                    <input type="hidden" name="_csrf_token" value="<?php echo csrfToken(); ?>">
+                    <input type="hidden" name="recaptcha_token" id="newsletter_recaptcha_token">
+                    <div class="newsletter-input-group">
+                        <input type="email" name="email" id="newsletterEmail" placeholder="Your email address" required>
+                        <button type="submit" class="btn btn-primary" id="newsletterBtn">Subscribe</button>
+                    </div>
+                    <div id="newsletterMessage" class="newsletter-message" style="display: none;"></div>
+                </form>
+            </div>
+        </div>
+    </section>
+    <?php endif; // End newsletter theme override check ?>
+
+    <!-- Footer -->
+    <?php
+    // Check if theme overrides the footer partial
+    $footerPartial = \App\Core\ThemeLoader::getPartial('footer');
+    if ($footerPartial && \App\Core\ThemeLoader::hasOverride('partial', 'footer')):
+        include $footerPartial;
+    else:
+    ?>
+    <footer class="footer">
+        <div class="container">
+            <!-- Social Media Links -->
+            <?php
+            $hasSocialLinks = !empty(setting('social_facebook')) || !empty(setting('social_instagram')) ||
+                              !empty(setting('social_twitter')) || !empty(setting('social_tiktok')) ||
+                              !empty(setting('social_youtube')) || !empty(setting('social_etsy')) ||
+                              !empty(setting('social_pinterest')) || !empty(setting('social_linkedin'));
+            if ($hasSocialLinks): ?>
+            <div class="social-links">
+                <?php if (!empty(setting('social_facebook'))): ?>
+                <a href="<?php echo escape(setting('social_facebook')); ?>" target="_blank" rel="noopener" class="social-link" title="Facebook">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                </a>
+                <?php endif; ?>
+                <?php if (!empty(setting('social_instagram'))): ?>
+                <a href="<?php echo escape(setting('social_instagram')); ?>" target="_blank" rel="noopener" class="social-link" title="Instagram">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+                </a>
+                <?php endif; ?>
+                <?php if (!empty(setting('social_twitter'))): ?>
+                <a href="<?php echo escape(setting('social_twitter')); ?>" target="_blank" rel="noopener" class="social-link" title="X (Twitter)">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                </a>
+                <?php endif; ?>
+                <?php if (!empty(setting('social_tiktok'))): ?>
+                <a href="<?php echo escape(setting('social_tiktok')); ?>" target="_blank" rel="noopener" class="social-link" title="TikTok">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg>
+                </a>
+                <?php endif; ?>
+                <?php if (!empty(setting('social_youtube'))): ?>
+                <a href="<?php echo escape(setting('social_youtube')); ?>" target="_blank" rel="noopener" class="social-link" title="YouTube">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                </a>
+                <?php endif; ?>
+                <?php if (!empty(setting('social_etsy'))): ?>
+                <a href="<?php echo escape(setting('social_etsy')); ?>" target="_blank" rel="noopener" class="social-link" title="Etsy Shop">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M8.559 3.89c0-.308.032-.6.06-.861.631-.054 1.647-.109 2.721-.109 2.005 0 4.178.243 4.995.392.198.034.314.104.326.316.063 1.104.249 2.396.376 3.426l-.81.125c-.323-1.282-.764-2.618-2.152-2.966-.698-.175-1.676-.21-2.303-.206-.524.003-1.148.014-1.213.014v6.639c1.134.009 2.291-.078 2.875-.134.635-.062.914-.263 1.043-.989l.217-1.217h.77c-.02.929-.064 2.035-.073 3.2.009 1.073.053 2.253.073 3.151h-.77l-.217-1.178c-.128-.766-.393-.94-1.043-1.037-.584-.088-1.741-.108-2.875-.117v4.94c0 1.553.204 1.966.726 2.146.521.18 1.327.195 2.234.195 1.855 0 3.073-.181 3.888-.769.84-.605 1.476-1.781 2.036-3.365l.836.249c-.236 1.121-.772 3.386-.961 4.281-.108.51-.205.682-.741.805-1.156.267-4.088.393-5.842.393-1.617 0-2.842-.025-3.813-.08-.506-.03-.813-.086-.813-.579 0-.449.05-1.393.05-3.886v-8.52c0-2.491-.05-3.434-.05-3.884z"/></svg>
+                </a>
+                <?php endif; ?>
+                <?php if (!empty(setting('social_pinterest'))): ?>
+                <a href="<?php echo escape(setting('social_pinterest')); ?>" target="_blank" rel="noopener" class="social-link" title="Pinterest">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0a12 12 0 0 0-4.373 23.178c-.07-.634-.134-1.606.028-2.298.146-.625.938-3.977.938-3.977s-.239-.479-.239-1.187c0-1.113.645-1.943 1.448-1.943.682 0 1.012.512 1.012 1.127 0 .687-.437 1.712-.663 2.663-.188.796.4 1.446 1.185 1.446 1.422 0 2.515-1.5 2.515-3.664 0-1.915-1.377-3.254-3.342-3.254-2.276 0-3.612 1.707-3.612 3.471 0 .688.265 1.425.595 1.826a.24.24 0 0 1 .056.23c-.061.252-.196.796-.222.907-.035.146-.116.177-.268.107-1-.465-1.624-1.926-1.624-3.1 0-2.523 1.834-4.84 5.286-4.84 2.775 0 4.932 1.977 4.932 4.62 0 2.757-1.739 4.976-4.151 4.976-.811 0-1.573-.421-1.834-.919l-.498 1.902c-.181.695-.669 1.566-.995 2.097A12 12 0 1 0 12 0z"/></svg>
+                </a>
+                <?php endif; ?>
+                <?php if (!empty(setting('social_linkedin'))): ?>
+                <a href="<?php echo escape(setting('social_linkedin')); ?>" target="_blank" rel="noopener" class="social-link" title="LinkedIn">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                </a>
+                <?php endif; ?>
+            </div>
+            <?php endif; ?>
+
+            <p class="footer-copy">&copy; <?php echo date('Y'); ?> <?php echo appName(); ?>. All rights reserved.</p>
+            <?php
+            $footMenuItems = setting('footer_menu', [
+                ['label' => 'Privacy', 'url' => '/privacy'],
+                ['label' => 'Terms', 'url' => '/terms'],
+                ['label' => 'Contact', 'url' => '/contact'],
+            ]);
+            if (is_string($footMenuItems)) $footMenuItems = json_decode($footMenuItems, true) ?: [];
+            ?>
+            <p class="footer-links"><?php echo implode(' | ', array_map(function($item) {
+                return '<a href="' . escape($item['url']) . '">' . escape($item['label']) . '</a>';
+            }, $footMenuItems)); ?></p>
+            <?php
+            // Show "Powered by Apparix" if enabled in settings OR if on free tier (can't disable on free)
+            $showPoweredBy = setting('show_powered_by', false) || \App\Core\License::isFree();
+            if ($showPoweredBy): ?>
+            <p class="footer-powered-by"><a href="https://apparix.app" target="_blank" rel="noopener">Powered by Apparix</a></p>
+            <?php endif; ?>
+        </div>
+    </footer>
+    <?php endif; // End footer theme override check ?>
+
+    <script>
+    const recaptchaSiteKey = '<?php echo \App\Core\ReCaptcha::getSiteKey(); ?>';
+
+    async function subscribeNewsletter(e) {
+        e.preventDefault();
+        const form = document.getElementById('newsletterForm');
+        const btn = document.getElementById('newsletterBtn');
+        const msg = document.getElementById('newsletterMessage');
+        const email = document.getElementById('newsletterEmail').value;
+
+        if (!email) {
+            msg.style.display = 'block';
+            msg.className = 'newsletter-message error';
+            msg.textContent = 'Please enter your email address.';
+            return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = 'Subscribing...';
+        msg.style.display = 'none';
+
+        try {
+            // Get reCAPTCHA token first (wrapped in ready check)
+            if (recaptchaSiteKey && typeof grecaptcha !== 'undefined') {
+                try {
+                    await new Promise((resolve, reject) => {
+                        grecaptcha.ready(() => {
+                            grecaptcha.execute(recaptchaSiteKey, {action: 'newsletter_subscribe'})
+                                .then(token => {
+                                    document.getElementById('newsletter_recaptcha_token').value = token;
+                                    resolve();
+                                })
+                                .catch(reject);
+                        });
+                    });
+                } catch (recaptchaError) {
+                    console.warn('reCAPTCHA failed, continuing without it:', recaptchaError);
+                }
+            }
+
+            const formData = new FormData(form);
+            formData.append('source', 'footer');
+
+            const response = await fetch('/newsletter/subscribe', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            const data = await response.json();
+
+            msg.style.display = 'block';
+            if (data.success) {
+                msg.className = 'newsletter-message success';
+                msg.textContent = data.message || 'Thank you for subscribing!';
+                document.getElementById('newsletterEmail').value = '';
+            } else {
+                msg.className = 'newsletter-message error';
+                msg.textContent = data.error || 'Failed to subscribe. Please try again.';
+            }
+        } catch (error) {
+            console.error('Newsletter subscribe error:', error);
+            msg.style.display = 'block';
+            msg.className = 'newsletter-message error';
+            msg.textContent = 'An error occurred. Please try again.';
+        }
+
+        btn.disabled = false;
+        btn.textContent = 'Subscribe';
+    }
+    </script>
+
+    <script defer src="/assets/js/main.js?v=14"></script>
+    <?php if ($themeService->isHeaderEffectEnabled() || $holidayCanvasOverride || $holidayEffectsEnabled): ?>
+    <script>
+    requestAnimationFrame(function(){setTimeout(function(){
+        <?php if ($themeService->isHeaderEffectEnabled() || $holidayCanvasOverride): ?>
+        var a=document.createElement('script');a.src='/assets/js/ambient-bg.js?v=11';document.body.appendChild(a);
+        <?php endif; ?>
+        <?php if ($holidayEffectsEnabled): ?>
+        var h=document.createElement('script');h.src='/assets/js/holidays.js?v=15';document.body.appendChild(h);
+        <?php endif; ?>
+    },0);});
+    </script>
+    <?php endif; ?>
+
+    <!-- Mobile Menu Toggle -->
+    <script>
+    (function() {
+        const toggle = document.getElementById('mobileMenuToggle');
+        const menu = document.getElementById('navbarMenu');
+
+        if (toggle && menu) {
+            toggle.addEventListener('click', function() {
+                toggle.classList.toggle('active');
+                menu.classList.toggle('active');
+                toggle.setAttribute('aria-expanded', menu.classList.contains('active'));
+                document.body.style.overflow = menu.classList.contains('active') ? 'hidden' : '';
+            });
+
+            // Close menu when clicking a link
+            menu.querySelectorAll('a').forEach(function(link) {
+                link.addEventListener('click', function() {
+                    toggle.classList.remove('active');
+                    menu.classList.remove('active');
+                    toggle.setAttribute('aria-expanded', 'false');
+                    document.body.style.overflow = '';
+                });
+            });
+
+            // Close menu on resize to desktop
+            window.addEventListener('resize', function() {
+                if (window.innerWidth > 768) {
+                    toggle.classList.remove('active');
+                    menu.classList.remove('active');
+                    toggle.setAttribute('aria-expanded', 'false');
+                    document.body.style.overflow = '';
+                }
+            });
+        }
+    })();
+    </script>
+
+    <!-- Exit-Intent Discount Popup -->
+    <div id="exitIntentPopup" class="exit-intent-popup" style="display: none;">
+        <div class="exit-popup-overlay"></div>
+        <div class="exit-popup-content">
+            <button type="button" class="exit-popup-close" onclick="closeExitPopup()" aria-label="Close">&times;</button>
+            <div class="exit-popup-badge">WAIT!</div>
+            <h3>Don't Leave Empty-Handed!</h3>
+            <p>Get <strong>10% OFF</strong> your first order when you enter your email below.</p>
+            <p class="exit-popup-exclusion">*Excludes items already on sale</p>
+            <div class="exit-popup-timer" id="exitPopupTimer">
+                <span class="timer-label">Offer expires in:</span>
+                <span class="timer-value" id="exitTimerValue">48:00:00</span>
+            </div>
+            <form id="exitIntentForm" class="exit-popup-form" onsubmit="submitExitIntent(event)">
+                <input type="hidden" name="_csrf_token" value="<?php echo csrfToken(); ?>">
+                <input type="email" name="email" id="exitEmail" placeholder="Enter your email" required>
+                <button type="submit" class="btn btn-primary" id="exitSubmitBtn">Get My 10% Off</button>
+            </form>
+            <div id="exitCouponResult" class="exit-coupon-result" style="display: none;">
+                <div class="coupon-success-icon">🎉</div>
+                <p>Your exclusive discount code:</p>
+                <div class="coupon-code" id="exitCouponCode"></div>
+                <p class="coupon-expires">Expires in <span id="couponExpiresIn"></span></p>
+                <p class="coupon-note">*Cannot be combined with other offers or applied to sale items</p>
+                <a href="/products" class="btn btn-primary">Start Shopping</a>
+            </div>
+            <div id="exitMessage" class="exit-popup-message" style="display: none;"></div>
+            <p class="exit-popup-dismiss"><a href="#" onclick="closeExitPopup(); return false;">No thanks, I'll pay full price</a></p>
+        </div>
+    </div>
 
     <!-- Lucky Clover Modal -->
     <div id="cloverModal" class="clover-modal" style="display: none;">
@@ -1181,83 +1389,6 @@ $bodyClasses = trim($bodyClasses);
         </div>
     </div>
 
-    <style>
-    .mobile-newsletter-banner {
-        display: none;
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        background: linear-gradient(135deg, #fff5f9 0%, #ffffff 100%);
-        padding: 1rem;
-        box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
-        z-index: 9999;
-        transform: translateY(100%);
-        transition: transform 0.4s ease;
-        border-top: 2px solid #FF68C5;
-    }
-    .mobile-newsletter-banner.visible {
-        transform: translateY(0);
-    }
-    .mobile-newsletter-close {
-        position: absolute;
-        top: 0.5rem;
-        right: 0.75rem;
-        background: none;
-        border: none;
-        font-size: 1.5rem;
-        color: #9ca3af;
-        cursor: pointer;
-        padding: 0.25rem;
-        line-height: 1;
-    }
-    .mobile-newsletter-content {
-        padding-right: 2rem;
-    }
-    .mobile-newsletter-text {
-        margin: 0 0 0.75rem 0;
-        font-size: 0.9rem;
-        color: #374151;
-    }
-    .mobile-newsletter-text strong {
-        color: #1f2937;
-    }
-    .mobile-newsletter-form {
-        display: flex;
-        gap: 0.5rem;
-    }
-    .mobile-newsletter-form input[type="email"] {
-        flex: 1;
-        padding: 0.625rem 0.875rem;
-        border: 2px solid #e5e7eb;
-        border-radius: 8px;
-        font-size: 0.9rem;
-    }
-    .mobile-newsletter-form input[type="email"]:focus {
-        outline: none;
-        border-color: #FF68C5;
-    }
-    .mobile-newsletter-form .btn {
-        padding: 0.625rem 1rem;
-        font-size: 0.9rem;
-        white-space: nowrap;
-    }
-    .mobile-newsletter-success {
-        color: #059669;
-        font-size: 0.9rem;
-        padding: 0.5rem 0;
-    }
-    .mobile-newsletter-success span::before {
-        content: '✓ ';
-    }
-    /* Only show on mobile */
-    @media (min-width: 769px) {
-        .mobile-newsletter-banner {
-            display: none !important;
-        }
-    }
-    </style>
-
     <script>
     // Mobile Newsletter Slide-in
     (function() {
@@ -1373,107 +1504,6 @@ $bodyClasses = trim($bodyClasses);
             <p class="social-proof-time" id="socialProofTime">just now</p>
         </div>
     </div>
-
-    <style>
-    .social-proof-popup {
-        position: fixed;
-        bottom: 20px;
-        left: 20px;
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 8px 30px rgba(0,0,0,0.15);
-        padding: 1rem 1.25rem;
-        display: none;
-        align-items: flex-start;
-        gap: 0.75rem;
-        max-width: 320px;
-        z-index: 9998;
-        border-left: 4px solid #FF68C5;
-    }
-    .social-proof-popup.visible {
-        display: flex;
-        animation: socialProofSlideIn 0.4s ease forwards;
-    }
-    @keyframes socialProofSlideIn {
-        from { opacity: 0; transform: translateX(-30px); }
-        to { opacity: 1; transform: translateX(0); }
-    }
-    .social-proof-close {
-        position: absolute;
-        top: 5px;
-        right: 5px;
-        background: #f3f4f6;
-        border: none;
-        border-radius: 50%;
-        font-size: 1.25rem;
-        color: #6b7280;
-        cursor: pointer;
-        width: 28px;
-        height: 28px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        line-height: 1;
-        touch-action: manipulation;
-        -webkit-tap-highlight-color: transparent;
-        z-index: 10;
-    }
-    .social-proof-close:hover,
-    .social-proof-close:active {
-        background: #e5e7eb;
-        color: #1f2937;
-    }
-    .social-proof-icon {
-        font-size: 1.75rem;
-        flex-shrink: 0;
-    }
-    .social-proof-content {
-        flex: 1;
-        padding-right: 1.5rem;
-    }
-    .social-proof-text {
-        margin: 0;
-        font-size: 0.875rem;
-        color: #4b5563;
-        line-height: 1.4;
-    }
-    .social-proof-text strong {
-        color: #1f2937;
-    }
-    .social-proof-product {
-        margin: 0.25rem 0 0 0;
-        font-size: 0.875rem;
-        font-weight: 600;
-        color: #1f2937;
-    }
-    .social-proof-time {
-        margin: 0.25rem 0 0 0;
-        font-size: 0.75rem;
-        color: #9ca3af;
-    }
-    @media (max-width: 480px) {
-        .social-proof-popup {
-            left: 10px;
-            right: 10px;
-            bottom: 80px;
-            max-width: none;
-        }
-        .social-proof-popup.visible {
-            animation: socialProofSlideUp 0.4s ease forwards;
-        }
-        @keyframes socialProofSlideUp {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .social-proof-close {
-            width: 36px;
-            height: 36px;
-            font-size: 1.5rem;
-            top: 8px;
-            right: 8px;
-        }
-    }
-    </style>
 
     <script>
     // Social Proof Popup - Shows recent purchases

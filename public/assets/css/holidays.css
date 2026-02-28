@@ -1,29 +1,25 @@
 /* Holiday Effects CSS */
-/* These effects are activated by adding holiday classes to the body */
+/* Effects are confined to the hero section via .holiday-effects-active */
+
+/* Hero section positioning context for holiday particles */
+.hero.holiday-effects-active {
+    position: relative;
+    overflow: hidden;
+}
 
 /* ============================================
    CHRISTMAS EFFECTS
    ============================================ */
 
-/* Warm festive glow on product cards */
-.holiday-christmas .product-card {
-    box-shadow: 0 5px 20px rgba(255, 215, 0, 0.08);
-    transition: box-shadow 0.3s ease;
-}
-
-.holiday-christmas .product-card:hover {
-    box-shadow: 0 8px 30px rgba(255, 215, 0, 0.15), 0 0 20px rgba(255, 0, 0, 0.05);
-}
-
 /* Snowflakes container */
 .snowflakes {
-    position: fixed;
+    position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
     pointer-events: none;
-    z-index: 9999;
+    z-index: 2;
     overflow: hidden;
 }
 
@@ -35,6 +31,7 @@
     text-shadow: 0 0 5px rgba(255,255,255,0.8);
     animation: snowfall linear infinite;
     opacity: 0.9;
+    will-change: transform, opacity;
 }
 
 @keyframes snowfall {
@@ -42,7 +39,7 @@
         transform: translateY(-20px) rotate(0deg);
     }
     100% {
-        transform: translateY(100vh) rotate(360deg);
+        transform: translateY(calc(100vh + 20px)) rotate(360deg);
     }
 }
 
@@ -50,30 +47,15 @@
    VALENTINE'S DAY EFFECTS
    ============================================ */
 
-.holiday-valentines .logo::after {
-    content: '💕';
-    position: absolute;
-    top: -10px;
-    right: -20px;
-    font-size: 1.2rem;
-    animation: heart-beat 1s ease-in-out infinite;
-    z-index: 100;
-}
-
-@keyframes heart-beat {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.2); }
-}
-
 /* Floating hearts container */
 .floating-hearts {
-    position: fixed;
+    position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
     pointer-events: none;
-    z-index: 9999;
+    z-index: 2;
     overflow: hidden;
 }
 
@@ -83,6 +65,7 @@
     font-size: 1.5rem;
     animation: float-up linear infinite;
     opacity: 0.7;
+    will-change: transform, opacity;
 }
 
 @keyframes float-up {
@@ -94,48 +77,24 @@
         opacity: 0.9;
     }
     100% {
-        transform: translateY(-110vh) rotate(20deg) scale(0.5);
+        transform: translateY(calc(-100vh - 50px)) rotate(20deg) scale(0.5);
         opacity: 0;
     }
-}
-
-/* Pink tint on product cards */
-.holiday-valentines .product-card {
-    box-shadow: 0 5px 20px rgba(255, 105, 180, 0.15);
-}
-
-.holiday-valentines .product-card:hover {
-    box-shadow: 0 8px 30px rgba(255, 105, 180, 0.25);
 }
 
 /* ============================================
    ST. PATRICK'S DAY EFFECTS
    ============================================ */
 
-.holiday-stpatricks .logo::after {
-    content: '☘️';
-    position: absolute;
-    top: -5px;
-    right: -25px;
-    font-size: 1.3rem;
-    animation: clover-spin 4s linear infinite;
-    z-index: 100;
-}
-
-@keyframes clover-spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
 /* Floating clovers container */
 .floating-clovers {
-    position: fixed;
+    position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
     pointer-events: none;
-    z-index: 9999;
+    z-index: 2;
     overflow: hidden;
 }
 
@@ -145,6 +104,7 @@
     font-size: 1.5rem;
     animation: clover-fall linear infinite;
     opacity: 0.7;
+    will-change: transform, opacity;
 }
 
 @keyframes clover-fall {
@@ -153,44 +113,24 @@
         opacity: 0.7;
     }
     100% {
-        transform: translateY(110vh) rotate(360deg);
+        transform: translateY(calc(100vh + 50px)) rotate(360deg);
         opacity: 0.3;
     }
-}
-
-/* Green accent on cards */
-.holiday-stpatricks .product-card {
-    box-shadow: 0 5px 20px rgba(34, 139, 34, 0.1);
 }
 
 /* ============================================
    HALLOWEEN EFFECTS
    ============================================ */
 
-.holiday-halloween .logo::after {
-    content: '🎃';
-    position: absolute;
-    top: -8px;
-    right: -25px;
-    font-size: 1.3rem;
-    animation: pumpkin-glow 2s ease-in-out infinite;
-    z-index: 100;
-}
-
-@keyframes pumpkin-glow {
-    0%, 100% { filter: brightness(1); }
-    50% { filter: brightness(1.3) drop-shadow(0 0 8px orange); }
-}
-
 /* Floating bats/spiders */
 .floating-spooky {
-    position: fixed;
+    position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
     pointer-events: none;
-    z-index: 9999;
+    z-index: 2;
     overflow: hidden;
 }
 
@@ -200,6 +140,7 @@
     font-size: 1.5rem;
     animation: bat-fly linear infinite;
     opacity: 0.6;
+    will-change: transform, opacity;
 }
 
 @keyframes bat-fly {
@@ -207,52 +148,32 @@
         transform: translateY(-50px) translateX(0) rotate(0deg);
     }
     25% {
-        transform: translateY(25vh) translateX(30px) rotate(-10deg);
+        transform: translateY(25%) translateX(30px) rotate(-10deg);
     }
     50% {
-        transform: translateY(50vh) translateX(-20px) rotate(10deg);
+        transform: translateY(50%) translateX(-20px) rotate(10deg);
     }
     75% {
-        transform: translateY(75vh) translateX(40px) rotate(-5deg);
+        transform: translateY(75%) translateX(40px) rotate(-5deg);
     }
     100% {
-        transform: translateY(110vh) translateX(0) rotate(0deg);
+        transform: translateY(calc(100vh + 50px)) translateX(0) rotate(0deg);
     }
-}
-
-/* Spooky card shadows */
-.holiday-halloween .product-card {
-    box-shadow: 0 5px 20px rgba(128, 0, 128, 0.15);
 }
 
 /* ============================================
    EASTER EFFECTS
    ============================================ */
 
-.holiday-easter .logo::after {
-    content: '🐰';
-    position: absolute;
-    top: -5px;
-    right: -25px;
-    font-size: 1.2rem;
-    animation: bunny-hop 1s ease-in-out infinite;
-    z-index: 100;
-}
-
-@keyframes bunny-hop {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-8px); }
-}
-
 /* Floating eggs */
 .floating-eggs {
-    position: fixed;
+    position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
     pointer-events: none;
-    z-index: 9999;
+    z-index: 2;
     overflow: hidden;
 }
 
@@ -262,6 +183,7 @@
     font-size: 1.5rem;
     animation: egg-fall linear infinite;
     opacity: 0.7;
+    will-change: transform, opacity;
 }
 
 @keyframes egg-fall {
@@ -269,43 +191,23 @@
         transform: translateY(-50px) rotate(0deg);
     }
     100% {
-        transform: translateY(110vh) rotate(180deg);
+        transform: translateY(calc(100vh + 50px)) rotate(180deg);
     }
-}
-
-/* Pastel card accents */
-.holiday-easter .product-card {
-    box-shadow: 0 5px 20px rgba(255, 182, 193, 0.2);
 }
 
 /* ============================================
    INDEPENDENCE DAY (4TH OF JULY) EFFECTS
    ============================================ */
 
-.holiday-independence .logo::after {
-    content: '🎆';
-    position: absolute;
-    top: -10px;
-    right: -25px;
-    font-size: 1.2rem;
-    animation: firework-burst 1.5s ease-in-out infinite;
-    z-index: 100;
-}
-
-@keyframes firework-burst {
-    0%, 100% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(1.3); opacity: 0.8; }
-}
-
 /* Floating stars */
 .floating-stars {
-    position: fixed;
+    position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
     pointer-events: none;
-    z-index: 9999;
+    z-index: 2;
     overflow: hidden;
 }
 
@@ -315,6 +217,7 @@
     font-size: 1.5rem;
     animation: star-fall linear infinite;
     opacity: 0.7;
+    will-change: transform, opacity;
 }
 
 @keyframes star-fall {
@@ -323,7 +226,7 @@
         opacity: 1;
     }
     100% {
-        transform: translateY(110vh) rotate(360deg);
+        transform: translateY(calc(100vh + 50px)) rotate(360deg);
         opacity: 0.3;
     }
 }
@@ -332,30 +235,15 @@
    NEW YEAR'S DAY EFFECTS
    ============================================ */
 
-.holiday-newyear .logo::after {
-    content: '🎉';
-    position: absolute;
-    top: -10px;
-    right: -25px;
-    font-size: 1.2rem;
-    animation: party-pop 0.8s ease-in-out infinite;
-    z-index: 100;
-}
-
-@keyframes party-pop {
-    0%, 100% { transform: rotate(-10deg) scale(1); }
-    50% { transform: rotate(10deg) scale(1.1); }
-}
-
 /* Floating confetti */
 .floating-confetti {
-    position: fixed;
+    position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
     pointer-events: none;
-    z-index: 9999;
+    z-index: 2;
     overflow: hidden;
 }
 
@@ -366,6 +254,7 @@
     height: 10px;
     animation: confetti-fall linear infinite;
     opacity: 0.8;
+    will-change: transform, opacity;
 }
 
 @keyframes confetti-fall {
@@ -374,9 +263,278 @@
         opacity: 1;
     }
     100% {
-        transform: translateY(110vh) rotate(720deg);
+        transform: translateY(calc(100vh + 20px)) rotate(720deg);
         opacity: 0;
     }
+}
+
+/* ============================================
+   HOLIDAY HERO BADGE
+   ============================================ */
+
+.holiday-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1.25rem;
+    border-radius: 50px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    margin-bottom: 1.25rem;
+    backdrop-filter: blur(8px);
+    animation: badgeFadeIn 0.6s ease-out;
+}
+
+@keyframes badgeFadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Christmas badge */
+.holiday-badge-christmas {
+    background: linear-gradient(135deg, rgba(220,38,38,0.25), rgba(255,215,0,0.15));
+    border: 1px solid rgba(220,38,38,0.3);
+    color: #fecaca;
+}
+.holiday-badge-christmas::before { content: '\2744 '; }
+
+/* Valentine's badge */
+.holiday-badge-valentines {
+    background: linear-gradient(135deg, rgba(236,72,153,0.25), rgba(255,20,147,0.15));
+    border: 1px solid rgba(236,72,153,0.3);
+    color: #fbcfe8;
+}
+.holiday-badge-valentines::before { content: '\2665 '; }
+
+/* St. Patrick's badge */
+.holiday-badge-stpatricks {
+    background: linear-gradient(135deg, rgba(34,197,94,0.25), rgba(74,222,128,0.15));
+    border: 1px solid rgba(34,197,94,0.3);
+    color: #a7f3d0;
+}
+.holiday-badge-stpatricks::before { content: '\2618 '; }
+
+/* Easter badge */
+.holiday-badge-easter {
+    background: linear-gradient(135deg, rgba(192,132,252,0.25), rgba(147,197,253,0.15));
+    border: 1px solid rgba(192,132,252,0.3);
+    color: #e9d5ff;
+}
+.holiday-badge-easter::before { content: '\1F430 '; }
+
+/* Halloween badge */
+.holiday-badge-halloween {
+    background: linear-gradient(135deg, rgba(249,115,22,0.25), rgba(128,0,128,0.15));
+    border: 1px solid rgba(249,115,22,0.3);
+    color: #fed7aa;
+}
+.holiday-badge-halloween::before { content: '\1F383 '; }
+
+/* Independence Day badge */
+.holiday-badge-independence {
+    background: linear-gradient(135deg, rgba(59,130,246,0.25), rgba(220,38,38,0.15));
+    border: 1px solid rgba(59,130,246,0.3);
+    color: #bfdbfe;
+}
+.holiday-badge-independence::before { content: '\2B50 '; }
+
+/* New Year's badge */
+.holiday-badge-newyear {
+    background: linear-gradient(135deg, rgba(234,179,8,0.25), rgba(255,255,255,0.10));
+    border: 1px solid rgba(234,179,8,0.3);
+    color: #fef08a;
+}
+.holiday-badge-newyear::before { content: '\1F389 '; }
+
+@media (max-width: 768px) {
+    .holiday-badge {
+        font-size: 0.75rem;
+        padding: 0.4rem 1rem;
+    }
+}
+
+/* ============================================
+   HOLIDAY HERO & BUTTON OVERRIDES
+   ============================================ */
+
+/* Christmas — deep red/black */
+.holiday-christmas .hero {
+    background: linear-gradient(135deg, #1a0505 0%, #2d0a0a 25%, #3d1010 50%, #2d0a0a 75%, #1a0505 100%);
+}
+
+.holiday-christmas .hero::before {
+    background:
+        radial-gradient(ellipse at 20% 30%, rgba(220,38,38,0.12) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 70%, rgba(255,215,0,0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 100%, rgba(255,255,255,0.04) 0%, transparent 50%);
+}
+
+.holiday-christmas .hero .btn-primary {
+    background: linear-gradient(135deg, #dc2626, #ef4444);
+    color: #fff;
+    box-shadow: 0 4px 20px rgba(220,38,38,0.4);
+}
+
+.holiday-christmas .hero .btn-primary:hover {
+    background: linear-gradient(135deg, #ef4444, #f87171);
+    box-shadow: 0 6px 25px rgba(220,38,38,0.5);
+    transform: translateY(-2px);
+    color: #fff;
+}
+
+/* Valentine's — deep rose/pink */
+.holiday-valentines .hero {
+    background: linear-gradient(135deg, #1a050f 0%, #2d0a1a 25%, #3d1025 50%, #2d0a1a 75%, #1a050f 100%);
+}
+
+.holiday-valentines .hero::before {
+    background:
+        radial-gradient(ellipse at 20% 30%, rgba(255,105,180,0.15) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 70%, rgba(255,20,147,0.10) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 100%, rgba(255,182,193,0.08) 0%, transparent 50%);
+}
+
+.holiday-valentines .hero .btn-primary {
+    background: linear-gradient(135deg, #ec4899, #f472b6);
+    color: #fff;
+    box-shadow: 0 4px 20px rgba(236,72,153,0.4);
+}
+
+.holiday-valentines .hero .btn-primary:hover {
+    background: linear-gradient(135deg, #f472b6, #f9a8d4);
+    box-shadow: 0 6px 25px rgba(236,72,153,0.5);
+    transform: translateY(-2px);
+    color: #fff;
+}
+
+/* St. Patrick's — deep emerald green */
+.holiday-stpatricks .hero {
+    background: linear-gradient(135deg, #0a1a0e 0%, #122b18 25%, #1a3d22 50%, #122b18 75%, #0a1a0e 100%);
+}
+
+.holiday-stpatricks .hero::before {
+    background:
+        radial-gradient(ellipse at 20% 30%, rgba(34,197,94,0.15) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 70%, rgba(74,222,128,0.12) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 100%, rgba(201,169,110,0.08) 0%, transparent 50%);
+}
+
+.holiday-stpatricks .hero .btn-primary {
+    background: linear-gradient(135deg, #22c55e, #4ade80);
+    color: #052e16;
+    font-weight: 700;
+    box-shadow: 0 4px 20px rgba(34,197,94,0.4);
+}
+
+.holiday-stpatricks .hero .btn-primary:hover {
+    background: linear-gradient(135deg, #4ade80, #86efac);
+    box-shadow: 0 6px 25px rgba(34,197,94,0.5);
+    transform: translateY(-2px);
+    color: #052e16;
+}
+
+/* Halloween — dark purple/black */
+.holiday-halloween .hero {
+    background: linear-gradient(135deg, #0a050f 0%, #1a0a2d 25%, #25103d 50%, #1a0a2d 75%, #0a050f 100%);
+}
+
+.holiday-halloween .hero::before {
+    background:
+        radial-gradient(ellipse at 20% 30%, rgba(128,0,128,0.12) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 70%, rgba(255,165,0,0.10) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 100%, rgba(255,69,0,0.06) 0%, transparent 50%);
+}
+
+.holiday-halloween .hero .btn-primary {
+    background: linear-gradient(135deg, #f97316, #fb923c);
+    color: #1a0505;
+    font-weight: 700;
+    box-shadow: 0 4px 20px rgba(249,115,22,0.4);
+}
+
+.holiday-halloween .hero .btn-primary:hover {
+    background: linear-gradient(135deg, #fb923c, #fdba74);
+    box-shadow: 0 6px 25px rgba(249,115,22,0.5);
+    transform: translateY(-2px);
+    color: #1a0505;
+}
+
+/* Easter — soft pastel */
+.holiday-easter .hero {
+    background: linear-gradient(135deg, #1a0f15 0%, #2d1a25 25%, #3d2535 50%, #2d1a25 75%, #1a0f15 100%);
+}
+
+.holiday-easter .hero::before {
+    background:
+        radial-gradient(ellipse at 20% 30%, rgba(255,182,193,0.15) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 70%, rgba(147,197,253,0.10) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 100%, rgba(196,181,253,0.08) 0%, transparent 50%);
+}
+
+.holiday-easter .hero .btn-primary {
+    background: linear-gradient(135deg, #c084fc, #d8b4fe);
+    color: #1e1b4b;
+    font-weight: 700;
+    box-shadow: 0 4px 20px rgba(192,132,252,0.4);
+}
+
+.holiday-easter .hero .btn-primary:hover {
+    background: linear-gradient(135deg, #d8b4fe, #e9d5ff);
+    box-shadow: 0 6px 25px rgba(192,132,252,0.5);
+    transform: translateY(-2px);
+    color: #1e1b4b;
+}
+
+/* Independence Day — deep navy */
+.holiday-independence .hero {
+    background: linear-gradient(135deg, #020617 0%, #0a1628 25%, #111d3a 50%, #0a1628 75%, #020617 100%);
+}
+
+.holiday-independence .hero::before {
+    background:
+        radial-gradient(ellipse at 20% 30%, rgba(59,130,246,0.15) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 70%, rgba(220,38,38,0.10) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 100%, rgba(255,255,255,0.06) 0%, transparent 50%);
+}
+
+.holiday-independence .hero .btn-primary {
+    background: linear-gradient(135deg, #dc2626, #ef4444);
+    color: #fff;
+    box-shadow: 0 4px 20px rgba(220,38,38,0.4);
+}
+
+.holiday-independence .hero .btn-primary:hover {
+    background: linear-gradient(135deg, #ef4444, #f87171);
+    box-shadow: 0 6px 25px rgba(220,38,38,0.5);
+    transform: translateY(-2px);
+    color: #fff;
+}
+
+/* New Year's — black/gold */
+.holiday-newyear .hero {
+    background: linear-gradient(135deg, #0a0a05 0%, #1a1a0a 25%, #2d2d10 50%, #1a1a0a 75%, #0a0a05 100%);
+}
+
+.holiday-newyear .hero::before {
+    background:
+        radial-gradient(ellipse at 20% 30%, rgba(255,215,0,0.12) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 70%, rgba(255,255,255,0.06) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 100%, rgba(218,165,32,0.10) 0%, transparent 50%);
+}
+
+.holiday-newyear .hero .btn-primary {
+    background: linear-gradient(135deg, #eab308, #facc15);
+    color: #1a1505;
+    font-weight: 700;
+    box-shadow: 0 4px 20px rgba(234,179,8,0.4);
+}
+
+.holiday-newyear .hero .btn-primary:hover {
+    background: linear-gradient(135deg, #facc15, #fde047);
+    box-shadow: 0 6px 25px rgba(234,179,8,0.5);
+    transform: translateY(-2px);
+    color: #1a1505;
 }
 
 /* ============================================
@@ -407,12 +565,4 @@
         display: none;
     }
 
-    .holiday-valentines .logo::after,
-    .holiday-stpatricks .logo::after,
-    .holiday-halloween .logo::after,
-    .holiday-easter .logo::after,
-    .holiday-independence .logo::after,
-    .holiday-newyear .logo::after {
-        animation: none !important;
-    }
 }

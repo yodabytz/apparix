@@ -323,12 +323,12 @@ class Installer
 
 SITE_PATH="{$sitePath}"
 
-# Create log files
+# Create log files in the storage directory (works on shared hosting too)
 echo "Creating log files..."
-touch /var/log/apparix-cron.log
-touch /var/log/google-feed.log
-chmod 666 /var/log/apparix-cron.log
-chmod 666 /var/log/google-feed.log
+touch "\$SITE_PATH/storage/logs/cron.log"
+touch "\$SITE_PATH/storage/logs/google-feed.log"
+chmod 664 "\$SITE_PATH/storage/logs/cron.log"
+chmod 664 "\$SITE_PATH/storage/logs/google-feed.log"
 
 # Create temporary cron file
 CRON_FILE=\$(mktemp)
@@ -351,25 +351,25 @@ cat >> "\$CRON_FILE" << 'CRON'
 # ===========================================
 
 # Abandoned cart emails - Every hour
-0 * * * * php \$SITE_PATH/cron/abandoned-carts.php >> /var/log/apparix-cron.log 2>&1
+0 * * * * php \$SITE_PATH/cron/abandoned-carts.php >> \$SITE_PATH/storage/logs/cron.log 2>&1
 
 # Review request emails - Daily at 10 AM
-0 10 * * * php \$SITE_PATH/cron/send-review-requests.php >> /var/log/apparix-cron.log 2>&1
+0 10 * * * php \$SITE_PATH/cron/send-review-requests.php >> \$SITE_PATH/storage/logs/cron.log 2>&1
 
 # Wishlist reminders - Daily at 9 AM
-0 9 * * * php \$SITE_PATH/cron/wishlist-reminders.php >> /var/log/apparix-cron.log 2>&1
+0 9 * * * php \$SITE_PATH/cron/wishlist-reminders.php >> \$SITE_PATH/storage/logs/cron.log 2>&1
 
 # Check delivery status - Every 4 hours
-0 */4 * * * php \$SITE_PATH/cron/check-delivery-status.php >> /var/log/apparix-cron.log 2>&1
+0 */4 * * * php \$SITE_PATH/cron/check-delivery-status.php >> \$SITE_PATH/storage/logs/cron.log 2>&1
 
 # Google Merchant Feed - Daily at 3 AM
-0 3 * * * php \$SITE_PATH/scripts/generate-google-feed.php >> /var/log/google-feed.log 2>&1
+0 3 * * * php \$SITE_PATH/scripts/generate-google-feed.php >> \$SITE_PATH/storage/logs/google-feed.log 2>&1
 
 # Cleanup orphaned favorites - Weekly on Sunday at 2 AM
-0 2 * * 0 php \$SITE_PATH/scripts/cleanup-orphaned-favorites.php >> /var/log/apparix-cron.log 2>&1
+0 2 * * 0 php \$SITE_PATH/scripts/cleanup-orphaned-favorites.php >> \$SITE_PATH/storage/logs/cron.log 2>&1
 
 # Image optimization - Daily at 4 AM
-0 4 * * * php \$SITE_PATH/scripts/optimize-images.php >> /var/log/apparix-cron.log 2>&1
+0 4 * * * php \$SITE_PATH/scripts/optimize-images.php >> \$SITE_PATH/storage/logs/cron.log 2>&1
 
 CRON
 
@@ -384,7 +384,7 @@ echo ""
 echo "✅ Cron jobs installed successfully!"
 echo ""
 echo "To verify, run: crontab -l"
-echo "To view logs: tail -f /var/log/apparix-cron.log"
+echo "To view logs: tail -f \$SITE_PATH/storage/logs/cron.log"
 echo ""
 BASH;
 

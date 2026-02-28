@@ -1,36 +1,29 @@
 /**
  * Apparix - Service Worker
- * Provides offline support and caching for PWA
+ * Network-first: always serves fresh content when online.
+ * Cache is ONLY used as an offline fallback.
  */
 
-const CACHE_NAME = 'apparix-v1';
+const CACHE_NAME = 'apparix-v3';
 const OFFLINE_URL = '/offline.html';
 
-// Assets to cache immediately on install
+// Minimal precache — only the offline fallback page
 const PRECACHE_ASSETS = [
-    '/',
-    '/assets/css/main.css',
-    '/assets/js/main.js',
-    '/assets/images/placeholder.png',
+    '/offline.html',
     '/android-chrome-192x192.png',
-    '/android-chrome-512x512.png',
-    '/favicon.ico',
-    '/offline.html'
+    '/favicon.ico'
 ];
 
-// Install event - cache core assets
+// Install — cache offline fallback only
 self.addEventListener('install', event => {
     event.waitUntil(
         caches.open(CACHE_NAME)
-            .then(cache => {
-                console.log('Caching core assets');
-                return cache.addAll(PRECACHE_ASSETS);
-            })
+            .then(cache => cache.addAll(PRECACHE_ASSETS))
             .then(() => self.skipWaiting())
     );
 });
 
-// Activate event - clean up old caches
+// Activate — nuke ALL old caches
 self.addEventListener('activate', event => {
     event.waitUntil(
         caches.keys().then(cacheNames => {
@@ -43,39 +36,26 @@ self.addEventListener('activate', event => {
     );
 });
 
-// Fetch event - serve from cache, fallback to network
+// Fetch — network first, cache only when offline
 self.addEventListener('fetch', event => {
     const { request } = event;
-    const url = new URL(request.url);
 
     // Skip non-GET requests
     if (request.method !== 'GET') return;
 
-    // Skip admin, API, and checkout routes (always fresh)
-    if (url.pathname.startsWith('/admin') ||
-        url.pathname.startsWith('/api') ||
-        url.pathname.startsWith('/checkout') ||
-        url.pathname.startsWith('/cart') ||
-        url.pathname.includes('stripe')) {
-        return;
-    }
-
-    // For navigation requests, use network-first strategy
+    // Navigation requests (HTML pages)
     if (request.mode === 'navigate') {
         event.respondWith(
             fetch(request)
                 .then(response => {
-                    // Cache successful responses
+                    // Cache a copy for offline use
                     if (response.ok) {
-                        const responseClone = response.clone();
-                        caches.open(CACHE_NAME).then(cache => {
-                            cache.put(request, responseClone);
-                        });
+                        const clone = response.clone();
+                        caches.open(CACHE_NAME).then(cache => cache.put(request, clone));
                     }
                     return response;
                 })
                 .catch(() => {
-                    // Offline - try cache, then offline page
                     return caches.match(request)
                         .then(cached => cached || caches.match(OFFLINE_URL));
                 })
@@ -83,37 +63,14 @@ self.addEventListener('fetch', event => {
         return;
     }
 
-    // For assets, use cache-first strategy
-    if (url.pathname.startsWith('/assets') ||
-        url.pathname.match(/\.(png|jpg|jpeg|gif|svg|ico|woff|woff2)$/)) {
-        event.respondWith(
-            caches.match(request)
-                .then(cached => {
-                    if (cached) return cached;
-
-                    return fetch(request).then(response => {
-                        if (response.ok) {
-                            const responseClone = response.clone();
-                            caches.open(CACHE_NAME).then(cache => {
-                                cache.put(request, responseClone);
-                            });
-                        }
-                        return response;
-                    });
-                })
-        );
-        return;
-    }
-
-    // Default: network-first for other requests
+    // All other requests (assets, images, scripts, etc.)
+    // Always go to network first. Only fall back to cache when offline.
     event.respondWith(
         fetch(request)
             .then(response => {
                 if (response.ok && request.url.startsWith(self.location.origin)) {
-                    const responseClone = response.clone();
-                    caches.open(CACHE_NAME).then(cache => {
-                        cache.put(request, responseClone);
-                    });
+                    const clone = response.clone();
+                    caches.open(CACHE_NAME).then(cache => cache.put(request, clone));
                 }
                 return response;
             })
@@ -129,7 +86,6 @@ self.addEventListener('sync', event => {
 });
 
 async function syncCart() {
-    // Handle offline cart sync when back online
     const pendingActions = await getStoredCartActions();
     for (const action of pendingActions) {
         try {
@@ -145,11 +101,10 @@ async function syncCart() {
 }
 
 async function getStoredCartActions() {
-    // This would integrate with IndexedDB in a full implementation
     return [];
 }
 
-// Push notifications (for future use)
+// Push notifications
 self.addEventListener('push', event => {
     if (!event.data) return;
 
@@ -159,9 +114,7 @@ self.addEventListener('push', event => {
         icon: '/android-chrome-192x192.png',
         badge: '/favicon-32x32.png',
         vibrate: [100, 50, 100],
-        data: {
-            url: data.url || '/'
-        },
+        data: { url: data.url || '/' },
         actions: data.actions || []
     };
 
@@ -177,13 +130,11 @@ self.addEventListener('notificationclick', event => {
     const url = event.notification.data?.url || '/';
     event.waitUntil(
         clients.matchAll({ type: 'window' }).then(clientList => {
-            // Focus existing window if available
             for (const client of clientList) {
                 if (client.url === url && 'focus' in client) {
                     return client.focus();
                 }
             }
-            // Otherwise open new window
             if (clients.openWindow) {
                 return clients.openWindow(url);
             }

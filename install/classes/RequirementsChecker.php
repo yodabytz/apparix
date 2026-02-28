@@ -58,7 +58,8 @@ class RequirementsChecker
             'json' => 'JSON',
             'fileinfo' => 'Fileinfo',
             'gd' => 'GD Image Library',
-            'curl' => 'cURL'
+            'curl' => 'cURL',
+            'zip' => 'Zip Archive'
         ];
 
         foreach ($extensions as $ext => $name) {

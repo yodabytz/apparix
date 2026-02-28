@@ -18,7 +18,8 @@ class Visitor extends Model
         'applebot', 'gptbot', 'claudebot', 'anthropic', 'openai', 'headless', 'phantomjs',
         'curl', 'wget', 'python', 'scrapy', 'axios', 'node-fetch', 'go-http-client',
         'java/', 'libwww', 'uptimerobot', 'pingdom', 'monitoring', 'gtmetrix', 'pagespeed',
-        'screaming frog', 'ahrefsbot', 'blexbot', 'dataforseo', 'megaindex', 'rogerbot'
+        'screaming frog', 'ahrefsbot', 'blexbot', 'dataforseo', 'megaindex', 'rogerbot',
+        'apparix-update'
     ];
 
     /**
@@ -88,6 +89,8 @@ class Visitor extends Model
         '51.0.0.0/8',        // Azure (51.x.x.x)
         '52.0.0.0/8',        // Azure (52.x.x.x)
         '104.40.0.0/13',     // Azure
+        // Apparix update server
+        '50.21.187.13/32',   // Quantumbytz (apparix.app)
     ];
 
     /**
@@ -115,6 +118,12 @@ class Visitor extends Model
     {
         if (empty($ip)) {
             return false;
+        }
+
+        // Exclude this server's own IP (update checks, cron, health checks)
+        $serverIp = $_SERVER['SERVER_ADDR'] ?? null;
+        if ($serverIp && $ip === $serverIp) {
+            return true;
         }
 
         foreach ($this->botIpRanges as $range) {

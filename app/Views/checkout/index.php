@@ -388,6 +388,13 @@ foreach ($items as $item) {
                     </div>
                     <?php endif; ?>
 
+                    <?php if (setting('tax_enabled')): ?>
+                    <div class="summary-row" id="taxRow">
+                        <span><?php echo escape(setting('tax_label', 'Tax')); ?></span>
+                        <span id="taxAmount">--</span>
+                    </div>
+                    <?php endif; ?>
+
                     <div class="summary-divider"></div>
 
                     <div class="summary-row total">
@@ -431,6 +438,26 @@ const csrfToken = '<?php echo csrfToken(); ?>';
 const cartSubtotal = <?php echo $cartTotal; ?>;
 const autoDiscountTotal = <?php echo $autoDiscountTotal ?? 0; ?>;
 const appliedDiscount = <?php echo $appliedCoupon ? $appliedCoupon['discount'] : 0; ?>;
+const taxEnabled = <?php echo setting('tax_enabled') ? 'true' : 'false'; ?>;
+const taxRate = <?php echo (float)setting('tax_rate', 0); ?>;
+const taxRegion = '<?php echo escape(setting('tax_region', '')); ?>';
+
+function calculateTax() {
+    if (!taxEnabled || taxRate <= 0) return 0;
+    if (taxRegion) {
+        const stateEl = document.getElementById('shipping_state');
+        const customerState = stateEl ? stateEl.value.trim() : '';
+        if (customerState.toLowerCase() !== taxRegion.toLowerCase()) return 0;
+    }
+    return Math.round(cartSubtotal * (taxRate / 100) * 100) / 100;
+}
+
+function updateTaxDisplay() {
+    const taxAmountEl = document.getElementById('taxAmount');
+    if (!taxAmountEl) return;
+    const tax = calculateTax();
+    taxAmountEl.textContent = tax > 0 ? '$' + tax.toFixed(2) : '--';
+}
 const isDigitalOnly = <?php echo $isDigitalOnly ? 'true' : 'false'; ?>;
 
 let stripe, elements, paymentElement;
@@ -514,7 +541,8 @@ async function initializePayment() {
 
     // Create Payment Intent with shipping info
     try {
-        const shippingCountry = document.getElementById('shipping_country').value;
+        const shippingCountryEl = document.getElementById('shipping_country');
+        const shippingCountry = shippingCountryEl ? shippingCountryEl.value : 'US';
 
         const response = await fetch('/checkout/create-payment-intent', {
             method: 'POST',
@@ -524,7 +552,8 @@ async function initializePayment() {
             },
             body: '_csrf_token=' + encodeURIComponent(csrfToken) +
                   '&shipping_method_id=' + encodeURIComponent(selectedShippingMethodId) +
-                  '&shipping_country=' + encodeURIComponent(shippingCountry)
+                  '&shipping_country=' + encodeURIComponent(shippingCountry) +
+                  '&shipping_state=' + encodeURIComponent(document.getElementById('shipping_state') ? document.getElementById('shipping_state').value : '')
         });
 
         const data = await response.json();
@@ -560,7 +589,7 @@ async function initializePayment() {
             paymentEl.appendChild(freeNotice);
 
             document.getElementById('submitBtn').style.display = 'block';
-            document.getElementById('submitBtn').textContent = 'Complete Free Order';
+            document.getElementById('buttonText').textContent = 'Complete Free Order';
 
             // Hide billing section for free orders
             const billingSection = document.getElementById('billingSection');
@@ -777,11 +806,22 @@ function selectShippingOption(input) {
         shippingAmountEl.textContent = shippingText;
     }
 
-    const total = Math.max(0, cartSubtotal - autoDiscountTotal - appliedDiscount + selectedShippingRate);
+    updateTaxDisplay();
+
+    const total = Math.max(0, cartSubtotal - autoDiscountTotal - appliedDiscount + selectedShippingRate + calculateTax());
     document.getElementById('orderTotal').textContent = '$' + total.toFixed(2);
     document.getElementById('buttonText').textContent = 'Place Order - $' + total.toFixed(2);
 
     enableSubmit();
+}
+
+// Recalculate tax when shipping state changes (for region-based tax)
+if (taxEnabled && taxRegion) {
+    const stateField = document.getElementById('shipping_state');
+    if (stateField) {
+        stateField.addEventListener('change', function() { updateTotals(); });
+        stateField.addEventListener('blur', function() { updateTotals(); });
+    }
 }
 
 function updateTotals() {
@@ -792,7 +832,9 @@ function updateTotals() {
         shippingAmountEl.textContent = shippingText;
     }
 
-    const total = Math.max(0, cartSubtotal - autoDiscountTotal - appliedDiscount + selectedShippingRate);
+    updateTaxDisplay();
+
+    const total = Math.max(0, cartSubtotal - autoDiscountTotal - appliedDiscount + selectedShippingRate + calculateTax());
     document.getElementById('orderTotal').textContent = '$' + total.toFixed(2);
     document.getElementById('buttonText').textContent = 'Place Order - $' + total.toFixed(2);
 }
@@ -943,8 +985,8 @@ function setLoading(isLoading) {
     const spinner = document.getElementById('spinner');
 
     btn.disabled = isLoading;
-    btnText.style.display = isLoading ? 'none' : 'inline';
-    spinner.style.display = isLoading ? 'inline-block' : 'none';
+    if (btnText) btnText.style.display = isLoading ? 'none' : 'inline';
+    if (spinner) spinner.style.display = isLoading ? 'inline-block' : 'none';
 }
 
 function showMessage(message) {

@@ -7,13 +7,27 @@
             <?php
             // Check if cart contains only digital products (no physical items to ship)
             $hasPhysicalItems = false;
+            $hasDigitalItems = false;
             foreach ($items as $item) {
                 if (empty($item['is_digital'])) {
                     $hasPhysicalItems = true;
-                    break;
+                } else {
+                    $hasDigitalItems = true;
                 }
             }
             ?>
+
+            <?php if ($hasDigitalItems && !auth()): ?>
+            <div class="cart-digital-auth-banner">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+                <div>
+                    <strong>Account required for digital products</strong>
+                    <p>Your cart contains digital products. Please <a href="/login">log in</a> or <a href="/register">create an account</a> to proceed to checkout.</p>
+                </div>
+            </div>
+            <?php endif; ?>
             <div class="cart-container">
                 <div class="cart-items">
                     <div class="cart-header">
@@ -159,10 +173,12 @@
                             <span>Calculated at checkout</span>
                         </div>
 
+                        <?php if (setting('tax_enabled')): ?>
                         <div class="summary-row">
-                            <span>Tax:</span>
+                            <span><?php echo escape(setting('tax_label', 'Tax')); ?>:</span>
                             <span>Calculated at checkout</span>
                         </div>
+                        <?php endif; ?>
                         <?php endif; ?>
 
                         <?php if (!empty($autoDiscounts)): ?>
@@ -181,9 +197,15 @@
                             <span><?php echo formatPrice(max(0, $cartTotal - ($autoDiscountTotal ?? 0))); ?></span>
                         </div>
 
+                        <?php if ($hasDigitalItems && !auth()): ?>
+                        <a href="/login" class="btn btn-primary btn-large" style="margin-top: 1.5rem;">
+                            Log In to Checkout
+                        </a>
+                        <?php else: ?>
                         <a href="/checkout" class="btn btn-primary btn-large" style="margin-top: 1.5rem;">
                             Proceed to Checkout
                         </a>
+                        <?php endif; ?>
 
                         <a href="/products" class="btn btn-secondary btn-large" style="margin-top: 0.75rem;">
                             Continue Shopping
@@ -223,6 +245,40 @@
         <?php endif; ?>
     </div>
 </section>
+
+<style>
+.cart-digital-auth-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px 20px;
+    background: #fef3c7;
+    border: 1px solid #fbbf24;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+.cart-digital-auth-banner svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+    color: #92400e;
+}
+.cart-digital-auth-banner strong {
+    display: block;
+    color: #92400e;
+    margin-bottom: 4px;
+}
+.cart-digital-auth-banner p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #78350f;
+    line-height: 1.5;
+}
+.cart-digital-auth-banner a {
+    color: #92400e;
+    font-weight: 600;
+    text-decoration: underline;
+}
+</style>
 
 <script>
 function incrementCartQty(btn) {

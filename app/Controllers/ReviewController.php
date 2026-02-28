@@ -116,8 +116,9 @@ class ReviewController extends Controller
     /**
      * Review page from email link
      */
-    public function fromEmail(string $token): void
+    public function fromEmail(): void
     {
+        $token = $_GET['token'] ?? '';
         $request = $this->reviewModel->getRequestByToken($token);
 
         if (!$request) {

@@ -154,9 +154,15 @@ class CategoryController extends Controller
             $imagePath = $this->uploadCategoryImage($_FILES['image']);
         }
 
+        // Handle OG image upload
+        $ogImagePath = null;
+        if (!empty($_FILES['og_image']['name'])) {
+            $ogImagePath = $this->uploadCategoryImage($_FILES['og_image']);
+        }
+
         $db->insert(
-            "INSERT INTO categories (name, slug, parent_id, sort_order, image, show_subcategory_grid, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())",
-            [$name, $slug, $parentId, $sortOrder, $imagePath, $showSubcategoryGrid]
+            "INSERT INTO categories (name, slug, parent_id, sort_order, image, og_image, show_subcategory_grid, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())",
+            [$name, $slug, $parentId, $sortOrder, $imagePath, $ogImagePath, $showSubcategoryGrid]
         );
 
         setFlash('success', 'Category created successfully.');
@@ -193,7 +199,7 @@ class CategoryController extends Controller
         $db = Database::getInstance();
 
         // Get current category data
-        $current = $db->selectOne("SELECT image FROM categories WHERE id = ?", [$id]);
+        $current = $db->selectOne("SELECT image, og_image FROM categories WHERE id = ?", [$id]);
 
         // Check for duplicate slug (excluding current)
         $existing = $db->selectOne("SELECT id FROM categories WHERE slug = ? AND id != ?", [$slug, $id]);
@@ -235,9 +241,31 @@ class CategoryController extends Controller
             $imagePath = $this->uploadCategoryImage($_FILES['image']);
         }
 
+        // Handle OG image
+        $ogImagePath = $current['og_image'] ?? null;
+        $removeOgImage = $this->post('remove_og_image') ? true : false;
+
+        if ($removeOgImage && $ogImagePath) {
+            $fullPath = PUBLIC_PATH . $ogImagePath;
+            if (file_exists($fullPath)) {
+                unlink($fullPath);
+            }
+            $ogImagePath = null;
+        }
+
+        if (!empty($_FILES['og_image']['name'])) {
+            if ($ogImagePath) {
+                $fullPath = PUBLIC_PATH . $ogImagePath;
+                if (file_exists($fullPath)) {
+                    unlink($fullPath);
+                }
+            }
+            $ogImagePath = $this->uploadCategoryImage($_FILES['og_image']);
+        }
+
         $db->update(
-            "UPDATE categories SET name = ?, slug = ?, parent_id = ?, image = ?, show_subcategory_grid = ? WHERE id = ?",
-            [$name, $slug, $parentId, $imagePath, $showSubcategoryGrid, $id]
+            "UPDATE categories SET name = ?, slug = ?, parent_id = ?, image = ?, og_image = ?, show_subcategory_grid = ? WHERE id = ?",
+            [$name, $slug, $parentId, $imagePath, $ogImagePath, $showSubcategoryGrid, $id]
         );
 
         setFlash('success', 'Category updated successfully.');
@@ -343,7 +371,10 @@ class CategoryController extends Controller
         $targetPath = $uploadDir . $filename;
 
         if (move_uploaded_file($file['tmp_name'], $targetPath)) {
-            return '/assets/images/categories/' . $filename;
+            // Convert to WebP
+            $webpPath = convertToWebp($targetPath);
+            $webpFilename = basename($webpPath);
+            return '/assets/images/categories/' . $webpFilename;
         }
 
         return null;

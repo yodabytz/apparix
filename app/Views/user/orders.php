@@ -47,6 +47,9 @@
                                     </div>
                                     <div class="item-price"><?php echo formatPrice($item['price']); ?></div>
                                     <div class="item-actions">
+                                        <?php if (!empty($item['is_digital'])): ?>
+                                            <a href="/account/downloads" class="btn btn-sm btn-download-link">Downloads</a>
+                                        <?php endif; ?>
                                         <?php if ($order['status'] === 'delivered' && !empty($item['product_slug'])): ?>
                                             <?php if ($item['has_reviewed']): ?>
                                                 <span class="reviewed-badge">Reviewed</span>
@@ -278,6 +281,16 @@
 
 .btn-review:hover {
     background: #e055ad;
+}
+
+.btn-download-link {
+    background: #3b82f6;
+    color: #fff;
+    margin-bottom: 4px;
+}
+
+.btn-download-link:hover {
+    background: #2563eb;
 }
 
 .reviewed-badge {

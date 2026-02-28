@@ -89,6 +89,7 @@ class Cart extends Model
                 so.shipping_cost_usa as origin_shipping_usa,
                 so.shipping_cost_canada as origin_shipping_canada,
                 so.shipping_cost_overseas as origin_shipping_overseas,
+                p.sku as product_sku,
                 pv.sku as variant_sku,
                 pv.inventory_count as variant_inventory,
                 pv.price_adjustment,
@@ -141,7 +142,7 @@ class Cart extends Model
             } else {
                 $item['variant_name'] = '';
                 $item['inventory_count'] = $item['product_inventory'];
-                $item['sku'] = null;
+                $item['sku'] = $item['product_sku'] ?? null;
             }
         }
 

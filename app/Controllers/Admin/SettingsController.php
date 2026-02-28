@@ -62,6 +62,8 @@ class SettingsController extends Controller
             'store_currency_symbol' => $this->settingModel->get('store_currency_symbol', '$'),
             'show_powered_by' => $this->settingModel->get('show_powered_by', '1'),
             'maintenance_mode' => $this->settingModel->get('maintenance_mode', '0'),
+            'maintenance_enabled' => $this->settingModel->get('maintenance_enabled', '0'),
+            'enable_downloads_section' => $this->settingModel->get('enable_downloads_section', '0'),
             // SEO settings
             'seo_title' => $this->settingModel->get('seo_title', ''),
             'seo_description' => $this->settingModel->get('seo_description', ''),
@@ -77,6 +79,11 @@ class SettingsController extends Controller
             'smtp_username' => $this->settingModel->get('smtp_username', ''),
             'smtp_password' => $this->settingModel->get('smtp_password', ''),
             'smtp_encryption' => $this->settingModel->get('smtp_encryption', 'tls'),
+            // Tax settings
+            'tax_enabled' => $this->settingModel->get('tax_enabled', '0'),
+            'tax_rate' => $this->settingModel->get('tax_rate', '0'),
+            'tax_label' => $this->settingModel->get('tax_label', 'Tax'),
+            'tax_region' => $this->settingModel->get('tax_region', ''),
         ];
 
         $this->render('admin.settings.index', [
@@ -115,6 +122,31 @@ class SettingsController extends Controller
 
         $maintenanceMode = $this->post('maintenance_mode') ? '1' : '0';
         $this->settingModel->set('maintenance_mode', $maintenanceMode, 'boolean', 'store', false);
+
+        $maintenanceEnabled = $this->post('maintenance_enabled') ? '1' : '0';
+        $this->settingModel->set('maintenance_enabled', $maintenanceEnabled, 'boolean', 'store', false);
+
+        $enableDownloads = $this->post('enable_downloads_section') ? '1' : '0';
+        $this->settingModel->set('enable_downloads_section', $enableDownloads, 'boolean', 'store', false);
+
+        // Tax settings
+        $taxEnabled = $this->post('tax_enabled') ? '1' : '0';
+        $this->settingModel->set('tax_enabled', $taxEnabled, 'boolean', 'store', true);
+
+        $taxRate = $this->post('tax_rate');
+        if ($taxRate !== null) {
+            $this->settingModel->set('tax_rate', $taxRate, 'string', 'store', true);
+        }
+
+        $taxLabel = $this->post('tax_label');
+        if ($taxLabel !== null) {
+            $this->settingModel->set('tax_label', $taxLabel, 'string', 'store', true);
+        }
+
+        $taxRegion = $this->post('tax_region');
+        if ($taxRegion !== null) {
+            $this->settingModel->set('tax_region', trim($taxRegion), 'string', 'store', true);
+        }
 
         // Clear cache
         $this->settingModel->clearCache();
@@ -362,7 +394,10 @@ class SettingsController extends Controller
         }
 
         if (move_uploaded_file($file['tmp_name'], $filePath)) {
-            $webPath = '/assets/images/branding/' . $filename;
+            // Convert to WebP
+            $webpPath = convertToWebp($filePath);
+            $webpFilename = basename($webpPath);
+            $webPath = '/assets/images/branding/' . $webpFilename;
             $this->settingModel->set('seo_og_image', $webPath, 'file', 'store', true);
             $this->settingModel->clearCache();
 
@@ -674,7 +709,10 @@ class SettingsController extends Controller
         }
 
         if (move_uploaded_file($file['tmp_name'], $filePath)) {
-            $webPath = '/assets/images/branding/' . $filename;
+            // Convert to WebP
+            $webpPath = convertToWebp($filePath);
+            $webpFilename = basename($webpPath);
+            $webPath = '/assets/images/branding/' . $webpFilename;
             $this->settingModel->set('hero_background_image', $webPath, 'file', 'theme', true);
             $this->settingModel->clearCache();
 
@@ -1146,13 +1184,16 @@ class SettingsController extends Controller
         if (is_string($navbarMenu)) $navbarMenu = json_decode($navbarMenu, true) ?: $defaultNavbar;
         if (is_string($footerMenu)) $footerMenu = json_decode($footerMenu, true) ?: $defaultFooter;
 
-        $this->view('admin/settings/menus', [
+        $flash = $_SESSION['flash'] ?? null;
+        unset($_SESSION['flash']);
+
+        $this->render('admin.settings.menus', [
+            'title' => 'Navigation Menus',
             'admin' => $this->admin,
             'navbarMenu' => $navbarMenu,
             'footerMenu' => $footerMenu,
-            'flash' => $_SESSION['flash'] ?? null,
-        ]);
-        unset($_SESSION['flash']);
+            'flash' => $flash,
+        ], 'admin');
     }
 
     /**

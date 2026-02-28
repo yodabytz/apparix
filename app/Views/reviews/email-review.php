@@ -11,7 +11,7 @@
             </div>
 
             <form action="/review/submit" method="POST" class="email-review-form">
-                <input type="hidden" name="csrf_token" value="<?php echo escape($_SESSION['csrf_token'] ?? ''); ?>">
+                <?php echo csrfField(); ?>
                 <input type="hidden" name="token" value="<?php echo escape($token); ?>">
 
                 <div class="form-group">

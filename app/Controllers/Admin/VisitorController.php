@@ -3,6 +3,7 @@
 namespace App\Controllers\Admin;
 
 use App\Core\Controller;
+use App\Core\BotBlocker;
 use App\Models\AdminUser;
 use App\Models\Visitor;
 
@@ -92,6 +93,14 @@ class VisitorController extends Controller
         $browserStats = $this->visitorModel->getBrowserStats($period, 10, false);
         $httpStats = $this->visitorModel->getHttpStatusStats($period, 10);
 
+        // BotBlocker — actively blocked IPs (403'd before hitting visitor tracking)
+        $blocker = BotBlocker::getInstance();
+        $blockedIps = $blocker->getBlockedIps();
+        $blockedCount = $blocker->getBlockedCount();
+
+        // Sort by most recent block first
+        uasort($blockedIps, fn($a, $b) => ($b['blocked_at'] ?? 0) <=> ($a['blocked_at'] ?? 0));
+
         $this->render('admin.visitors.index', [
             'title' => 'Visitor Analytics',
             'admin' => $this->admin,
@@ -109,7 +118,9 @@ class VisitorController extends Controller
             'topBots' => $topBots,
             'deviceStats' => $deviceStats,
             'browserStats' => $browserStats,
-            'httpStats' => $httpStats
+            'httpStats' => $httpStats,
+            'blockedIps' => $blockedIps,
+            'blockedCount' => $blockedCount
         ], 'admin');
     }
 }

@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo escape(appName()); ?> - Coming Soon</title>
-    <meta name="description" content="<?php echo escape(appName()); ?> - Coming soon!">
+    <title><?php echo escape(appName()); ?> - Under Maintenance</title>
+    <meta name="description" content="<?php echo escape(appName()); ?> is currently undergoing scheduled maintenance. We'll be back shortly.">
+    <meta name="robots" content="noindex">
 
     <?php
     // Initialize theme service for colors and effects
@@ -49,7 +50,7 @@
     <link href="<?php echo $themeService->getGoogleFontsUrl(); ?>" rel="stylesheet">
 
     <!-- Main CSS for visual effects -->
-    <link rel="stylesheet" href="/assets/css/main.css?v=95">
+    <link rel="stylesheet" href="/assets/css/main.css?v=106">
 
     <?php
     // Inject full dynamic theme CSS variables
@@ -83,13 +84,13 @@
             overflow: hidden;
         }
 
-        /* Make bg-shapes visible on splash page */
+        /* Make bg-shapes visible on maintenance page */
         .bg-shapes {
             display: block !important;
             z-index: 0 !important;
         }
 
-        .splash-container {
+        .maintenance-container {
             position: relative;
             z-index: 101;
             text-align: center;
@@ -118,6 +119,34 @@
             filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1));
         }
 
+        .maintenance-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, <?php echo escape($primaryColor); ?>, <?php echo escape($accentColor); ?>);
+            border-radius: 50%;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 10px 30px <?php echo escape($primaryColor); ?>30;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .maintenance-icon svg {
+            color: white;
+            width: 36px;
+            height: 36px;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                box-shadow: 0 10px 30px <?php echo escape($primaryColor); ?>30;
+            }
+            50% {
+                box-shadow: 0 10px 40px <?php echo escape($primaryColor); ?>50;
+            }
+        }
+
         h1 {
             font-family: var(--font-heading, 'Montserrat'), sans-serif;
             font-size: 2.75rem;
@@ -142,7 +171,7 @@
             line-height: 1.7;
         }
 
-        .coming-soon-badge {
+        .status-badge {
             display: inline-block;
             background: linear-gradient(135deg, <?php echo escape($primaryColor); ?>, <?php echo escape($accentColor); ?>);
             color: white;
@@ -154,45 +183,6 @@
             text-transform: uppercase;
             margin-bottom: 2rem;
             box-shadow: 0 10px 30px <?php echo escape($primaryColor); ?>40;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        .coming-soon-badge:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 15px 40px <?php echo escape($primaryColor); ?>50;
-        }
-
-        .features {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 0.75rem;
-            margin-bottom: 2.5rem;
-        }
-
-        .feature-tag {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            background: white;
-            border: 1px solid #e2e8f0;
-            color: #334155;
-            padding: 0.6rem 1.1rem;
-            border-radius: 10px;
-            font-size: 0.875rem;
-            font-weight: 500;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-            transition: all 0.3s ease;
-        }
-
-        .feature-tag:hover {
-            border-color: <?php echo escape($primaryColor); ?>;
-            box-shadow: 0 4px 12px <?php echo escape($primaryColor); ?>20;
-            transform: translateY(-2px);
-        }
-
-        .feature-tag svg {
-            color: <?php echo escape($primaryColor); ?>;
         }
 
         .contact-link {
@@ -223,7 +213,7 @@
             box-shadow: 0 6px 16px <?php echo escape($primaryColor); ?>25;
         }
 
-        .splash-footer {
+        .maintenance-footer {
             position: fixed;
             bottom: 0;
             left: 0;
@@ -236,13 +226,13 @@
             background: linear-gradient(to top, rgba(255,255,255,0.9), transparent);
         }
 
-        .splash-footer a {
+        .maintenance-footer a {
             color: <?php echo escape($primaryColor); ?>;
             text-decoration: none;
             font-weight: 500;
         }
 
-        .splash-footer a:hover {
+        .maintenance-footer a:hover {
             text-decoration: underline;
         }
 
@@ -264,23 +254,19 @@
                 max-width: 200px;
             }
 
-            .coming-soon-badge {
+            .maintenance-icon {
+                width: 64px;
+                height: 64px;
+            }
+
+            .maintenance-icon svg {
+                width: 28px;
+                height: 28px;
+            }
+
+            .status-badge {
                 padding: 0.6rem 1.5rem;
                 font-size: 0.75rem;
-            }
-
-            .features {
-                gap: 0.5rem;
-            }
-
-            .feature-tag {
-                font-size: 0.8rem;
-                padding: 0.5rem 0.9rem;
-            }
-
-            .social-link {
-                width: 44px;
-                height: 44px;
             }
         }
     </style>
@@ -300,82 +286,54 @@
     </div>
     <?php endif; ?>
 
-    <div class="splash-container">
+    <div class="maintenance-container">
         <div class="logo-container">
             <?php
-            $splashLogo = storeLogo();
-            $splashLogoWhite = '/assets/images/apparix-logo-white.png';
-            if ($splashLogo) {
-                $whitePath = preg_replace('/(\.[^.]+)$/', '-white$1', $splashLogo);
+            $mLogo = storeLogo();
+            $mLogoWhite = '/assets/images/apparix-logo-white.png';
+            if ($mLogo) {
+                $whitePath = preg_replace('/(\.[^.]+)$/', '-white$1', $mLogo);
                 if (file_exists((defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__, 2)) . '/public' . $whitePath)) {
-                    $splashLogoWhite = $whitePath;
+                    $mLogoWhite = $whitePath;
                 } else {
-                    $splashLogoWhite = $splashLogo;
+                    $mLogoWhite = $mLogo;
                 }
             }
             ?>
-            <img src="<?php echo escape($splashLogoWhite); ?>?v=2" alt="<?php echo escape(appName()); ?>">
+            <img src="<?php echo escape($mLogoWhite); ?>?v=2" alt="<?php echo escape(appName()); ?>">
         </div>
 
-        <h1>Welcome to <span><?php echo escape(appName()); ?></span></h1>
+        <div class="maintenance-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+        </div>
 
-        <?php $storeTagline = setting('store_tagline'); ?>
-        <?php if ($storeTagline): ?>
-        <p class="tagline"><?php echo escape($storeTagline); ?></p>
-        <?php else: ?>
+        <h1>We'll Be <span>Back Soon</span></h1>
+
         <p class="tagline">
-            We're getting things ready. Something great is on its way.<br>
-            Stay tuned!
+            We're performing scheduled maintenance to improve your experience.<br>
+            We'll be back shortly.
         </p>
-        <?php endif; ?>
 
-        <div class="coming-soon-badge">Coming Soon</div>
-
-        <div class="features">
-            <div class="feature-tag">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
-                    <line x1="3" y1="6" x2="21" y2="6"></line>
-                    <path d="M16 10a4 4 0 0 1-8 0"></path>
-                </svg>
-                Online Shopping
-            </div>
-            <div class="feature-tag">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-                </svg>
-                Secure Checkout
-            </div>
-            <div class="feature-tag">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="1" y="3" width="15" height="13"></rect>
-                    <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
-                    <circle cx="5.5" cy="18.5" r="2.5"></circle>
-                    <circle cx="18.5" cy="18.5" r="2.5"></circle>
-                </svg>
-                Fast Shipping
-            </div>
-            <div class="feature-tag">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-                </svg>
-                Curated Selection
-            </div>
-        </div>
+        <div class="status-badge">Under Maintenance</div>
 
         <?php $contactEmail = storeEmail(); ?>
         <?php if ($contactEmail): ?>
-        <a href="mailto:<?php echo escape($contactEmail); ?>" class="contact-link">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
-                <polyline points="22,6 12,13 2,6"></polyline>
-            </svg>
-            <?php echo escape($contactEmail); ?>
-        </a>
+        <div>
+            <a href="mailto:<?php echo escape($contactEmail); ?>" class="contact-link">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                    <polyline points="22,6 12,13 2,6"></polyline>
+                </svg>
+                <?php echo escape($contactEmail); ?>
+            </a>
+        </div>
         <?php endif; ?>
     </div>
 
-    <footer class="splash-footer">
+    <footer class="maintenance-footer">
         <p>&copy; <?php echo date('Y'); ?> <?php echo escape(appName()); ?>.<?php
             $showPoweredBy = setting('show_powered_by') || \App\Core\License::isFree();
             if ($showPoweredBy): ?> Powered by <a href="https://apparix.app" target="_blank" rel="noopener">Apparix</a>.<?php endif; ?></p>

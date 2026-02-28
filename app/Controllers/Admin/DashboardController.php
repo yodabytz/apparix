@@ -501,20 +501,39 @@ class DashboardController extends Controller
         $f2bActive = false;
         $f2bDetails = '';
         if ($f2bInstalled) {
-            // Try fail2ban-client first (needs root), fall back to systemctl
-            $output = @shell_exec('fail2ban-client status 2>/dev/null');
-            if ($output && preg_match('/Number of jail:\s*(\d+)/i', $output, $m)) {
-                $f2bActive = (int)$m[1] > 0;
-                $f2bDetails = $m[1] . ' active jail' . ((int)$m[1] !== 1 ? 's' : '');
-            } else {
-                // Fall back to systemctl (works without root)
-                $svcStatus = trim(@shell_exec('systemctl is-active fail2ban 2>/dev/null') ?? '');
-                if ($svcStatus === 'active') {
-                    $f2bActive = true;
-                    $f2bDetails = 'Service running';
-                } else {
-                    $f2bDetails = 'Installed but not responding';
+            // Check PID file first (works without shell_exec or root)
+            $f2bPid = @file_get_contents('/var/run/fail2ban/fail2ban.pid');
+            if ($f2bPid && is_dir('/proc/' . trim($f2bPid))) {
+                $f2bActive = true;
+                $f2bDetails = 'Service running';
+            }
+
+            // Try shell_exec for more details if available (guard against disable_functions)
+            if (!$f2bActive && \function_exists('shell_exec') && !in_array('shell_exec', array_map('trim', explode(',', ini_get('disable_functions'))))) {
+                $output = @\shell_exec('fail2ban-client status 2>/dev/null');
+                if ($output && preg_match('/Number of jail:\s*(\d+)/i', $output, $m)) {
+                    $f2bActive = (int)$m[1] > 0;
+                    $f2bDetails = $m[1] . ' active jail' . ((int)$m[1] !== 1 ? 's' : '');
                 }
+
+                // Fall back to systemctl
+                if (!$f2bActive) {
+                    $svcStatus = trim(@\shell_exec('systemctl is-active fail2ban 2>/dev/null') ?? '');
+                    if ($svcStatus === 'active') {
+                        $f2bActive = true;
+                        $f2bDetails = 'Service running';
+                    }
+                }
+            }
+
+            // Last resort: check socket existence
+            if (!$f2bActive && file_exists('/var/run/fail2ban/fail2ban.sock')) {
+                $f2bActive = true;
+                $f2bDetails = 'Service running';
+            }
+
+            if (!$f2bActive) {
+                $f2bDetails = 'Installed but not responding';
             }
         }
         $tools[] = [

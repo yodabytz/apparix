@@ -49,12 +49,13 @@ class OrderNotificationService
             $items = $this->db->select(
                 "SELECT oi.*,
                         p.name as base_product_name,
+                        COALESCE(oi.product_sku, p.sku) as product_sku,
                         (SELECT GROUP_CONCAT(CONCAT(po.option_name, ': ', pov.value_name) SEPARATOR ', ')
                          FROM product_variants pv
                          JOIN variant_option_values vov ON pv.id = vov.variant_id
                          JOIN product_option_values pov ON vov.option_value_id = pov.id
                          JOIN product_options po ON pov.option_id = po.id
-                         WHERE pv.sku = oi.product_sku) as variant_options
+                         WHERE pv.sku = COALESCE(oi.product_sku, p.sku)) as variant_options
                  FROM order_items oi
                  LEFT JOIN products p ON oi.product_id = p.id
                  WHERE oi.order_id = ?",
@@ -126,10 +127,11 @@ class OrderNotificationService
         // Build items HTML
         $itemsHtml = '';
         foreach ($items as $item) {
+            $skuDisplay = !empty($item['product_sku']) ? htmlspecialchars($item['product_sku']) : '';
+            $skuLine = $skuDisplay ? "<br><span style='color: #666; font-size: 13px;'>SKU: {$skuDisplay}</span>" : '';
             $itemsHtml .= "<tr>
                 <td style='padding: 12px; border-bottom: 1px solid #f0f0f0;'>
-                    <strong>{$item['product_name']}</strong><br>
-                    <span style='color: #666; font-size: 13px;'>SKU: {$item['product_sku']}</span>
+                    <strong>{$item['product_name']}</strong>{$skuLine}
                 </td>
                 <td style='padding: 12px; border-bottom: 1px solid #f0f0f0; text-align: center;'>{$item['quantity']}</td>
                 <td style='padding: 12px; border-bottom: 1px solid #f0f0f0; text-align: right;'>$" . number_format($item['price'], 2) . "</td>
@@ -226,7 +228,12 @@ class OrderNotificationService
                                             <tr>
                                                 <td style='padding: 8px 0;'>Shipping ({$order['shipping_method']}):</td>
                                                 <td style='padding: 8px 0; text-align: right;'>$" . number_format($order['shipping_cost'], 2) . "</td>
-                                            </tr>
+                                            </tr>" .
+                                            ($order['tax'] > 0 ? "
+                                            <tr>
+                                                <td style='padding: 8px 0;'>" . htmlspecialchars(setting('tax_label', 'Tax')) . ":</td>
+                                                <td style='padding: 8px 0; text-align: right;'>$" . number_format($order['tax'], 2) . "</td>
+                                            </tr>" : "") . "
                                             <tr style='border-top: 2px solid #333;'>
                                                 <td style='padding: 12px 0; font-weight: bold; font-size: 18px;'>Total:</td>
                                                 <td style='padding: 12px 0; text-align: right; font-weight: bold; font-size: 18px; color: {$b['primary']};'>$" . number_format($order['total'], 2) . "</td>

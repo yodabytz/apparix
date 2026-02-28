@@ -8,6 +8,7 @@ use App\Models\OrderLicense;
 
 /**
  * DownloadController - handles digital product downloads
+ * All downloads require authentication and ownership verification.
  */
 class DownloadController extends Controller
 {
@@ -22,10 +23,42 @@ class DownloadController extends Controller
     }
 
     /**
+     * Require user authentication and return user data.
+     * Redirects to login with return URL if not authenticated.
+     */
+    private function requireDownloadAuth(string $returnPath): ?array
+    {
+        $user = auth();
+        if (!$user) {
+            $_SESSION['intended_url'] = $returnPath;
+            setFlash('error', 'Please log in to access your downloads.');
+            $this->redirect('/login');
+            return null;
+        }
+        return $user;
+    }
+
+    /**
+     * Verify the authenticated user owns the download (via order.user_id).
+     */
+    private function verifyOwnership(array $download, int $userId): bool
+    {
+        return !empty($download['user_id']) && (int)$download['user_id'] === $userId;
+    }
+
+    /**
      * Download a file by token
      */
-    public function download(string $token): void
+    public function download(): void
     {
+        $token = $_GET['token'] ?? '';
+
+        // Require authentication
+        $user = $this->requireDownloadAuth('/account/downloads');
+        if (!$user) {
+            return;
+        }
+
         $result = $this->downloadModel->isValidDownload($token);
 
         if (!$result['valid']) {
@@ -37,12 +70,29 @@ class DownloadController extends Controller
         }
 
         $download = $result['download'];
+
+        // Verify ownership
+        if (!$this->verifyOwnership($download, $user['id'])) {
+            $this->render('download.error', [
+                'title' => 'Download Error',
+                'error' => 'This download belongs to a different account.'
+            ]);
+            return;
+        }
+
         $safeName = basename($download['download_file']);
-        $filePath = BASE_PATH . '/storage/downloads/' . $safeName;
+        $downloadsDir = BASE_PATH . '/storage/downloads';
+
+        // Ensure downloads directory exists
+        if (!is_dir($downloadsDir)) {
+            @mkdir($downloadsDir, 0750, true);
+        }
+
+        $filePath = $downloadsDir . '/' . $safeName;
 
         // Verify file is within allowed directory (prevent path traversal)
         $realPath = realpath($filePath);
-        $allowedDir = realpath(BASE_PATH . '/storage/downloads');
+        $allowedDir = realpath($downloadsDir);
         if ($realPath === false || $allowedDir === false || strpos($realPath, $allowedDir) !== 0) {
             $this->render('download.error', [
                 'title' => 'Download Error',
@@ -59,9 +109,17 @@ class DownloadController extends Controller
             return;
         }
 
-        // Record the download
-        $ip = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? null;
-        $this->downloadModel->recordDownload($download['id'], $ip);
+        // Record the download (wrapped in try-catch so logging never blocks the download)
+        try {
+            $ip = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? null;
+            $this->downloadModel->recordDownload($download['id'], $ip);
+
+            $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? null;
+            $referer = $_SERVER['HTTP_REFERER'] ?? null;
+            $this->downloadModel->logDownloadEvent($download['id'], $download['product_id'], $ip ?? '', $userAgent, $referer);
+        } catch (\Throwable $e) {
+            error_log('Download log error: ' . $e->getMessage());
+        }
 
         // Serve the file
         $filename = basename($download['download_file']);
@@ -73,14 +131,14 @@ class DownloadController extends Controller
             ob_end_clean();
         }
 
-        // Send headers
+        // Send headers — prevent caching and URL sharing
         header('Content-Description: File Transfer');
         header('Content-Type: ' . $mimeType);
         header('Content-Disposition: attachment; filename="' . $filename . '"');
         header('Content-Transfer-Encoding: binary');
         header('Content-Length: ' . $filesize);
-        header('Cache-Control: must-revalidate');
-        header('Pragma: public');
+        header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+        header('Pragma: no-cache');
         header('Expires: 0');
 
         // Send file
@@ -91,8 +149,16 @@ class DownloadController extends Controller
     /**
      * Show download page with license info
      */
-    public function show(string $token): void
+    public function show(): void
     {
+        $token = $_GET['token'] ?? '';
+
+        // Require authentication
+        $user = $this->requireDownloadAuth('/download/' . $token);
+        if (!$user) {
+            return;
+        }
+
         $result = $this->downloadModel->isValidDownload($token);
 
         if (!$result['valid']) {
@@ -104,6 +170,15 @@ class DownloadController extends Controller
         }
 
         $download = $result['download'];
+
+        // Verify ownership
+        if (!$this->verifyOwnership($download, $user['id'])) {
+            $this->render('download.error', [
+                'title' => 'Download Error',
+                'error' => 'This download belongs to a different account.'
+            ]);
+            return;
+        }
 
         // Get any licenses for this order
         $licenses = $this->licenseModel->getByOrderId($download['order_id']);
@@ -117,27 +192,20 @@ class DownloadController extends Controller
     }
 
     /**
-     * Customer license lookup by email
+     * Customer license lookup — requires login, only shows own downloads
      */
     public function lookup(): void
     {
-        $email = $this->post('email') ?? $this->get('email');
-
-        if (!$email) {
-            $this->render('download.lookup', [
-                'title' => 'License Lookup'
-            ]);
+        $user = auth();
+        if (!$user) {
+            $_SESSION['intended_url'] = '/licenses/lookup';
+            setFlash('error', 'Please log in to view your licenses and downloads.');
+            $this->redirect('/login');
             return;
         }
 
-        // Validate email format
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $this->render('download.lookup', [
-                'title' => 'License Lookup',
-                'error' => 'Please enter a valid email address'
-            ]);
-            return;
-        }
+        // Always use the authenticated user's email — ignore any email parameter
+        $email = $user['email'];
 
         $licenses = $this->licenseModel->getByCustomerEmail($email);
         $downloads = $this->downloadModel->getByCustomerEmail($email);

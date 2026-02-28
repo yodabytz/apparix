@@ -288,7 +288,8 @@ class UpdateService
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_TIMEOUT => 300,
             CURLOPT_SSL_VERIFYPEER => true,
-            CURLOPT_HEADER => true
+            CURLOPT_HEADER => true,
+            CURLOPT_USERAGENT => 'Apparix-Update/1.0'
         ]);
 
         $fullResponse = curl_exec($ch);
@@ -405,6 +406,24 @@ class UpdateService
             // Customer uploaded content
             'public/assets/images/products',
             'public/assets/images/uploads',
+            'public/assets/images/categories',
+            'public/assets/images/newsletter',
+            'public/assets/images/branding',
+            'public/uploads',
+
+            // Site-specific branding (favicons, logos, manifests)
+            'public/favicon.ico',
+            'public/favicon.svg',
+            'public/favicon-16x16.png',
+            'public/favicon-32x32.png',
+            'public/favicon-96x96.png',
+            'public/apple-touch-icon.png',
+            'public/android-chrome-192x192.png',
+            'public/android-chrome-512x512.png',
+            'public/web-app-manifest-192x192.png',
+            'public/web-app-manifest-512x512.png',
+            'public/manifest.json',
+            'public/site.webmanifest',
 
             // Customer-installed plugins and themes
             'content/plugins',
@@ -667,31 +686,64 @@ class UpdateService
                 continue;
             }
 
-            // Execute migration via mysql CLI for reliable multi-statement support
-            // This handles PREPARE/EXECUTE, DELIMITER changes, etc.
+            // Execute migration - try mysql CLI first, fall back to PDO
             try {
-                $dbHost = $_ENV['DB_HOST'] ?? 'localhost';
-                $dbName = $_ENV['DB_NAME'] ?? '';
-                $dbUser = $_ENV['DB_USER'] ?? '';
-                $dbPass = $_ENV['DB_PASS'] ?? '';
+                $migrationRan = false;
 
-                $cmd = sprintf(
-                    'mysql -h %s -u %s -p%s %s < %s 2>&1',
-                    escapeshellarg($dbHost),
-                    escapeshellarg($dbUser),
-                    escapeshellarg($dbPass),
-                    escapeshellarg($dbName),
-                    escapeshellarg($file)
-                );
+                // Method 1: mysql CLI (handles PREPARE/EXECUTE, DELIMITER, etc.)
+                if (function_exists('exec')) {
+                    $dbHost = $_ENV['DB_HOST'] ?? 'localhost';
+                    $dbName = $_ENV['DB_NAME'] ?? '';
+                    $dbUser = $_ENV['DB_USER'] ?? '';
+                    $dbPass = $_ENV['DB_PASS'] ?? '';
 
-                $output = [];
-                $exitCode = 0;
-                exec($cmd, $output, $exitCode);
+                    $cmd = sprintf(
+                        'mysql -h %s -u %s -p%s %s < %s 2>&1',
+                        escapeshellarg($dbHost),
+                        escapeshellarg($dbUser),
+                        escapeshellarg($dbPass),
+                        escapeshellarg($dbName),
+                        escapeshellarg($file)
+                    );
 
-                if ($exitCode !== 0) {
-                    $errorMsg = implode("\n", $output);
-                    error_log("Migration error in {$migration} (exit code {$exitCode}): {$errorMsg}");
-                    continue;
+                    $output = [];
+                    $exitCode = 0;
+                    exec($cmd, $output, $exitCode);
+
+                    if ($exitCode === 0) {
+                        $migrationRan = true;
+                    } else {
+                        $errorMsg = implode("\n", $output);
+                        error_log("Migration CLI failed for {$migration} (exit {$exitCode}): {$errorMsg}, trying PDO...");
+                    }
+                }
+
+                // Method 2: PDO fallback (for shared hosting where exec() is disabled)
+                if (!$migrationRan) {
+                    $sql = file_get_contents($file);
+                    if ($sql === false) {
+                        error_log("Migration error: could not read {$file}");
+                        continue;
+                    }
+
+                    // Strip DELIMITER commands and split on semicolons
+                    $sql = preg_replace('/DELIMITER\s+[^\n]+/i', '', $sql);
+                    $statements = array_filter(array_map('trim', explode(';', $sql)));
+
+                    $pdo = $db->getConnection();
+                    foreach ($statements as $stmt) {
+                        if (empty($stmt)) continue;
+                        try {
+                            $pdo->exec($stmt);
+                        } catch (\PDOException $e) {
+                            // Skip "already exists" errors (1060, 1061, 1050)
+                            if (!in_array($e->getCode(), ['42S01', '42S21', '42000']) &&
+                                !preg_match('/Duplicate|already exists/i', $e->getMessage())) {
+                                error_log("Migration PDO error in {$migration}: " . $e->getMessage());
+                            }
+                        }
+                    }
+                    $migrationRan = true;
                 }
 
                 // Record migration
@@ -775,7 +827,8 @@ class UpdateService
             ],
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => 30,
-            CURLOPT_SSL_VERIFYPEER => true
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_USERAGENT => 'Apparix-Update/1.0'
         ]);
 
         $response = curl_exec($ch);

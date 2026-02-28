@@ -209,6 +209,95 @@ sudo systemctl reload nginx
 
 > **Note:** Adjust `php8.3-fpm.sock` to match your PHP version (e.g., `php8.1-fpm.sock`, `php8.2-fpm.sock`).
 
+**For Apache**, Apparix includes a `.htaccess` file in the `public/` directory that handles URL rewriting, security headers, scanner blocking, and static asset caching automatically. You just need to:
+
+1. Enable `mod_rewrite`:
+
+```bash
+sudo a2enmod rewrite headers expires deflate
+sudo systemctl restart apache2
+```
+
+2. Create a virtual host at `/etc/apache2/sites-available/yourdomain.com.conf`:
+
+```apache
+<VirtualHost *:80>
+    ServerName yourdomain.com
+    ServerAlias www.yourdomain.com
+    Redirect permanent / https://yourdomain.com/
+</VirtualHost>
+
+<VirtualHost *:443>
+    ServerName yourdomain.com
+    ServerAlias www.yourdomain.com
+
+    DocumentRoot /var/www/yourdomain.com/public
+
+    # SSL (use Let's Encrypt — see Security section below)
+    SSLEngine on
+    SSLCertificateFile /etc/letsencrypt/live/yourdomain.com/fullchain.pem
+    SSLCertificateKeyFile /etc/letsencrypt/live/yourdomain.com/privkey.pem
+
+    <Directory /var/www/yourdomain.com/public>
+        AllowOverride All
+        Require all granted
+    </Directory>
+
+    # Deny access to app directory (above document root, but just in case)
+    <Directory /var/www/yourdomain.com/app>
+        Require all denied
+    </Directory>
+    <Directory /var/www/yourdomain.com/storage>
+        Require all denied
+    </Directory>
+    <Directory /var/www/yourdomain.com/vendor>
+        Require all denied
+    </Directory>
+
+    # File upload limit
+    LimitRequestBody 52428800
+
+    ErrorLog ${APACHE_LOG_DIR}/yourdomain.com-error.log
+    CustomLog ${APACHE_LOG_DIR}/yourdomain.com-access.log combined
+</VirtualHost>
+```
+
+3. Enable the site:
+
+```bash
+sudo a2ensite yourdomain.com.conf
+sudo a2enmod ssl
+sudo apache2ctl configtest
+sudo systemctl reload apache2
+```
+
+> **Note:** The `.htaccess` file in `public/` handles URL rewriting, security headers, vulnerability scanner blocking, static file caching, and gzip compression. Make sure `AllowOverride All` is set in your virtual host.
+
+**For Shared Hosting (cPanel, Plesk, etc.)**, most shared hosts use Apache with `.htaccess` support enabled by default:
+
+1. Upload all Apparix files to your hosting account
+2. Set the **document root** to the `public/` subdirectory:
+   - **cPanel**: Go to "Domains" → edit your domain → change Document Root to `public`
+   - **Plesk**: Go to "Hosting & DNS" → "Hosting Settings" → change Document Root
+   - **Other**: Contact your host — most can change it in their control panel
+3. If you **cannot change the document root**, create an `.htaccess` in your web root (`public_html/`) with:
+
+```apache
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+```
+
+4. Set directory permissions via your host's File Manager:
+   - `storage/` → 775
+   - `public/assets/images/` → 775
+   - `.env` → 600
+5. Import the database using phpMyAdmin (available in most control panels)
+6. Navigate to `https://yourdomain.com/install` to run the installer
+
+> **Shared hosting limitations:** Server-level protections (ModSecurity, SecuNX, Fail2Ban, Nginx bot map) won't be available, but the built-in PHP BotBlocker, CSRF protection, and security headers still work automatically.
+
 ### 5. Run the Installer
 
 Navigate to `https://yourdomain.com/install` in your browser and follow the setup wizard:

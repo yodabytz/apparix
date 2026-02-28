@@ -3,53 +3,7 @@
     <div class="container">
         <div class="shop-layout">
             <!-- Sidebar -->
-            <aside class="shop-sidebar">
-                <div class="sidebar-section">
-                    <h3>Categories</h3>
-                    <ul class="category-list">
-                        <li>
-                            <a href="/products">All Products</a>
-                        </li>
-                        <?php if (!empty($categories)): ?>
-                            <?php foreach ($categories as $cat): ?>
-                                <li class="parent-category">
-                                    <a href="/category/<?php echo escape($cat['slug']); ?>"
-                                       class="<?php echo ($currentCategory === $cat['slug']) ? 'active' : ''; ?>">
-                                        <?php echo escape($cat['name']); ?>
-                                        <span class="count"><?php echo (int)$cat['product_count']; ?></span>
-                                    </a>
-                                    <?php if (!empty($cat['children'])): ?>
-                                        <ul class="subcategory-list">
-                                            <?php foreach ($cat['children'] as $child): ?>
-                                                <li class="<?php echo !empty($child['children']) ? 'has-children' : ''; ?>">
-                                                    <a href="/category/<?php echo escape($child['slug']); ?>"
-                                                       class="<?php echo ($currentCategory === $child['slug']) ? 'active' : ''; ?>">
-                                                        <?php echo escape($child['name']); ?>
-                                                        <span class="count"><?php echo (int)$child['product_count']; ?></span>
-                                                    </a>
-                                                    <?php if (!empty($child['children'])): ?>
-                                                        <ul class="grandchild-list">
-                                                            <?php foreach ($child['children'] as $grandchild): ?>
-                                                                <li>
-                                                                    <a href="/category/<?php echo escape($grandchild['slug']); ?>"
-                                                                       class="<?php echo ($currentCategory === $grandchild['slug']) ? 'active' : ''; ?>">
-                                                                        <?php echo escape($grandchild['name']); ?>
-                                                                        <span class="count"><?php echo (int)$grandchild['product_count']; ?></span>
-                                                                    </a>
-                                                                </li>
-                                                            <?php endforeach; ?>
-                                                        </ul>
-                                                    <?php endif; ?>
-                                                </li>
-                                            <?php endforeach; ?>
-                                        </ul>
-                                    <?php endif; ?>
-                                </li>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </ul>
-                </div>
-            </aside>
+            <?php include __DIR__ . '/../partials/shop-sidebar.php'; ?>
 
             <!-- Main Content -->
             <div class="shop-main">
@@ -207,7 +161,7 @@
                                              width="300"
                                              height="300">
                                         <?php if (!empty($product['video_path'])): ?>
-                                            <video class="product-video" src="<?php echo escape($product['video_path']); ?>" muted loop playsinline preload="metadata"></video>
+                                            <video class="product-video" data-src="<?php echo escape($product['video_path']); ?>" muted loop playsinline preload="none"></video>
                                             <span class="video-indicator">&#9658;</span>
                                         <?php endif; ?>
                                     </a>

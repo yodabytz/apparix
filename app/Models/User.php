@@ -31,7 +31,7 @@ class User extends Model
     }
 
     /**
-     * Create a new user
+     * Create a new user (with email verification token)
      */
     public function createUser(string $email, string $password, ?string $firstName = null, ?string $lastName = null, bool $newsletterSubscribed = false): ?int
     {
@@ -43,13 +43,71 @@ class User extends Model
         }
 
         $passwordHash = password_hash($password, PASSWORD_ARGON2ID);
+        $verificationToken = bin2hex(random_bytes(32));
 
         $id = $this->db->insert(
-            "INSERT INTO {$this->table} (email, password_hash, first_name, last_name, newsletter_subscribed) VALUES (?, ?, ?, ?, ?)",
-            [$email, $passwordHash, $firstName, $lastName, $newsletterSubscribed ? 1 : 0]
+            "INSERT INTO {$this->table} (email, password_hash, first_name, last_name, newsletter_subscribed, email_verification_token) VALUES (?, ?, ?, ?, ?, ?)",
+            [$email, $passwordHash, $firstName, $lastName, $newsletterSubscribed ? 1 : 0, $verificationToken]
         );
 
         return (int)$id;
+    }
+
+    /**
+     * Get email verification token for a user
+     */
+    public function getVerificationToken(int $id): ?string
+    {
+        $result = $this->queryOne(
+            "SELECT email_verification_token FROM {$this->table} WHERE id = ?",
+            [$id]
+        );
+        return $result['email_verification_token'] ?? null;
+    }
+
+    /**
+     * Verify email using token
+     */
+    public function verifyEmail(string $token): bool
+    {
+        $user = $this->queryOne(
+            "SELECT id FROM {$this->table} WHERE email_verification_token = ? AND email_verified_at IS NULL",
+            [$token]
+        );
+
+        if (!$user) {
+            return false;
+        }
+
+        return $this->db->update(
+            "UPDATE {$this->table} SET email_verified_at = NOW(), email_verification_token = NULL WHERE id = ?",
+            [$user['id']]
+        ) > 0;
+    }
+
+    /**
+     * Check if user email is verified
+     */
+    public function isEmailVerified(int $id): bool
+    {
+        $result = $this->queryOne(
+            "SELECT email_verified_at FROM {$this->table} WHERE id = ?",
+            [$id]
+        );
+        return !empty($result['email_verified_at']);
+    }
+
+    /**
+     * Regenerate verification token (for resend)
+     */
+    public function regenerateVerificationToken(int $id): ?string
+    {
+        $token = bin2hex(random_bytes(32));
+        $this->db->update(
+            "UPDATE {$this->table} SET email_verification_token = ? WHERE id = ?",
+            [$token, $id]
+        );
+        return $token;
     }
 
     /**
@@ -115,12 +173,12 @@ class User extends Model
     }
 
     /**
-     * Find user by remember token
+     * Find user by remember token (only verified users)
      */
     public function findByRememberToken(string $token): ?array
     {
         $result = $this->queryOne(
-            "SELECT * FROM {$this->table} WHERE remember_token = ? AND remember_token_expires > NOW()",
+            "SELECT * FROM {$this->table} WHERE remember_token = ? AND remember_token_expires > NOW() AND email_verified_at IS NOT NULL",
             [$token]
         );
         return $result ?: null;

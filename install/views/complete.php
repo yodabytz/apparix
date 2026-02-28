@@ -25,33 +25,34 @@
         <p style="margin-bottom: 12px; color: #856404; font-size: 0.9rem;">For full functionality, add these cron jobs to your server. Run <code style="background: #f8f9fa; padding: 2px 6px; border-radius: 4px;">crontab -e</code> and add:</p>
         <pre style="background: #1e1e1e; color: #d4d4d4; padding: 16px; border-radius: 6px; overflow-x: auto; font-size: 0.8rem; line-height: 1.6; margin: 0;">
 # Apparix E-Commerce Cron Jobs
-# Replace SITEPATH with your actual installation path
+# Replace /path/to/apparix with your actual installation path
+# (e.g., /var/www/yourdomain.com or /home/user/yourdomain.com)
 
 # Abandoned cart emails - Every hour
-0 * * * * php /var/www/SITEPATH/cron/abandoned-carts.php >> /var/log/apparix-cron.log 2>&1
+0 * * * * php /path/to/apparix/cron/abandoned-carts.php >> /path/to/apparix/storage/logs/cron.log 2>&1
 
 # Review request emails - Daily at 10 AM
-0 10 * * * php /var/www/SITEPATH/cron/send-review-requests.php >> /var/log/apparix-cron.log 2>&1
+0 10 * * * php /path/to/apparix/cron/send-review-requests.php >> /path/to/apparix/storage/logs/cron.log 2>&1
 
 # Wishlist reminders - Daily at 9 AM
-0 9 * * * php /var/www/SITEPATH/cron/wishlist-reminders.php >> /var/log/apparix-cron.log 2>&1
+0 9 * * * php /path/to/apparix/cron/wishlist-reminders.php >> /path/to/apparix/storage/logs/cron.log 2>&1
 
 # Check delivery status - Every 4 hours
-0 */4 * * * php /var/www/SITEPATH/cron/check-delivery-status.php >> /var/log/apparix-cron.log 2>&1
+0 */4 * * * php /path/to/apparix/cron/check-delivery-status.php >> /path/to/apparix/storage/logs/cron.log 2>&1
 
 # Google Merchant Feed - Daily at 3 AM
-0 3 * * * php /var/www/SITEPATH/scripts/generate-google-feed.php >> /var/log/google-feed.log 2>&1
+0 3 * * * php /path/to/apparix/scripts/generate-google-feed.php >> /path/to/apparix/storage/logs/google-feed.log 2>&1
 
 # Cleanup orphaned favorites - Weekly on Sunday at 2 AM
-0 2 * * 0 php /var/www/SITEPATH/scripts/cleanup-orphaned-favorites.php >> /var/log/apparix-cron.log 2>&1
+0 2 * * 0 php /path/to/apparix/scripts/cleanup-orphaned-favorites.php >> /path/to/apparix/storage/logs/cron.log 2>&1
 
 # Image optimization - Daily at 4 AM
-0 4 * * * php /var/www/SITEPATH/scripts/optimize-images.php >> /var/log/apparix-cron.log 2>&1</pre>
+0 4 * * * php /path/to/apparix/scripts/optimize-images.php >> /path/to/apparix/storage/logs/cron.log 2>&1</pre>
         <p style="margin-top: 12px; margin-bottom: 8px; color: #856404; font-size: 0.85rem;">
-            <strong>Quick Setup:</strong> Run <code style="background: #f8f9fa; padding: 2px 6px; border-radius: 4px;">sudo bash setup-cron.sh</code> from your installation directory to automatically configure all cron jobs.
+            <strong>Quick Setup (VPS/Dedicated):</strong> Run <code style="background: #f8f9fa; padding: 2px 6px; border-radius: 4px;">bash setup-cron.sh</code> from your installation directory to automatically configure all cron jobs.
         </p>
         <p style="margin: 0; color: #856404; font-size: 0.85rem;">
-            <strong>Manual:</strong> Create log file with: <code style="background: #f8f9fa; padding: 2px 6px; border-radius: 4px;">sudo touch /var/log/apparix-cron.log && sudo chmod 666 /var/log/apparix-cron.log</code>
+            <strong>Shared Hosting:</strong> Use your control panel's Cron Jobs section (cPanel &rarr; Cron Jobs, Plesk &rarr; Scheduled Tasks). Logs are written to <code style="background: #f8f9fa; padding: 2px 6px; border-radius: 4px;">storage/logs/cron.log</code> inside your installation.
         </p>
     </div>
 

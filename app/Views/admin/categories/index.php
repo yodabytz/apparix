@@ -29,10 +29,15 @@
                 <input type="text" name="slug" class="form-input" placeholder="auto-generated if empty">
             </div>
         </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 1rem; align-items: end;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 1rem; align-items: end;">
             <div class="form-group" style="margin-bottom: 0;">
                 <label class="form-label">Category Image (optional)</label>
                 <input type="file" name="image" class="form-input" accept="image/*">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label">OG / Social Share Image</label>
+                <input type="file" name="og_image" class="form-input" accept="image/png,image/jpeg,image/webp">
+                <small style="color: var(--admin-text-light);">1200x630px recommended</small>
             </div>
             <div class="form-group" style="margin-bottom: 0;">
                 <label class="form-label" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
@@ -69,6 +74,7 @@
                         <tr data-id="<?php echo $category['id']; ?>"
                             data-parent="<?php echo $category['parent_id'] ?? ''; ?>"
                             data-image="<?php echo escape($category['image'] ?? ''); ?>"
+                            data-og-image="<?php echo escape($category['og_image'] ?? ''); ?>"
                             data-show-grid="<?php echo $category['show_subcategory_grid'] ?? 0; ?>"
                             class="<?php echo !empty($category['is_child']) ? 'subcategory-row' : ''; ?>">
                             <td>
@@ -195,6 +201,18 @@
                     </div>
                 </div>
                 <div class="form-group">
+                    <label class="form-label">OG / Social Share Image</label>
+                    <div id="currentOgPreview" style="margin-bottom: 0.5rem;"></div>
+                    <input type="file" name="og_image" class="form-input" accept="image/png,image/jpeg,image/webp">
+                    <div id="removeOgCheckbox" style="display: none; margin-top: 0.5rem;">
+                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                            <input type="checkbox" name="remove_og_image" value="1" style="width: auto;">
+                            Remove OG image
+                        </label>
+                    </div>
+                    <small style="color: var(--admin-text-light);">1200x630px recommended. Used when shared on Facebook, Twitter, etc.</small>
+                </div>
+                <div class="form-group">
                     <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
                         <input type="checkbox" name="show_subcategory_grid" id="editShowGrid" value="1" style="width: auto;">
                         Show subcategory grid (display subcategories with images)
@@ -284,6 +302,7 @@ function openEditModal(id) {
     const slug = row.querySelector('.category-slug').textContent.trim();
     const parentId = row.dataset.parent || '';
     const image = row.dataset.image || '';
+    const ogImage = row.dataset.ogImage || '';
     const showGrid = row.dataset.showGrid === '1';
 
     document.getElementById('editId').value = id;
@@ -301,6 +320,17 @@ function openEditModal(id) {
     } else {
         previewContainer.innerHTML = '<span style="color: var(--admin-text-light);">No image</span>';
         removeCheckbox.style.display = 'none';
+    }
+
+    // Handle OG image preview
+    const ogPreview = document.getElementById('currentOgPreview');
+    const removeOg = document.getElementById('removeOgCheckbox');
+    if (ogImage) {
+        ogPreview.innerHTML = `<img src="${ogImage}" alt="" style="max-width: 200px; max-height: 105px; border-radius: 4px; border: 1px solid #ddd;">`;
+        removeOg.style.display = 'block';
+    } else {
+        ogPreview.innerHTML = '<span style="color: var(--admin-text-light);">No OG image</span>';
+        removeOg.style.display = 'none';
     }
 
     // Disable self as parent option

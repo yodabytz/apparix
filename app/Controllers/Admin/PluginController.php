@@ -84,6 +84,12 @@ class PluginController extends Controller
     {
         $this->requireValidCSRF();
 
+        if (!class_exists('ZipArchive')) {
+            setFlash('error', 'PHP zip extension is not installed. Run: sudo apt install php' . PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION . '-zip && sudo systemctl restart php' . PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION . '-fpm');
+            $this->redirect('/admin/plugins');
+            return;
+        }
+
         if (!isset($_FILES['plugin_zip']) || $_FILES['plugin_zip']['error'] !== UPLOAD_ERR_OK) {
             setFlash('error', 'Please select a valid ZIP file');
             $this->redirect('/admin/plugins');

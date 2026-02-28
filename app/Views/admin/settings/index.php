@@ -81,6 +81,24 @@
 
                 <div class="form-group">
                     <label class="checkbox-label">
+                        <input type="checkbox" name="maintenance_enabled" id="maintenance_enabled" value="1"
+                               <?php echo !empty($settings['maintenance_enabled']) ? 'checked' : ''; ?>>
+                        <span>Enable Maintenance Mode</span>
+                    </label>
+                    <span class="form-help">Show a maintenance page with HTTP 503 status. Google will hold your rankings and retry later. Admin panel remains accessible.</span>
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="enable_downloads_section" id="enable_downloads_section" value="1"
+                               <?php echo !empty($settings['enable_downloads_section']) ? 'checked' : ''; ?>>
+                        <span>Enable Downloads Section</span>
+                    </label>
+                    <span class="form-help">Show the Downloads section in the admin panel for tracking digital product downloads.</span>
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-label">
                         <?php $isFree = \App\Core\License::isFree(); ?>
                         <input type="checkbox" name="show_powered_by" id="show_powered_by" value="1"
                                <?php echo ($settings['show_powered_by'] ?? true) || $isFree ? 'checked' : ''; ?>
@@ -327,6 +345,57 @@
                                style="max-width: 250px; margin: 0;">
                         <button type="button" id="send-test-email" class="btn btn-secondary">Send Test</button>
                     </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+        <!-- Tax Settings -->
+        <div class="settings-card">
+            <h2>Tax Settings</h2>
+            <form id="tax-settings-form" class="settings-form">
+                <?php echo csrfField(); ?>
+
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="tax_enabled" id="tax_enabled" value="1"
+                               <?php echo !empty($settings['tax_enabled']) && $settings['tax_enabled'] !== '0' ? 'checked' : ''; ?>>
+                        <span>Enable Tax</span>
+                    </label>
+                    <span class="form-help">When enabled, tax will be calculated and added to orders at checkout.</span>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="tax_rate">Tax Rate (%)</label>
+                        <input type="number" name="tax_rate" id="tax_rate"
+                               value="<?php echo escape($settings['tax_rate'] ?? '0'); ?>"
+                               class="form-control" min="0" max="100" step="0.01"
+                               placeholder="e.g., 7.5" style="max-width: 150px;">
+                        <span class="form-help">Enter as a percentage (e.g., 7.5 for 7.5%)</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="tax_label">Tax Label</label>
+                        <input type="text" name="tax_label" id="tax_label"
+                               value="<?php echo escape($settings['tax_label'] ?? 'Tax'); ?>"
+                               class="form-control" maxlength="50" placeholder="e.g., Sales Tax, VAT, GST"
+                               style="max-width: 200px;">
+                        <span class="form-help">Label shown to customers on checkout and receipts</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="tax_region">Tax Region (State / Province)</label>
+                    <input type="text" name="tax_region" id="tax_region"
+                           value="<?php echo escape($settings['tax_region'] ?? ''); ?>"
+                           class="form-control" maxlength="100" placeholder="e.g., FL, CA, ON"
+                           style="max-width: 200px;">
+                    <span class="form-help">Only charge tax when the customer's shipping state matches this region. Leave blank to charge tax on all orders (common for VAT/GST).</span>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Save Tax Settings</button>
                 </div>
             </form>
         </div>
@@ -1160,5 +1229,41 @@ document.addEventListener('DOMContentLoaded', function() {
             btn.textContent = originalText;
         });
     });
+
+    // Tax settings form
+    const taxForm = document.getElementById('tax-settings-form');
+    if (taxForm) {
+        taxForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(taxForm);
+            const submitBtn = taxForm.querySelector('button[type="submit"]');
+            const originalText = submitBtn.textContent;
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Saving...';
+
+            fetch('/admin/settings/update', {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                body: new URLSearchParams(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('Tax settings saved successfully', 'success');
+                } else {
+                    showNotification(data.error || 'Failed to save tax settings', 'error');
+                }
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalText;
+            })
+            .catch(err => {
+                console.error(err);
+                showNotification('Error saving tax settings', 'error');
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalText;
+            });
+        });
+    }
 });
 </script>

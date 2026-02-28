@@ -82,6 +82,24 @@
                 </form>
             </div>
 
+            <!-- My Downloads Section (only if user has digital purchases) -->
+            <?php
+            $downloadModel = new \App\Models\OrderDownload();
+            $userDownloads = $downloadModel->getByUserId(auth()['id']);
+            ?>
+            <?php if (!empty($userDownloads)): ?>
+            <div class="account-card full-width">
+                <div class="card-header">
+                    <h2>My Downloads</h2>
+                    <a href="/account/downloads" class="view-all">View All Downloads</a>
+                </div>
+                <div class="downloads-summary">
+                    <p><?php echo count($userDownloads); ?> digital product<?php echo count($userDownloads) !== 1 ? 's' : ''; ?> available for download.</p>
+                    <a href="/account/downloads" class="btn btn-primary">Go to Downloads</a>
+                </div>
+            </div>
+            <?php endif; ?>
+
             <!-- Recent Orders Section -->
             <div class="account-card full-width">
                 <div class="card-header">
@@ -280,6 +298,16 @@
     width: 18px;
     height: 18px;
     accent-color: #FF68C5;
+}
+
+.downloads-summary {
+    text-align: center;
+    padding: 20px;
+}
+
+.downloads-summary p {
+    color: #555;
+    margin-bottom: 16px;
 }
 
 .empty-state {

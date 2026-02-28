@@ -91,6 +91,7 @@
                                       maxlength="320" placeholder="A brief description of this product for search results..."><?php echo escape($product['meta_description'] ?? ''); ?></textarea>
                             <small style="color: var(--admin-text-light);">Brief description for search results (max 320 chars). <span id="metaDescCount">0</span>/320</small>
                         </div>
+
                     </div>
 
                     <div class="form-group">
@@ -1369,6 +1370,7 @@ if (metaDescInput && metaDescCount) {
         metaDescCount.textContent = this.value.length;
     });
 }
+
 
 // Drag and drop for images
 const dropzone = document.getElementById('imageDropzone');

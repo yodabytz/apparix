@@ -142,7 +142,7 @@ class Theme extends Model
             'name', 'description', 'primary_color', 'secondary_color', 'accent_color',
             'navbar_bg_color', 'navbar_text_color', 'glow_color',
             'heading_font', 'body_font', 'layout_style', 'header_style',
-            'category_layout', 'product_grid_columns', 'custom_css', 'effect_settings'
+            'category_layout', 'sidebar_menu_mode', 'product_grid_columns', 'custom_css', 'effect_settings'
         ];
 
         $updateData = array_intersect_key($data, array_flip($allowed));

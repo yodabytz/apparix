@@ -84,7 +84,7 @@ session_set_cookie_params([
     'lifetime' => (int)($_ENV['SESSION_LIFETIME'] ?? 604800),
     'path' => '/',
     'domain' => '',  // Empty for current domain only
-    'secure' => true,  // Always use secure cookies (HTTPS)
+    'secure' => !(isset($_ENV['SESSION_COOKIE_SECURE']) && $_ENV['SESSION_COOKIE_SECURE'] === 'false'),
     'httponly' => true, // Prevent JavaScript access to session cookie
     'samesite' => 'Lax' // Lax allows same-site form submissions; Strict can block them
 ]);
@@ -275,6 +275,7 @@ $router = new Router();
 // Enable via Admin > Settings or set 'maintenance_mode' in settings table
 // Admins automatically get bypass_splash cookie on login
 $showSplash = (bool)setting('maintenance_mode');
+$showMaintenance = (bool)setting('maintenance_enabled');
 $bypassSplash = isset($_GET['preview']) || isset($_COOKIE['bypass_splash']);
 $requestPath = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
@@ -298,9 +299,16 @@ foreach ($allowedPaths as $allowed) {
     }
 }
 
-// Maintenance mode: Block ALL public routes if enabled and not bypassed
+// Maintenance mode: 503 + Retry-After (Google holds rankings)
+if ($showMaintenance && !$bypassSplash && !$isAllowedPath) {
+    http_response_code(503);
+    header('Retry-After: 3600');
+    require BASE_PATH . '/app/Views/splash/maintenance.php';
+    exit;
+}
+
+// Coming soon mode: for new stores being set up
 if ($showSplash && !$bypassSplash && !$isAllowedPath) {
-    // Show splash page for any non-allowed route
     require BASE_PATH . '/app/Views/splash/index.php';
     exit;
 }
@@ -325,9 +333,12 @@ $router->get('/login', 'UserController', 'loginForm');
 $router->post('/login', 'UserController', 'login');
 $router->get('/register', 'UserController', 'registerForm');
 $router->post('/register', 'UserController', 'register');
+$router->get('/verify-email/resend', 'UserController', 'resendVerification');
+$router->get('/verify-email/:token', 'UserController', 'verifyEmail');
 $router->get('/logout', 'UserController', 'logout');
 $router->get('/account', 'UserController', 'dashboard');
 $router->get('/account/orders', 'UserController', 'orders');
+$router->get('/account/downloads', 'UserController', 'downloads');
 $router->post('/account/update-profile', 'UserController', 'updateProfile');
 $router->post('/account/change-password', 'UserController', 'changePassword');
 
@@ -554,6 +565,9 @@ $router->get('/admin/orders/profits', 'Admin\\OrderController', 'profits');
 
 // Admin visitors/analytics routes
 $router->get('/admin/visitors', 'Admin\\VisitorController', 'index');
+
+// Admin downloads tracking
+$router->get('/admin/downloads', 'Admin\\DownloadController', 'index');
 
 // Admin user management routes (super_admin only)
 $router->get('/admin/users', 'Admin\\AdminUserController', 'index');

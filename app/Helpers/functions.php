@@ -490,3 +490,67 @@ function smtpReadResponse($socket): string
     }
     return $response;
 }
+
+/**
+ * Convert an uploaded image to WebP format
+ * Returns the new WebP file path, or the original path if conversion fails
+ *
+ * @param string $filePath Absolute path to the uploaded file
+ * @param int $maxSize Max width/height (0 = no resize)
+ * @param int $quality WebP quality (1-100)
+ * @return string The (possibly updated) file path
+ */
+function convertToWebp(string $filePath, int $maxSize = 0, int $quality = 85): string
+{
+    $imageInfo = @getimagesize($filePath);
+    if (!$imageInfo) return $filePath;
+
+    $mime = $imageInfo['mime'];
+    $width = $imageInfo[0];
+    $height = $imageInfo[1];
+
+    // Load source image
+    $source = match($mime) {
+        'image/jpeg' => @imagecreatefromjpeg($filePath),
+        'image/png'  => @imagecreatefrompng($filePath),
+        'image/gif'  => @imagecreatefromgif($filePath),
+        'image/webp' => @imagecreatefromwebp($filePath),
+        default      => null,
+    };
+
+    if (!$source) return $filePath;
+
+    // Resize if needed
+    if ($maxSize > 0 && ($width > $maxSize || $height > $maxSize)) {
+        $ratio = min($maxSize / $width, $maxSize / $height);
+        $newW = (int)($width * $ratio);
+        $newH = (int)($height * $ratio);
+        $resized = imagecreatetruecolor($newW, $newH);
+        imagealphablending($resized, false);
+        imagesavealpha($resized, true);
+        $trans = imagecolorallocatealpha($resized, 255, 255, 255, 127);
+        imagefilledrectangle($resized, 0, 0, $newW, $newH, $trans);
+        imagecopyresampled($resized, $source, 0, 0, 0, 0, $newW, $newH, $width, $height);
+        imagedestroy($source);
+        $source = $resized;
+    }
+
+    // Build WebP path
+    $pathInfo = pathinfo($filePath);
+    $webpPath = $pathInfo['dirname'] . '/' . $pathInfo['filename'] . '.webp';
+
+    // Save as WebP
+    imagealphablending($source, true);
+    imagesavealpha($source, true);
+    $ok = imagewebp($source, $webpPath, $quality);
+    imagedestroy($source);
+
+    if (!$ok) return $filePath;
+
+    // Delete original if not already webp
+    if ($mime !== 'image/webp' && file_exists($filePath) && $filePath !== $webpPath) {
+        unlink($filePath);
+    }
+
+    return $webpPath;
+}

@@ -151,7 +151,7 @@
             </div>
             <?php if ($order['tax'] > 0): ?>
             <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                <span style="color: #6b7280;">Tax</span>
+                <span style="color: #6b7280;"><?php echo escape(setting('tax_label', 'Tax')); ?></span>
                 <span>$<?php echo number_format($order['tax'], 2); ?></span>
             </div>
             <?php endif; ?>

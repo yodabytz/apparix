@@ -169,6 +169,13 @@ class BotBlocker
         $uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
         $ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
 
+        // Never block this server's own IP or localhost (prevents self-blocking
+        // from internal requests, update checks, cron jobs, etc.)
+        $serverIp = $_SERVER['SERVER_ADDR'] ?? '';
+        if ($ip === $serverIp || $ip === '127.0.0.1' || $ip === '::1') {
+            return true;
+        }
+
         // Never block legitimate bots
         if ($this->isGoodBot($ua)) {
             return true;

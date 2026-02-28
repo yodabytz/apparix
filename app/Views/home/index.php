@@ -20,6 +20,31 @@ $heroTaglineInterval = (int)setting('hero_tagline_interval', '8');
 $heroOverlayOpacity = setting('hero_overlay_opacity', '0.12');
 $heroBgImage = setting('hero_background_image', '');
 
+// Holiday hero override — check if an active holiday has custom hero content
+$holidayBadge = '';
+$holidayHeroKey = '';
+try {
+    $themeService = new \App\Core\ThemeService();
+    $holidayPreview = $themeService->getHolidayPreview();
+    $activeHero = \App\Core\HolidayEffects::getActiveHoliday($holidayPreview);
+    if ($activeHero && $themeService->isHolidayEffectsEnabled() || ($activeHero && $holidayPreview)) {
+        $holidayHeroKey = $activeHero['key'];
+        $effects = $themeService->getEffectSettings();
+        $heroes = $effects['holiday_effects']['heroes'] ?? [];
+        $hConf = $heroes[$holidayHeroKey] ?? [];
+        if (!empty($hConf['badge'])) $holidayBadge = $hConf['badge'];
+        if (!empty($hConf['heading'])) $heroHeading = $hConf['heading'];
+        if (!empty($hConf['tagline'])) {
+            $heroTaglines = [$hConf['tagline']];
+            $heroRotateTaglines = false;
+        }
+        if (!empty($hConf['cta_text'])) $heroCtaText = $hConf['cta_text'];
+        if (!empty($hConf['cta_url'])) $heroCtaUrl = $hConf['cta_url'];
+    }
+} catch (\Exception $e) {
+    // Graceful fallback — holiday hero is optional
+}
+
 // Build hero class
 $heroClasses = ['hero', 'hero-' . $heroBgStyle];
 if (!$heroShowGlow) $heroClasses[] = 'hero-no-glow';
@@ -28,6 +53,11 @@ if (!$heroShowShimmer) $heroClasses[] = 'hero-no-shimmer';
 <!-- Hero Section -->
 <section class="<?php echo escape(implode(' ', $heroClasses)); ?>"<?php if ($heroBgStyle === 'image' && $heroBgImage): ?> style="background-image: url('<?php echo escape($heroBgImage); ?>');"<?php endif; ?>>
     <div class="hero-content">
+        <?php if ($holidayBadge): ?>
+        <div class="holiday-badge holiday-badge-<?php echo escape($holidayHeroKey); ?>">
+            <?php echo escape($holidayBadge); ?>
+        </div>
+        <?php endif; ?>
         <h1><?php echo escape($heroHeading); ?></h1>
         <p class="hero-tagline" id="heroTagline"><?php echo escape($heroTaglines[0] ?? ''); ?></p>
         <a href="<?php echo escape($heroCtaUrl); ?>" class="btn btn-primary"><?php echo escape($heroCtaText); ?></a>
@@ -97,7 +127,7 @@ if (!$heroShowShimmer) $heroClasses[] = 'hero-no-shimmer';
                                      width="300"
                                      height="300">
                                 <?php if (!empty($product['video_path'])): ?>
-                                    <video class="product-video" src="<?php echo escape($product['video_path']); ?>" muted loop playsinline preload="metadata"></video>
+                                    <video class="product-video" data-src="<?php echo escape($product['video_path']); ?>" muted loop playsinline preload="none"></video>
                                     <span class="video-indicator">&#9658;</span>
                                 <?php endif; ?>
                             </a>

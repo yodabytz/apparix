@@ -256,6 +256,15 @@
                     </button>
                 </form>
 
+                <?php if (!empty($product['is_digital']) && !auth()): ?>
+                <div class="digital-account-notice">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+                    </svg>
+                    <span>An account is required to purchase digital products. <a href="/login">Log in</a> or <a href="/register">create an account</a>.</span>
+                </div>
+                <?php endif; ?>
+
                 <!-- Favorite & Notify Buttons -->
                 <div class="action-buttons-row">
                     <button type="button" class="favorite-heart-btn" id="favoriteBtn" data-product-id="<?php echo $product['id']; ?>" onclick="toggleFavorite(<?php echo $product['id']; ?>, this)" aria-label="Add to favorites">
@@ -498,7 +507,7 @@
                     <button type="button" class="btn btn-primary" id="writeReviewBtn" onclick="toggleReviewForm()">Write a Review</button>
 
                     <form id="reviewForm" class="review-form" style="display: none;">
-                        <input type="hidden" name="csrf_token" value="<?php echo escape($_SESSION['csrf_token'] ?? ''); ?>">
+                        <?php echo csrfField(); ?>
                         <input type="hidden" name="product_id" value="<?php echo $product['id']; ?>">
 
                         <div class="form-group">
@@ -1798,6 +1807,9 @@ document.getElementById('reviewForm')?.addEventListener('submit', async function
 })();
 </script>
 <style>
+.digital-account-notice{display:flex;align-items:flex-start;gap:8px;margin-top:12px;padding:10px 14px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;font-size:0.875rem;color:#1e40af;line-height:1.5;}
+.digital-account-notice svg{flex-shrink:0;margin-top:2px;color:#3b82f6;}
+.digital-account-notice a{color:#1e40af;font-weight:600;text-decoration:underline;}
 .quantity-tier-badges{margin:0.75rem 0;}
 .quantity-tier-badges .tier-label{font-size:0.85rem;font-weight:600;color:#333;display:block;margin-bottom:0.4rem;}
 .quantity-tier-badges .tier-list{display:flex;flex-wrap:wrap;gap:0.4rem;}

@@ -73,8 +73,13 @@
                 </ol>
             </div>
 
+            <!-- Account Downloads Link -->
+            <div style="margin-top: 1.5rem; text-align: center;">
+                <a href="/account/downloads" style="color: var(--primary-pink); font-weight: 500; text-decoration: none;">View all your downloads in My Account &rarr;</a>
+            </div>
+
             <!-- Support Info -->
-            <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid #e2e8f0; text-align: center;">
+            <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #e2e8f0; text-align: center;">
                 <p style="margin: 0; color: #64748b; font-size: 0.9375rem;">
                     Need help? Contact us at <a href="mailto:support@apparix.app" style="color: var(--primary-pink);">support@apparix.app</a>
                 </p>

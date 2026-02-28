@@ -70,10 +70,12 @@
                     <span>Shipping</span>
                     <span><?= $order['shipping_cost'] > 0 ? '$' . number_format($order['shipping_cost'], 2) : 'FREE' ?></span>
                 </div>
+                <?php if ($order['tax'] > 0): ?>
                 <div class="total-row">
-                    <span>Tax</span>
+                    <span><?= escape(setting('tax_label', 'Tax')) ?></span>
                     <span>$<?= number_format($order['tax'], 2) ?></span>
                 </div>
+                <?php endif; ?>
                 <div class="total-row grand-total">
                     <span>Total</span>
                     <span>$<?= number_format($order['total'], 2) ?></span>

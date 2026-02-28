@@ -107,8 +107,20 @@ class UserController extends Controller
             return;
         }
 
+        // Check email verification
+        if (!$this->userModel->isEmailVerified($user['id'])) {
+            $_SESSION['unverified_user_id'] = $user['id'];
+            $_SESSION['unverified_user_email'] = $user['email'];
+            setFlash('error', 'Please verify your email address before logging in. <a href="/verify-email/resend">Resend verification email</a>');
+            $this->redirect('/login');
+            return;
+        }
+
         // Clear rate limiting on successful login
         $this->rateLimiter->clearAttempts($ip, $email, 'user');
+
+        // Capture old session ID before regeneration (for cart/favorites merge)
+        $oldSessionId = session_id();
 
         // Regenerate session ID to prevent fixation
         session_regenerate_id(true);
@@ -130,11 +142,11 @@ class UserController extends Controller
             ]);
         }
 
-        // Merge guest cart with user cart if applicable
-        $this->mergeGuestCart($user['id']);
+        // Merge guest cart with user cart using the OLD session ID
+        $this->cartModel->mergeOnLogin($oldSessionId, $user['id']);
 
-        // Merge guest favorites with user favorites
-        $this->favoriteModel->mergeGuestFavorites(session_id(), $user['id']);
+        // Merge guest favorites using the OLD session ID
+        $this->favoriteModel->mergeGuestFavorites($oldSessionId, $user['id']);
 
         setFlash('success', 'Welcome back' . ($user['first_name'] ? ', ' . $user['first_name'] : '') . '!');
 
@@ -229,25 +241,12 @@ class UserController extends Controller
             $this->newsletterModel->subscribe($email, $firstName ?: null, $userId, 'registration');
         }
 
-        // Send welcome email
-        $this->sendWelcomeEmail($email, $firstName ?: null);
+        // Send verification email
+        $verificationToken = $this->userModel->getVerificationToken($userId);
+        $this->sendVerificationEmail($email, $firstName ?: null, $verificationToken);
 
-        // Regenerate session ID to prevent fixation
-        session_regenerate_id(true);
-
-        // Auto-login
-        $_SESSION['user_id'] = $userId;
-        $_SESSION['user_email'] = $email;
-        $_SESSION['user_name'] = $firstName ?: explode('@', $email)[0];
-
-        // Merge guest cart
-        $this->mergeGuestCart($userId);
-
-        // Merge guest favorites
-        $this->favoriteModel->mergeGuestFavorites(session_id(), $userId);
-
-        setFlash('success', 'Account created successfully! Welcome to ' . appName() . '.');
-        $this->redirect('/account');
+        setFlash('success', 'Account created! Please check your email to verify your address before logging in.');
+        $this->redirect('/login');
     }
 
     /**
@@ -413,6 +412,71 @@ class UserController extends Controller
     }
 
     /**
+     * Verify email address via token
+     */
+    public function verifyEmail(string $token): void
+    {
+        if ($this->userModel->verifyEmail($token)) {
+            setFlash('success', 'Email verified successfully! You can now log in.');
+        } else {
+            setFlash('error', 'Invalid or expired verification link. Please try logging in or request a new verification email.');
+        }
+        $this->redirect('/login');
+    }
+
+    /**
+     * Resend verification email
+     */
+    public function resendVerification(): void
+    {
+        $userId = $_SESSION['unverified_user_id'] ?? null;
+        $email = $_SESSION['unverified_user_email'] ?? null;
+
+        if (!$userId || !$email) {
+            setFlash('error', 'Please try logging in first.');
+            $this->redirect('/login');
+            return;
+        }
+
+        // Check if already verified
+        if ($this->userModel->isEmailVerified($userId)) {
+            setFlash('success', 'Your email is already verified. You can log in.');
+            $this->redirect('/login');
+            return;
+        }
+
+        // Regenerate token and send
+        $token = $this->userModel->regenerateVerificationToken($userId);
+        $user = $this->userModel->findById($userId);
+        $this->sendVerificationEmail($email, $user['first_name'] ?? null, $token);
+
+        setFlash('success', 'Verification email sent! Please check your inbox.');
+        $this->redirect('/login');
+    }
+
+    /**
+     * My Downloads page — shows digital purchases with download links
+     */
+    public function downloads(): void
+    {
+        $this->requireAuth();
+
+        $userId = auth()['id'];
+
+        $downloadModel = new \App\Models\OrderDownload();
+        $licenseModel = new \App\Models\OrderLicense();
+
+        $downloads = $downloadModel->getByUserId($userId);
+        $licenses = $licenseModel->getByCustomerEmail(auth()['email']);
+
+        $this->render('user/downloads', [
+            'title' => 'My Downloads',
+            'downloads' => $downloads,
+            'licenses' => $licenses
+        ]);
+    }
+
+    /**
      * Require authentication
      */
     protected function requireAuth(): void
@@ -432,6 +496,77 @@ class UserController extends Controller
     {
         $sessionId = session_id();
         $this->cartModel->mergeOnLogin($sessionId, $userId);
+    }
+
+    /**
+     * Send email verification link
+     */
+    private function sendVerificationEmail(string $email, ?string $firstName, string $token): void
+    {
+        try {
+            $storeName = appName();
+            $storeUrl = appUrl();
+            $name = $firstName ?: 'there';
+            $verifyUrl = $storeUrl . '/verify-email/' . $token;
+
+            $subject = "Verify your email - {$storeName}";
+
+            $html = '<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>' . htmlspecialchars($subject) . '</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, sans-serif; background-color: #f7f7f7;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f7f7f7;">
+        <tr>
+            <td align="center" style="padding: 40px 20px;">
+                <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
+                    <tr>
+                        <td align="center" style="padding: 40px 40px 20px;">
+                            <h1 style="margin: 0; font-size: 28px; color: #333;">Verify Your Email</h1>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 20px 40px;">
+                            <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6; color: #555;">
+                                Hi ' . htmlspecialchars($name) . ',
+                            </p>
+                            <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6; color: #555;">
+                                Thank you for creating an account with ' . htmlspecialchars($storeName) . '! Please click the button below to verify your email address.
+                            </p>
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                                <tr>
+                                    <td align="center" style="padding: 10px 0 30px;">
+                                        <a href="' . $verifyUrl . '" style="display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, var(--primary-color, #2186c4) 0%, var(--secondary-color, #83b1ec) 100%); background-color: #2186c4; color: #ffffff; text-decoration: none; border-radius: 50px; font-weight: 600; font-size: 16px;">Verify Email Address</a>
+                                    </td>
+                                </tr>
+                            </table>
+                            <p style="margin: 0 0 10px; font-size: 14px; color: #999;">
+                                If you didn\'t create this account, you can safely ignore this email.
+                            </p>
+                            <p style="margin: 0; font-size: 12px; color: #ccc; word-break: break-all;">
+                                Or copy this link: ' . $verifyUrl . '
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="center" style="padding: 20px 40px 30px; border-top: 1px solid #eee;">
+                            <p style="margin: 0; font-size: 14px; color: #999;">' . htmlspecialchars($storeName) . '</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>';
+
+            sendEmail($email, $subject, $html, ['html' => true]);
+        } catch (\Exception $e) {
+            error_log("Failed to send verification email: " . $e->getMessage());
+        }
     }
 
     /**

@@ -164,6 +164,7 @@ class ThemeController extends Controller
             'header_effect' => [
                 'enabled' => (bool)$this->post('effect_header_enabled'),
                 'style' => $this->post('effect_header_style', 'swirl'),
+                'location' => in_array($this->post('effect_header_location'), ['navbar', 'hero']) ? $this->post('effect_header_location') : 'navbar',
                 'opacity' => max(0.05, min(1, (float)$this->post('effect_header_opacity', '0.5')))
             ],
             'page_transitions' => [
@@ -178,6 +179,11 @@ class ThemeController extends Controller
             'card_hover' => [
                 'enabled' => (bool)$this->post('effect_card_hover_enabled'),
                 'style' => $this->post('effect_card_hover_style', 'lift')
+            ],
+            'holiday_effects' => [
+                'enabled' => (bool)$this->post('effect_holiday_enabled'),
+                'preview' => $this->post('holiday_preview_holiday', 'none'),
+                'heroes' => $this->buildHolidayHeroes()
             ]
         ];
 
@@ -189,18 +195,21 @@ class ThemeController extends Controller
             'navbar_bg_color' => $this->post('navbar_bg_color', $theme['navbar_bg_color'] ?? '#FFFFFF'),
             'navbar_text_color' => $this->post('navbar_text_color', $theme['navbar_text_color'] ?? '#1f2937'),
             'glow_color' => $this->post('glow_color', $theme['glow_color'] ?? $theme['primary_color']),
+            'hero_bg_start' => $this->post('hero_bg_start', $theme['hero_bg_start'] ?? '#0d0d1a'),
+            'hero_bg_end' => $this->post('hero_bg_end', $theme['hero_bg_end'] ?? '#1a1a2e'),
             'heading_font' => $this->post('heading_font', $theme['heading_font']),
             'body_font' => $this->post('body_font', $theme['body_font']),
             'layout_style' => $this->post('layout_style', $theme['layout_style']),
             'header_style' => $this->post('header_style', $theme['header_style']),
             'category_layout' => $this->post('category_layout', $theme['category_layout']),
+            'sidebar_menu_mode' => $this->post('sidebar_menu_mode', $theme['sidebar_menu_mode'] ?? 'hover'),
             'product_grid_columns' => (int)$this->post('product_grid_columns', $theme['product_grid_columns']),
             'custom_css' => $this->post('custom_css', ''),
             'effect_settings' => json_encode($effectSettings)
         ];
 
         // Validate colors are valid hex
-        foreach (['primary_color', 'secondary_color', 'accent_color', 'navbar_bg_color', 'navbar_text_color', 'glow_color'] as $colorField) {
+        foreach (['primary_color', 'secondary_color', 'accent_color', 'navbar_bg_color', 'navbar_text_color', 'glow_color', 'hero_bg_start', 'hero_bg_end'] as $colorField) {
             if (!preg_match('/^#[0-9A-Fa-f]{6}$/', $data[$colorField])) {
                 $this->json(['error' => 'Invalid color format for ' . $colorField], 400);
                 return;
@@ -338,11 +347,14 @@ class ThemeController extends Controller
             'navbar_bg_color' => $this->post('navbar_bg_color', '#FFFFFF'),
             'navbar_text_color' => $this->post('navbar_text_color', '#1f2937'),
             'glow_color' => $this->post('glow_color', '#FF68C5'),
+            'hero_bg_start' => $this->post('hero_bg_start', '#0d0d1a'),
+            'hero_bg_end' => $this->post('hero_bg_end', '#1a1a2e'),
             'heading_font' => $this->post('heading_font', 'Playfair Display'),
             'body_font' => $this->post('body_font', 'Inter'),
             'layout_style' => $this->post('layout_style', 'sidebar'),
             'header_style' => $this->post('header_style', 'standard'),
             'category_layout' => $this->post('category_layout', 'grid'),
+            'sidebar_menu_mode' => $this->post('sidebar_menu_mode', 'hover'),
             'product_grid_columns' => (int)$this->post('product_grid_columns', 4),
             'custom_css' => $this->post('custom_css', '')
         ];
@@ -755,6 +767,11 @@ class ThemeController extends Controller
         $filename = 'error-404-' . time() . '.' . strtolower($ext);
 
         if (move_uploaded_file($file['tmp_name'], $uploadDir . $filename)) {
+            // Convert to WebP (skip SVG)
+            if ($mimeType !== 'image/svg+xml') {
+                $webpPath = convertToWebp($uploadDir . $filename);
+                $filename = basename($webpPath);
+            }
             $settingModel->set('error_404_image', '/assets/images/branding/' . $filename, 'file', 'theme', true);
         }
     }
@@ -777,5 +794,28 @@ class ThemeController extends Controller
         }
 
         $this->json(['success' => true, 'message' => '404 image removed']);
+    }
+
+    private function buildHolidayHeroes(): array
+    {
+        $holidays = ['christmas', 'valentines', 'stpatricks', 'easter', 'independence', 'halloween', 'newyear'];
+        $heroes = [];
+        foreach ($holidays as $key) {
+            $badge = trim($this->post("holiday_hero_{$key}_badge", ''));
+            $heading = trim($this->post("holiday_hero_{$key}_heading", ''));
+            $tagline = trim($this->post("holiday_hero_{$key}_tagline", ''));
+            $ctaText = trim($this->post("holiday_hero_{$key}_cta_text", ''));
+            $ctaUrl = trim($this->post("holiday_hero_{$key}_cta_url", ''));
+            if ($badge || $heading || $tagline || $ctaText || $ctaUrl) {
+                $heroes[$key] = array_filter([
+                    'badge' => $badge,
+                    'heading' => $heading,
+                    'tagline' => $tagline,
+                    'cta_text' => $ctaText,
+                    'cta_url' => $ctaUrl,
+                ]);
+            }
+        }
+        return $heroes;
     }
 }

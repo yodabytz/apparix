@@ -35,7 +35,7 @@
                         <?php endif; ?>
                         <?php if ($order['tax'] > 0): ?>
                             <div class="total-row">
-                                <span>Tax</span>
+                                <span><?php echo escape(setting('tax_label', 'Tax')); ?></span>
                                 <span><?php echo formatPrice($order['tax']); ?></span>
                             </div>
                         <?php endif; ?>

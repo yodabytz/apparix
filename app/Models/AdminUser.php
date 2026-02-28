@@ -50,7 +50,7 @@ class AdminUser extends Model
     {
         $db = Database::getInstance();
         $token = bin2hex(random_bytes(32));
-        $expiresAt = date('Y-m-d H:i:s', strtotime('+24 hours'));
+        $expiresAt = date('Y-m-d H:i:s', strtotime('+7 days'));
 
         $db->insert(
             "INSERT INTO admin_sessions (admin_user_id, session_token, ip_address, user_agent, expires_at) VALUES (?, ?, ?, ?, ?)",

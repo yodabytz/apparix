@@ -112,7 +112,7 @@ class ReCaptcha
         if (empty($siteKey)) {
             return '';
         }
-        return '<script src="https://www.google.com/recaptcha/api.js?render=' . htmlspecialchars($siteKey) . '"></script>';
+        return '<script defer src="https://www.google.com/recaptcha/api.js?render=' . htmlspecialchars($siteKey) . '"></script>';
     }
 
     /**

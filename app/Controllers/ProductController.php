@@ -207,6 +207,19 @@ class ProductController extends Controller
         // Build BreadcrumbList JSON-LD
         $jsonLd = $this->buildCategoryJsonLd($category);
 
+        // Build OG image: prefer dedicated og_image, fall back to category image
+        $ogImage = null;
+        if (!empty($category['og_image'])) {
+            $img = $category['og_image'];
+            $ogImage = (strpos($img, 'http') === 0) ? $img : appUrl() . $img;
+        } elseif (!empty($category['image'])) {
+            $img = $category['image'];
+            // Skip SVGs for OG (not supported by most social platforms)
+            if (stripos($img, '.svg') === false) {
+                $ogImage = (strpos($img, 'http') === 0) ? $img : appUrl() . $img;
+            }
+        }
+
         $data = [
             'title' => $category['name'],
             'category' => $category,
@@ -219,6 +232,8 @@ class ProductController extends Controller
             'currentCategory' => $slug,
             'sort' => $sort,
             'jsonLd' => $jsonLd,
+            'ogImage' => $ogImage,
+            'metaDescription' => !empty($category['description']) ? substr(strip_tags($category['description']), 0, 160) : null,
         ];
 
         $this->render('products.category', $data);

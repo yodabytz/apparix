@@ -3,50 +3,7 @@
     <div class="container">
         <div class="shop-layout">
             <!-- Sidebar -->
-            <aside class="shop-sidebar">
-                <div class="sidebar-section">
-                    <h3>Categories</h3>
-                    <ul class="category-list">
-                        <li>
-                            <a href="/products">All Products</a>
-                        </li>
-                        <?php if (!empty($categories)): ?>
-                            <?php foreach ($categories as $category): ?>
-                                <li class="parent-category">
-                                    <a href="/category/<?php echo escape($category['slug']); ?>">
-                                        <?php echo escape($category['name']); ?>
-                                        <span class="count"><?php echo (int)$category['product_count']; ?></span>
-                                    </a>
-                                    <?php if (!empty($category['children'])): ?>
-                                        <ul class="subcategory-list">
-                                            <?php foreach ($category['children'] as $child): ?>
-                                                <li class="<?php echo !empty($child['children']) ? 'has-children' : ''; ?>">
-                                                    <a href="/category/<?php echo escape($child['slug']); ?>">
-                                                        <?php echo escape($child['name']); ?>
-                                                        <span class="count"><?php echo (int)$child['product_count']; ?></span>
-                                                    </a>
-                                                    <?php if (!empty($child['children'])): ?>
-                                                        <ul class="grandchild-list">
-                                                            <?php foreach ($child['children'] as $grandchild): ?>
-                                                                <li>
-                                                                    <a href="/category/<?php echo escape($grandchild['slug']); ?>">
-                                                                        <?php echo escape($grandchild['name']); ?>
-                                                                        <span class="count"><?php echo (int)$grandchild['product_count']; ?></span>
-                                                                    </a>
-                                                                </li>
-                                                            <?php endforeach; ?>
-                                                        </ul>
-                                                    <?php endif; ?>
-                                                </li>
-                                            <?php endforeach; ?>
-                                        </ul>
-                                    <?php endif; ?>
-                                </li>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </ul>
-                </div>
-            </aside>
+            <?php include __DIR__ . '/../partials/shop-sidebar.php'; ?>
 
             <!-- Main Content -->
             <div class="shop-main">
@@ -86,7 +43,7 @@
                                              width="300"
                                              height="300">
                                         <?php if (!empty($product['video_path'])): ?>
-                                            <video class="product-video" src="<?php echo escape($product['video_path']); ?>" muted loop playsinline preload="metadata"></video>
+                                            <video class="product-video" data-src="<?php echo escape($product['video_path']); ?>" muted loop playsinline preload="none"></video>
                                             <span class="video-indicator">&#9658;</span>
                                         <?php endif; ?>
                                     </a>

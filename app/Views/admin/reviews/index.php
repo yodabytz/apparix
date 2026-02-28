@@ -90,7 +90,7 @@
                             <td class="actions-col">
                                 <?php if (!$review['is_approved']): ?>
                                     <form action="/admin/reviews/approve" method="POST" style="display: inline;">
-                                        <input type="hidden" name="csrf_token" value="<?php echo escape($_SESSION['csrf_token'] ?? ''); ?>">
+                                        <?php echo csrfField(); ?>
                                         <input type="hidden" name="review_id" value="<?php echo $review['id']; ?>">
                                         <button type="submit" class="btn btn-sm btn-success" title="Approve">
                                             &#10003;
@@ -99,7 +99,7 @@
                                 <?php endif; ?>
 
                                 <form action="/admin/reviews/toggle-featured" method="POST" style="display: inline;">
-                                    <input type="hidden" name="csrf_token" value="<?php echo escape($_SESSION['csrf_token'] ?? ''); ?>">
+                                    <?php echo csrfField(); ?>
                                     <input type="hidden" name="review_id" value="<?php echo $review['id']; ?>">
                                     <button type="submit" class="btn btn-sm <?php echo $review['is_featured'] ? 'btn-warning' : 'btn-secondary'; ?>" title="<?php echo $review['is_featured'] ? 'Unfeature' : 'Feature'; ?>">
                                         &#9733;
@@ -107,7 +107,7 @@
                                 </form>
 
                                 <form action="/admin/reviews/reject" method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this review?');">
-                                    <input type="hidden" name="csrf_token" value="<?php echo escape($_SESSION['csrf_token'] ?? ''); ?>">
+                                    <?php echo csrfField(); ?>
                                     <input type="hidden" name="review_id" value="<?php echo $review['id']; ?>">
                                     <button type="submit" class="btn btn-sm btn-danger" title="Delete">
                                         &#10005;

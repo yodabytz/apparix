@@ -18,18 +18,42 @@ class Database
     {
         try {
             $dsn = 'mysql:host=' . $_ENV['DB_HOST'] . ';dbname=' . $_ENV['DB_NAME'] . ';charset=utf8mb4';
+            $timezone = $_ENV['APP_TIMEZONE'] ?? 'America/New_York';
 
-            $this->pdo = new PDO(
-                $dsn,
-                $_ENV['DB_USER'],
-                $_ENV['DB_PASS'],
-                [
-                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                    PDO::ATTR_EMULATE_PREPARES => false,  // Use native prepared statements
-                    PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci, time_zone = 'America/New_York'"
-                ]
-            );
+            // Try with named timezone first, fall back to UTC offset if tz tables aren't loaded
+            $initCommand = "SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci, time_zone = '{$timezone}'";
+
+            try {
+                $this->pdo = new PDO(
+                    $dsn,
+                    $_ENV['DB_USER'],
+                    $_ENV['DB_PASS'],
+                    [
+                        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                        PDO::ATTR_EMULATE_PREPARES => false,
+                        PDO::MYSQL_ATTR_INIT_COMMAND => $initCommand
+                    ]
+                );
+            } catch (PDOException $tzError) {
+                // Timezone tables not loaded — connect without named timezone
+                if (str_contains($tzError->getMessage(), 'time zone')) {
+                    $this->pdo = new PDO(
+                        $dsn,
+                        $_ENV['DB_USER'],
+                        $_ENV['DB_PASS'],
+                        [
+                            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                            PDO::ATTR_EMULATE_PREPARES => false,
+                            PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci"
+                        ]
+                    );
+                    error_log('Database: Named timezone failed, connected without timezone setting. Run mysql_tzinfo_to_sql to fix.');
+                } else {
+                    throw $tzError;
+                }
+            }
         } catch (PDOException $e) {
             error_log('Database Connection Error: ' . $e->getMessage());
             die('Database connection failed. Please contact support.');

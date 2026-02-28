@@ -212,7 +212,7 @@ class Order extends Model
     public function getOrderItems(int $orderId): array
     {
         return $this->query(
-            "SELECT oi.*, p.slug as product_slug, p.manufacturer,
+            "SELECT oi.*, p.slug as product_slug, p.manufacturer, p.is_digital,
                     COALESCE(oi.cost, pv.cost, p.cost) as product_cost,
                     p.cost as base_product_cost,
                     pv.cost as variant_cost,

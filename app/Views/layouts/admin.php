@@ -33,13 +33,19 @@ if (isset($admin)) {
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title><?php echo isset($title) ? escape($title) . ' | ' : ''; ?>Apparix Admin</title>
+    <title><?php echo isset($title) ? escape($title) . ' | ' : ''; ?><?php echo appName(); ?> Admin</title>
+    <?php $adminFavicon = setting('store_favicon'); ?>
+    <?php if ($adminFavicon): ?>
+    <link rel="icon" href="<?php echo escape($adminFavicon); ?>">
+    <link rel="shortcut icon" href="<?php echo escape($adminFavicon); ?>">
+    <?php else: ?>
     <link rel="icon" href="/favicon.ico">
     <link rel="shortcut icon" href="/favicon.ico">
+    <?php endif; ?>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/assets/css/admin.css?v=27">
+    <link rel="stylesheet" href="/assets/css/admin.css?v=28">
     <?php
     // Get theme colors from ThemeService to match admin panel with site theme
     $themeService = \App\Core\ThemeService::getInstance();
@@ -62,9 +68,20 @@ if (isset($admin)) {
 <body>
     <?php if (isset($admin)): ?>
     <?php
-    // Get store logo for admin panel
+    // Get store logo for admin panel (white variant for dark sidebar/header)
     $adminStoreLogo = storeLogo();
     $adminStoreName = appName();
+    // Use white logo variant for dark admin backgrounds
+    $adminLogoWhite = '/assets/images/apparix-logo-white.png';
+    if ($adminStoreLogo) {
+        // Check if a white variant exists alongside the uploaded logo
+        $whitePath = preg_replace('/(\.[^.]+)$/', '-white$1', $adminStoreLogo);
+        if (file_exists((defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__, 2)) . '/public' . $whitePath)) {
+            $adminLogoWhite = $whitePath;
+        } else {
+            $adminLogoWhite = $adminStoreLogo;
+        }
+    }
     ?>
     <!-- Mobile Header -->
     <header class="admin-mobile-header">
@@ -74,11 +91,7 @@ if (isset($admin)) {
             <span></span>
         </button>
         <a href="/admin" class="admin-mobile-logo">
-            <?php if ($adminStoreLogo): ?>
-                <img src="<?php echo escape($adminStoreLogo); ?>" alt="<?php echo escape($adminStoreName); ?>" height="28">
-            <?php else: ?>
-                <span class="admin-logo-text"><?php echo escape($adminStoreName); ?></span>
-            <?php endif; ?>
+            <img src="<?php echo escape($adminLogoWhite); ?>?v=2" alt="<?php echo escape($adminStoreName); ?>" height="28">
         </a>
         <a href="/" class="admin-mobile-view-site" target="_blank" title="View Site">&#127760;</a>
     </header>
@@ -90,11 +103,7 @@ if (isset($admin)) {
     <aside class="admin-sidebar" id="adminSidebar">
         <div class="sidebar-header">
             <a href="/admin" class="admin-logo">
-                <?php if ($adminStoreLogo): ?>
-                    <img src="<?php echo escape($adminStoreLogo); ?>" alt="<?php echo escape($adminStoreName); ?>" height="40">
-                <?php else: ?>
-                    <span class="admin-logo-text"><?php echo escape($adminStoreName); ?></span>
-                <?php endif; ?>
+                <img src="<?php echo escape($adminLogoWhite); ?>?v=2" alt="<?php echo escape($adminStoreName); ?>">
             </a>
         </div>
 
@@ -138,6 +147,11 @@ if (isset($admin)) {
             <a href="/admin/visitors" class="nav-item <?php echo strpos($_SERVER['REQUEST_URI'], '/admin/visitors') === 0 ? 'active' : ''; ?>">
                 <span class="nav-icon">&#128200;</span> Visitors
             </a>
+            <?php if (setting('enable_downloads_section')): ?>
+            <a href="/admin/downloads" class="nav-item <?php echo strpos($_SERVER['REQUEST_URI'], '/admin/downloads') === 0 ? 'active' : ''; ?>">
+                <span class="nav-icon">&#11015;</span> Downloads
+            </a>
+            <?php endif; ?>
 
             <div class="nav-divider"></div>
             <span class="nav-section-title">Settings</span>
@@ -190,6 +204,14 @@ if (isset($admin)) {
             <a href="/admin/logout" class="nav-item logout">
                 <span class="nav-icon">&#128682;</span> Logout
             </a>
+            <?php
+            $versionFile = dirname(__DIR__, 3) . '/version.php';
+            $vInfo = file_exists($versionFile) ? include($versionFile) : null;
+            if ($vInfo && isset($vInfo['version'])): ?>
+            <div style="padding: 8px 16px 4px; font-size: 11px; color: rgba(255,255,255,0.35); text-align: center;">
+                v<?php echo escape($vInfo['version']); ?>
+            </div>
+            <?php endif; ?>
         </div>
     </aside>
     <?php endif; ?>

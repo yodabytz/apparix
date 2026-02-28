@@ -50,6 +50,21 @@ class CheckoutController extends Controller
             return;
         }
 
+        // Require account for digital products
+        $hasDigitalItems = false;
+        foreach ($items as $item) {
+            if (!empty($item['is_digital'])) {
+                $hasDigitalItems = true;
+                break;
+            }
+        }
+        if ($hasDigitalItems && !auth()) {
+            $_SESSION['intended_url'] = '/checkout';
+            setFlash('error', 'An account is required to purchase digital products. Please <a href="/login">log in</a> or <a href="/register">create an account</a>.');
+            $this->redirect('/cart');
+            return;
+        }
+
         $cartTotal = $this->cartModel->getTotal($sessionId, $userId);
 
         // Get user's saved addresses if logged in
@@ -138,10 +153,22 @@ class CheckoutController extends Controller
             $discountAmount = $appliedCoupon['discount'] ?? 0;
         }
 
+        // Calculate tax if enabled
+        $tax = 0;
+        if (setting('tax_enabled')) {
+            $taxRegion = setting('tax_region', '');
+            $shippingState = $this->post('shipping_state', '');
+            // If a tax region is set, only charge when customer's state matches
+            if (empty($taxRegion) || strcasecmp(trim($taxRegion), trim($shippingState)) === 0) {
+                $taxRate = (float)setting('tax_rate', 0) / 100;
+                $tax = round($subtotal * $taxRate, 2);
+            }
+        }
+
         // Calculate total (same formula as process())
         // Cap discounts so total never goes below zero
-        $totalDiscount = min($autoDiscountTotal + $discountAmount, $subtotal + $shippingCost);
-        $total = $subtotal + $shippingCost - $totalDiscount;
+        $totalDiscount = min($autoDiscountTotal + $discountAmount, $subtotal + $shippingCost + $tax);
+        $total = $subtotal + $shippingCost + $tax - $totalDiscount;
 
         // Handle free orders - no payment needed
         if ($total <= 0) {
@@ -174,6 +201,7 @@ class CheckoutController extends Controller
             $_SESSION['payment_intent_data'] = [
                 'payment_intent_id' => $paymentIntent->id,
                 'subtotal' => $subtotal,
+                'tax' => $tax,
                 'shipping_cost' => $shippingCost,
                 'shipping_method_id' => $shippingMethodId ? (int)$shippingMethodId : null,
                 'auto_discount_amount' => $autoDiscountTotal,
@@ -220,13 +248,28 @@ class CheckoutController extends Controller
             return;
         }
 
-        // Check if cart is digital-only (no physical items)
+        // Check if cart has digital items and if digital-only
+        $hasDigitalItems = false;
         $isDigitalOnly = true;
         foreach ($items as $item) {
-            if (empty($item['is_digital'])) {
+            if (!empty($item['is_digital'])) {
+                $hasDigitalItems = true;
+            } else {
                 $isDigitalOnly = false;
-                break;
             }
+        }
+
+        // Require account for digital products at checkout
+        if ($hasDigitalItems && !auth()) {
+            $errorMsg = 'An account is required to purchase digital products. Please log in or create an account.';
+            if ($this->isAjaxRequest()) {
+                $this->json(['error' => $errorMsg], 403);
+            } else {
+                $_SESSION['intended_url'] = '/checkout';
+                setFlash('error', $errorMsg);
+                $this->redirect('/cart');
+            }
+            return;
         }
 
         // Check license monthly order limit
@@ -337,7 +380,18 @@ class CheckoutController extends Controller
 
         // Calculate totals - use stored values if available to prevent race conditions
         $subtotal = $this->cartModel->getTotal($sessionId, $userId);
-        $tax = 0; // TODO: Calculate tax based on location
+
+        // Calculate tax if enabled
+        $tax = 0;
+        if ($paymentIntentData && isset($paymentIntentData['tax'])) {
+            $tax = $paymentIntentData['tax'];
+        } elseif (setting('tax_enabled')) {
+            $taxRegion = setting('tax_region', '');
+            if (empty($taxRegion) || strcasecmp(trim($taxRegion), trim($shippingState)) === 0) {
+                $taxRate = (float)setting('tax_rate', 0) / 100;
+                $tax = round($subtotal * $taxRate, 2);
+            }
+        }
 
         // Verify cart hasn't changed since payment was created (if payment intent data exists)
         if ($paymentIntentData && abs($subtotal - $paymentIntentData['subtotal']) > 0.01) {

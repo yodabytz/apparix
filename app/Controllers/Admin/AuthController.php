@@ -206,9 +206,9 @@ class AuthController extends Controller
         // Create session
         $token = $this->adminModel->createSession($admin['id'], $ip, $userAgent);
 
-        // Set cookie (24 hours, HTTP only, secure, same-site strict)
+        // Set cookie (7 days, HTTP only, secure, same-site strict)
         setcookie('admin_token', $token, [
-            'expires' => time() + 86400,
+            'expires' => time() + 604800,
             'path' => '/admin',
             'secure' => true,
             'httponly' => true,
@@ -217,7 +217,7 @@ class AuthController extends Controller
 
         // Set bypass cookie for splash page (path '/' so it works on homepage)
         setcookie('bypass_splash', '1', [
-            'expires' => time() + 86400,
+            'expires' => time() + 604800,
             'path' => '/',
             'secure' => true,
             'httponly' => true,

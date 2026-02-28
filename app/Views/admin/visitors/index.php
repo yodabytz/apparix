@@ -87,6 +87,76 @@ $selectedBotStats = $botStats[$period] ?? $botStats['month'];
     </div>
 </div>
 
+<!-- BotBlocker: Actively Blocked IPs -->
+<?php if (!empty($blockedIps)): ?>
+<div class="card" style="margin-top: 1.5rem;">
+    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <h3 class="card-title">&#128683; Blocked Bots <span class="period-badge" style="background: #dc2626;"><?php echo number_format($blockedCount); ?> IPs</span></h3>
+        <span style="font-size: 0.75rem; color: var(--admin-text-light);">Auto-blocked by BotBlocker (7-day ban)</span>
+    </div>
+    <div class="table-container" style="max-height: 400px; overflow-y: auto;">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>IP Address</th>
+                    <th>Reason</th>
+                    <th>Detail</th>
+                    <th style="text-align: right;">Hits</th>
+                    <th>Blocked At</th>
+                    <th>Expires</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php
+                $shown = 0;
+                foreach ($blockedIps as $ip => $entry):
+                    if ($shown >= 50) break;
+                    $shown++;
+                    $blockedAt = $entry['blocked_at'] ?? 0;
+                    $expiresAt = $blockedAt + 604800; // 7 days
+                    $remainingHours = max(0, round(($expiresAt - time()) / 3600));
+                    $reasonLabels = [
+                        'honeypot' => 'Honeypot Trap',
+                        'bad_agent' => 'Malicious Agent',
+                        'empty_ua' => 'Empty User Agent',
+                        'manual' => 'Manual Block'
+                    ];
+                    $reasonColors = [
+                        'honeypot' => '#f97316',
+                        'bad_agent' => '#ef4444',
+                        'empty_ua' => '#eab308',
+                        'manual' => '#8b5cf6'
+                    ];
+                    $reason = $entry['reason'] ?? 'unknown';
+                    $reasonLabel = $reasonLabels[$reason] ?? ucfirst($reason);
+                    $reasonColor = $reasonColors[$reason] ?? '#64748b';
+                ?>
+                <tr>
+                    <td style="font-family: monospace; font-size: 0.85rem; color: #4fc3f7;"><?php echo escape($ip); ?></td>
+                    <td>
+                        <span style="display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; background: <?php echo $reasonColor; ?>20; color: <?php echo $reasonColor; ?>; border: 1px solid <?php echo $reasonColor; ?>40;">
+                            <?php echo $reasonLabel; ?>
+                        </span>
+                    </td>
+                    <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.8rem; color: var(--admin-text-light);">
+                        <?php echo escape($entry['detail'] ?? ''); ?>
+                    </td>
+                    <td style="text-align: right; font-weight: 600;"><?php echo number_format($entry['hits'] ?? 0); ?></td>
+                    <td style="white-space: nowrap; font-size: 0.85rem;"><?php echo $blockedAt ? date('M j, g:ia', $blockedAt) : 'Unknown'; ?></td>
+                    <td style="white-space: nowrap; font-size: 0.85rem; color: var(--admin-text-light);"><?php echo $remainingHours; ?>h remaining</td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+    <?php if ($blockedCount > 50): ?>
+    <div style="padding: 0.75rem 1rem; border-top: 1px solid var(--admin-border, #e2e8f0); color: var(--admin-text-light); font-size: 0.8rem;">
+        Showing 50 of <?php echo number_format($blockedCount); ?> blocked IPs (most recent first)
+    </div>
+    <?php endif; ?>
+</div>
+<?php endif; ?>
+
 <!-- Visitors Line Chart -->
 <div class="card" style="margin-top: 1.5rem;">
     <div class="card-header">
