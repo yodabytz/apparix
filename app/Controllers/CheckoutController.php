@@ -613,6 +613,19 @@ class CheckoutController extends Controller
             }
             // Inventory is now locked and validated - safe to proceed
 
+            // Ensure customer record exists (for guest checkouts)
+            if (!$userId && !empty($email)) {
+                $existingUser = $db->selectOne("SELECT id FROM users WHERE email = ?", [$email]);
+                if ($existingUser) {
+                    $userId = $existingUser['id'];
+                } else {
+                    $userId = $db->insert(
+                        "INSERT INTO users (email, first_name, last_name, phone, is_guest, created_at) VALUES (?, ?, ?, ?, 1, NOW())",
+                        [$email, $shippingFirstName, $shippingLastName, $shippingPhone]
+                    );
+                }
+            }
+
             // Create shipping address
             $shippingAddressId = $db->insert(
                 "INSERT INTO addresses (user_id, type, first_name, last_name, address_line1, address_line2, city, state, postal_code, country, phone)

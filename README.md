@@ -688,25 +688,16 @@ Access the admin panel at: `https://yourdomain.com/admin`
 
 ## License Tiers
 
-| Feature | Free | Standard | Professional | Enterprise | Unlimited |
-|---------|------|----------|--------------|------------|-----------|
-| Products | 25 | 100 | 1,000 | Unlimited | Unlimited |
-| Orders/Month | 50 | 500 | 5,000 | Unlimited | Unlimited |
-| Admin Users | 1 | 1 | 5 | Unlimited | Unlimited |
-| Custom Themes | — | ✓ | ✓ | ✓ | ✓ |
-| Coupons & Discounts | — | ✓ | ✓ | ✓ | ✓ |
-| Newsletter | — | ✓ | ✓ | ✓ | ✓ |
-| Remove Branding | — | ✓ | ✓ | ✓ | ✓ |
-| API Access | — | — | ✓ | ✓ | ✓ |
-| Advanced Analytics | — | — | ✓ | ✓ | ✓ |
-| Bulk Import/Export | — | — | ✓ | ✓ | ✓ |
-| Abandoned Cart Recovery | — | — | — | ✓ | ✓ |
-| Multi-Currency | — | — | — | ✓ | ✓ |
-| Priority Support | — | — | — | ✓ | ✓ |
-| Unlimited Domains | — | — | — | — | ✓ |
-| Developer License | — | — | — | — | ✓ |
-| White-Label Rights | — | — | — | — | ✓ |
-| Price | **Free** | **$99** | **$199** | **$299** | **$499** |
+| Feature | Standard (Free) | Professional | Business | Enterprise |
+|---------|----------------|--------------|----------|------------|
+| Orders/Month | 50 | 500 | Unlimited | Unlimited |
+| Products | 100 | 1,000 | Unlimited | Unlimited |
+| Admin Users | 5 | 15 | 50 | Unlimited |
+| Digital Products | ✓ | ✓ | ✓ | ✓ |
+| Themes | Basic | All | All | All + Custom |
+| Plugins | Community | All | All | All + Custom |
+| Support | Community | Email | Priority | Dedicated |
+| Price | **Free** | $99/year | $249/year | Contact Us |
 
 **Purchase your license at: [https://apparix.app/pricing](https://apparix.app/pricing)**
 
@@ -740,11 +731,8 @@ Download plugins at: [https://apparix.app/plugins](https://apparix.app/plugins)
 
 Apparix is released under the [Apparix License](LICENSE).
 
-- **Free** — Up to 25 products, 50 orders/month, core features, Apparix branding
-- **Standard** ($99) — Up to 100 products, custom themes, coupons, remove branding
-- **Professional** ($199) — Up to 1,000 products, API access, advanced analytics, bulk import/export
-- **Enterprise** ($299) — Unlimited everything, abandoned cart recovery, multi-currency, priority support
-- **Unlimited** ($499) — All Enterprise features plus unlimited domains, developer license, white-label rights
+- **Free** for personal and small business use (with limitations)
+- **Commercial licenses** available for larger deployments and premium features
 
 Purchase licenses at: [https://apparix.app/pricing](https://apparix.app/pricing)
 

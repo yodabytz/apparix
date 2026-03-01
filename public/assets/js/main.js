@@ -19,42 +19,11 @@ document.addEventListener('DOMContentLoaded', function() {
 function initVideoHover() {
     const productCards = document.querySelectorAll('.product-card[data-has-video="true"]');
 
-    // Lazy-load video src via IntersectionObserver
-    if ('IntersectionObserver' in window) {
-        const videoObserver = new IntersectionObserver(function(entries) {
-            entries.forEach(function(entry) {
-                if (entry.isIntersecting) {
-                    const video = entry.target.querySelector('video.product-video[data-src]');
-                    if (video) {
-                        video.src = video.getAttribute('data-src');
-                        video.removeAttribute('data-src');
-                    }
-                    videoObserver.unobserve(entry.target);
-                }
-            });
-        }, { rootMargin: '200px' });
-
-        productCards.forEach(function(card) { videoObserver.observe(card); });
-    } else {
-        // Fallback: load all videos immediately
-        productCards.forEach(function(card) {
-            const video = card.querySelector('video.product-video[data-src]');
-            if (video) {
-                video.src = video.getAttribute('data-src');
-                video.removeAttribute('data-src');
-            }
-        });
-    }
-
     productCards.forEach(card => {
         const video = card.querySelector('video.product-video');
         if (!video) return;
 
         card.addEventListener('mouseenter', function() {
-            if (!video.src && video.getAttribute('data-src')) {
-                video.src = video.getAttribute('data-src');
-                video.removeAttribute('data-src');
-            }
             video.play().catch(() => {});
         });
 
@@ -63,11 +32,27 @@ function initVideoHover() {
             video.currentTime = 0;
         });
     });
-}
 
-/**
- * Initialize image zoom functionality
- */
+    // After page fully loads, start buffering visible videos in background
+    window.addEventListener('load', function() {
+        setTimeout(function() {
+            if ('IntersectionObserver' in window) {
+                var bufferObserver = new IntersectionObserver(function(entries) {
+                    entries.forEach(function(entry) {
+                        if (entry.isIntersecting) {
+                            var video = entry.target.querySelector('video.product-video');
+                            if (video && video.preload === 'none') {
+                                video.preload = 'auto';
+                            }
+                            bufferObserver.unobserve(entry.target);
+                        }
+                    });
+                }, { rootMargin: '500px' });
+                productCards.forEach(function(card) { bufferObserver.observe(card); });
+            }
+        }, 1000);
+    });
+}
 function initImageZoom() {
     const mainImage = document.querySelector('.main-image');
     if (!mainImage) return;
@@ -400,3 +385,20 @@ function addToCart(productId, quantity = 1) {
 function formatPrice(price) {
     return '$' + parseFloat(price).toFixed(2);
 }
+
+/**
+ * Prevent page zoom on iOS Safari (ignores user-scalable=no)
+ */
+document.addEventListener('gesturestart', function(e) { e.preventDefault(); }, { passive: false });
+document.addEventListener('gesturechange', function(e) { e.preventDefault(); }, { passive: false });
+document.addEventListener('gestureend', function(e) { e.preventDefault(); }, { passive: false });
+document.addEventListener('touchstart', function(e) {
+    if (e.touches.length > 1) {
+        var t = e.target;
+        while (t) {
+            if (t.classList && t.classList.contains('image-lightbox')) return;
+            t = t.parentElement;
+        }
+        e.preventDefault();
+    }
+}, { passive: false });

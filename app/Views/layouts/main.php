@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <?php
     // Initialize theme service early (needed for theme-color meta tag)
     $themeService = new \App\Core\ThemeService();
@@ -107,7 +107,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preload" href="<?php echo $themeService->getGoogleFontsUrl(); ?>" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link href="<?php echo $themeService->getGoogleFontsUrl(); ?>" rel="stylesheet"></noscript>
-    <link rel="stylesheet" href="/assets/css/main.css?v=108">
+    <link rel="stylesheet" href="/assets/css/main.css?v=111">
     <?php
     // Load installed theme CSS (if any)
     $installedThemeCss = \App\Core\ThemeLoader::getThemeCss();
@@ -670,6 +670,7 @@
         }
     }
     </style>
+    <?php \App\Core\Plugins\HookRegistry::doAction('page_head'); ?>
 </head>
 <?php
 $bodyClasses = $themeService->getBodyClasses();
@@ -720,6 +721,40 @@ $bodyClasses = trim($bodyClasses);
         $headerConfig = $themeService->getHeaderEffectConfig(); ?>
     <script>window.ambientBgConfig = <?php echo json_encode($headerConfig); ?>;</script>
     <?php endif; ?>
+    <!-- Theme Preview Banner (admin only, URL-signed) -->
+    <?php
+    $__previewInfo = $themeService->getPreviewInfo();
+    if ($__previewInfo):
+        $__pvSlug = htmlspecialchars($__previewInfo['slug'], ENT_QUOTES, 'UTF-8');
+        $__pvName = htmlspecialchars($__previewInfo['name'] ?? $__previewInfo['slug'], ENT_QUOTES, 'UTF-8');
+        $__pvKey  = htmlspecialchars($_GET['_pkey'] ?? '', ENT_QUOTES, 'UTF-8');
+    ?>
+    <div id="themePreviewBar" style="position:fixed;bottom:0;left:0;right:0;z-index:99999;background:#1e293b;color:#fff;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;font-family:-apple-system,system-ui,sans-serif;font-size:14px;box-shadow:0 -4px 20px rgba(0,0,0,0.2);">
+        <span style="display:flex;align-items:center;gap:8px;">
+            <span style="background:#f59e0b;color:#1e293b;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;text-transform:uppercase;letter-spacing:.5px;">Preview</span>
+            <strong><?php echo $__pvName; ?></strong> &mdash; only you can see this
+        </span>
+        <div style="display:flex;gap:10px;align-items:center;">
+            <form method="POST" action="/admin/themes/preview/activate" style="margin:0;">
+                <?php echo csrfField(); ?>
+                <input type="hidden" name="slug" value="<?php echo $__pvSlug; ?>">
+                <button type="submit" style="background:#22c55e;color:#fff;border:none;padding:8px 18px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;transition:background .15s;">Activate This Theme</button>
+            </form>
+            <a href="/admin/themes" style="background:#64748b;color:#fff;padding:8px 18px;border-radius:6px;font-size:13px;font-weight:600;text-decoration:none;transition:background .15s;">Exit Preview</a>
+        </div>
+    </div>
+    <script>
+    (function(){
+        var qs='theme_preview=<?php echo urlencode($__previewInfo['slug']); ?>&_pkey=<?php echo urlencode($_GET['_pkey'] ?? ''); ?>';
+        document.querySelectorAll('a[href]').forEach(function(a){
+            var h=a.getAttribute('href');
+            if(!h||h.charAt(0)==='#'||h.startsWith('javascript')||h.startsWith('mailto')||h.startsWith('/admin')||h.indexOf('//')===0||h.indexOf('http')===0)return;
+            a.href=h+(h.indexOf('?')!==-1?'&':'?')+qs;
+        });
+    })();
+    </script>
+    <?php endif; ?>
+
     <!-- Navigation -->
     <?php
     // Check if theme overrides the navbar partial
@@ -731,7 +766,11 @@ $bodyClasses = trim($bodyClasses);
     <nav class="navbar">
         <div class="container">
             <div class="navbar-brand">
-                <a href="/" class="logo"><img src="<?php echo setting('store_logo') ?: '/assets/images/apparix-logo.png'; ?>?v=2" alt="<?php echo appName(); ?>"></a>
+                <?php
+                $__themeLogo = $themeService->getActiveTheme()['theme_logo'] ?? null;
+                $__displayLogo = $__themeLogo ?: (setting('store_logo') ?: '/assets/images/apparix-logo.png');
+                ?>
+                <a href="/" class="logo"><img src="<?php echo escape($__displayLogo); ?>?v=2" alt="<?php echo appName(); ?>"></a>
             </div>
             <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Toggle menu" aria-expanded="false">
                 <span></span>
@@ -744,6 +783,7 @@ $bodyClasses = trim($bodyClasses);
                 ['label' => 'Shop', 'url' => '/products'],
             ]);
             if (is_string($navMenuItems)) $navMenuItems = json_decode($navMenuItems, true) ?: [];
+            $navMenuItems = \App\Core\Plugins\HookRegistry::applyFilters('navbar_menu_items', $navMenuItems);
             ?>
             <ul class="navbar-menu" id="navbarMenu">
                 <?php foreach ($navMenuItems as $navItem): ?>
@@ -984,7 +1024,7 @@ $bodyClasses = trim($bodyClasses);
     }
     </script>
 
-    <script defer src="/assets/js/main.js?v=14"></script>
+    <script defer src="/assets/js/main.js?v=20"></script>
     <?php if ($themeService->isHeaderEffectEnabled() || $holidayCanvasOverride || $holidayEffectsEnabled): ?>
     <script>
     requestAnimationFrame(function(){setTimeout(function(){

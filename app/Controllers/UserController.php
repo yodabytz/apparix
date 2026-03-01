@@ -414,8 +414,15 @@ class UserController extends Controller
     /**
      * Verify email address via token
      */
-    public function verifyEmail(string $token): void
+    public function verifyEmail(): void
     {
+        $token = $_GET['token'] ?? '';
+        if (!$token) {
+            setFlash('error', 'Invalid verification link.');
+            $this->redirect('/login');
+            return;
+        }
+
         if ($this->userModel->verifyEmail($token)) {
             setFlash('success', 'Email verified successfully! You can now log in.');
         } else {

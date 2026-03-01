@@ -528,29 +528,44 @@ class ThemeController extends Controller
         // Read manifest
         $manifest = json_decode(file_get_contents($manifestPath), true);
 
+        // Build theme data from manifest (including expanded settings)
+        $settings = $manifest['settings'] ?? [];
+        $effects = $manifest['effects'] ?? null;
+
+        $themeData = [
+            'slug' => $manifest['slug'],
+            'name' => $manifest['name'],
+            'description' => $manifest['description'] ?? '',
+            'primary_color' => $manifest['colors']['primary'] ?? '#FF68C5',
+            'secondary_color' => $manifest['colors']['secondary'] ?? '#FF94C8',
+            'accent_color' => $manifest['colors']['accent'] ?? '#FFE4F3',
+            'heading_font' => $manifest['fonts']['heading'] ?? 'Playfair Display',
+            'body_font' => $manifest['fonts']['body'] ?? 'Inter',
+            'navbar_bg_color' => $settings['navbar_bg_color'] ?? '#FFFFFF',
+            'navbar_text_color' => $settings['navbar_text_color'] ?? '#1f2937',
+            'glow_color' => $settings['glow_color'] ?? ($manifest['colors']['secondary'] ?? '#FF68C5'),
+            'hero_bg_start' => $settings['hero_bg_start'] ?? '#0d0d1a',
+            'hero_bg_end' => $settings['hero_bg_end'] ?? '#1a1a2e',
+            'layout_style' => $settings['layout_style'] ?? 'standard',
+            'header_style' => $settings['header_style'] ?? 'standard',
+            'category_layout' => $settings['category_layout'] ?? 'grid',
+            'product_grid_columns' => (int)($settings['product_grid_columns'] ?? 4),
+            'is_preset' => 0,
+            'source' => 'installed'
+        ];
+
+        if ($effects) {
+            $themeData['effect_settings'] = json_encode($effects);
+        }
+
         // Create or update theme in database to track active installed theme
         $existingTheme = $this->themeModel->findBySlug($slug);
 
         if ($existingTheme) {
-            // Activate existing
+            // Update existing record with latest manifest data then activate
+            $this->themeModel->updateCustomTheme($existingTheme['id'], $themeData);
             $this->themeModel->activate($existingTheme['id']);
         } else {
-            // Create new theme entry for this installed theme
-            $themeData = [
-                'slug' => $manifest['slug'],
-                'name' => $manifest['name'],
-                'description' => $manifest['description'] ?? '',
-                'primary_color' => $manifest['colors']['primary'] ?? '#FF68C5',
-                'secondary_color' => $manifest['colors']['secondary'] ?? '#FF94C8',
-                'accent_color' => $manifest['colors']['accent'] ?? '#FFE4F3',
-                'heading_font' => $manifest['fonts']['heading'] ?? 'Playfair Display',
-                'body_font' => $manifest['fonts']['body'] ?? 'Inter',
-                'layout_style' => 'standard',
-                'header_style' => 'standard',
-                'is_preset' => 0,
-                'source' => 'installed'
-            ];
-
             $newId = $this->themeModel->create($themeData);
             $this->themeModel->activate($newId);
         }
@@ -664,6 +679,116 @@ class ThemeController extends Controller
         }
 
         return rmdir($dir);
+    }
+
+    /**
+     * Start a live preview — sets preview cookie and redirects with signed URL
+     */
+    public function startPreview(): void
+    {
+        $this->requireValidCSRF();
+
+        $type = $this->post('type'); // 'db' or 'installed'
+        $slug = null;
+
+        if ($type === 'installed') {
+            $slug = $this->post('theme_slug');
+            if (!$slug || !preg_match('/^[a-z0-9-]+$/', $slug)) {
+                redirectWithFlash('/admin/themes', 'error', 'Invalid theme slug');
+                return;
+            }
+            $themesPath = dirname(__DIR__, 3) . '/content/themes/' . $slug;
+            if (!is_dir($themesPath) || !file_exists($themesPath . '/theme.json')) {
+                redirectWithFlash('/admin/themes', 'error', 'Theme not found');
+                return;
+            }
+        } else {
+            $themeId = (int)$this->post('theme_id');
+            $theme = $this->themeModel->find($themeId);
+            if (!$theme) {
+                redirectWithFlash('/admin/themes', 'error', 'Theme not found');
+                return;
+            }
+            $slug = $theme['slug'];
+        }
+
+        // Set a site-wide preview token cookie (admin_token is path=/admin, can't be read on /)
+        $adminToken = $_COOKIE['admin_token'] ?? '';
+        $previewToken = hash_hmac('sha256', 'theme-preview-cookie:' . $adminToken, $adminToken);
+        setcookie('theme_preview_token', $previewToken, [
+            'expires' => time() + 3600, // 1 hour
+            'path' => '/',
+            'secure' => true,
+            'httponly' => true,
+            'samesite' => 'Strict'
+        ]);
+
+        $url = ThemeService::generatePreviewUrl($slug, $previewToken);
+        $this->redirect($url);
+    }
+
+    /**
+     * Activate a theme from preview (POST with slug in body)
+     */
+    public function activatePreview(): void
+    {
+        $this->requireValidCSRF();
+
+        $slug = $this->post('slug');
+        if (!$slug || !preg_match('/^[a-z0-9-]+$/', $slug)) {
+            redirectWithFlash('/admin/themes', 'error', 'Invalid theme');
+            return;
+        }
+
+        // Clear preview cookie
+        setcookie('theme_preview_token', '', ['expires' => time() - 3600, 'path' => '/']);
+
+        // Try DB theme first
+        $dbTheme = $this->themeModel->findBySlug($slug);
+        if ($dbTheme) {
+            $this->themeModel->activate($dbTheme['id']);
+            redirectWithFlash('/admin/themes', 'success', 'Theme "' . $dbTheme['name'] . '" activated!');
+            return;
+        }
+
+        // Try installed theme
+        $themePath = dirname(__DIR__, 3) . '/content/themes/' . $slug;
+        $manifestPath = $themePath . '/theme.json';
+        if (is_dir($themePath) && file_exists($manifestPath)) {
+            $manifest = json_decode(file_get_contents($manifestPath), true);
+            $settings = $manifest['settings'] ?? [];
+            $effects = $manifest['effects'] ?? null;
+            $themeData = [
+                'slug' => $manifest['slug'],
+                'name' => $manifest['name'],
+                'description' => $manifest['description'] ?? '',
+                'primary_color' => $manifest['colors']['primary'] ?? '#FF68C5',
+                'secondary_color' => $manifest['colors']['secondary'] ?? '#FF94C8',
+                'accent_color' => $manifest['colors']['accent'] ?? '#FFE4F3',
+                'heading_font' => $manifest['fonts']['heading'] ?? 'Playfair Display',
+                'body_font' => $manifest['fonts']['body'] ?? 'Inter',
+                'navbar_bg_color' => $settings['navbar_bg_color'] ?? '#FFFFFF',
+                'navbar_text_color' => $settings['navbar_text_color'] ?? '#1f2937',
+                'glow_color' => $settings['glow_color'] ?? ($manifest['colors']['secondary'] ?? '#FF68C5'),
+                'hero_bg_start' => $settings['hero_bg_start'] ?? '#0d0d1a',
+                'hero_bg_end' => $settings['hero_bg_end'] ?? '#1a1a2e',
+                'layout_style' => $settings['layout_style'] ?? 'standard',
+                'header_style' => $settings['header_style'] ?? 'standard',
+                'category_layout' => $settings['category_layout'] ?? 'grid',
+                'product_grid_columns' => (int)($settings['product_grid_columns'] ?? 4),
+                'is_preset' => 0,
+                'source' => 'installed'
+            ];
+            if ($effects) {
+                $themeData['effect_settings'] = json_encode($effects);
+            }
+            $newId = $this->themeModel->create($themeData);
+            $this->themeModel->activate($newId);
+            redirectWithFlash('/admin/themes', 'success', 'Theme "' . $manifest['name'] . '" activated!');
+            return;
+        }
+
+        redirectWithFlash('/admin/themes', 'error', 'Theme not found');
     }
 
     /**
@@ -794,6 +919,184 @@ class ThemeController extends Controller
         }
 
         $this->json(['success' => true, 'message' => '404 image removed']);
+    }
+
+    /**
+     * Upload a theme-specific logo
+     */
+    public function uploadThemeLogo(): void
+    {
+        $this->requireValidCSRF();
+
+        $themeId = (int)$this->post('theme_id');
+        $theme = $this->themeModel->find($themeId);
+        if (!$theme) {
+            $this->json(['error' => 'Theme not found'], 404);
+            return;
+        }
+
+        $file = $_FILES['theme_logo'] ?? null;
+        if (!$file || $file['error'] !== UPLOAD_ERR_OK) {
+            $this->json(['error' => 'No file uploaded'], 400);
+            return;
+        }
+
+        $finfo = new \finfo(FILEINFO_MIME_TYPE);
+        $mimeType = $finfo->file($file['tmp_name']);
+        $allowedTypes = ['image/png', 'image/jpeg', 'image/svg+xml', 'image/webp', 'image/gif'];
+        if (!in_array($mimeType, $allowedTypes)) {
+            $this->json(['error' => 'Invalid file type. Allowed: PNG, JPG, SVG, WebP, GIF'], 400);
+            return;
+        }
+
+        if ($file['size'] > 2 * 1024 * 1024) {
+            $this->json(['error' => 'File too large. Maximum 2MB.'], 400);
+            return;
+        }
+
+        $slug = $theme['slug'];
+        $uploadDir = PUBLIC_PATH . '/assets/images/themes/' . $slug . '/';
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+
+        $ext = pathinfo($file['name'], PATHINFO_EXTENSION) ?: 'png';
+        $filename = 'logo-' . time() . '.' . strtolower($ext);
+
+        // Delete old logo if exists
+        if (!empty($theme['theme_logo'])) {
+            $oldPath = PUBLIC_PATH . $theme['theme_logo'];
+            if (file_exists($oldPath) && is_file($oldPath)) {
+                unlink($oldPath);
+            }
+        }
+
+        if (move_uploaded_file($file['tmp_name'], $uploadDir . $filename)) {
+            $webPath = '/assets/images/themes/' . $slug . '/' . $filename;
+            $this->themeModel->updateCustomTheme($themeId, ['theme_logo' => $webPath]);
+
+            $this->json([
+                'success' => true,
+                'path' => $webPath,
+                'message' => 'Theme logo uploaded'
+            ]);
+        } else {
+            $this->json(['error' => 'Failed to save file'], 500);
+        }
+    }
+
+    /**
+     * Remove theme-specific logo
+     */
+    public function removeThemeLogo(): void
+    {
+        $this->requireValidCSRF();
+
+        $themeId = (int)$this->post('theme_id');
+        $theme = $this->themeModel->find($themeId);
+        if (!$theme) {
+            $this->json(['error' => 'Theme not found'], 404);
+            return;
+        }
+
+        if (!empty($theme['theme_logo'])) {
+            $path = PUBLIC_PATH . $theme['theme_logo'];
+            if (file_exists($path) && is_file($path)) {
+                unlink($path);
+            }
+        }
+
+        $this->themeModel->updateCustomTheme($themeId, ['theme_logo' => null]);
+        $this->json(['success' => true, 'message' => 'Theme logo removed. Store default will be used.']);
+    }
+
+    /**
+     * Upload a theme-specific hero background image
+     */
+    public function uploadThemeHeroImage(): void
+    {
+        $this->requireValidCSRF();
+
+        $themeId = (int)$this->post('theme_id');
+        $theme = $this->themeModel->find($themeId);
+        if (!$theme) {
+            $this->json(['error' => 'Theme not found'], 404);
+            return;
+        }
+
+        $file = $_FILES['hero_image'] ?? null;
+        if (!$file || $file['error'] !== UPLOAD_ERR_OK) {
+            $this->json(['error' => 'No file uploaded'], 400);
+            return;
+        }
+
+        $finfo = new \finfo(FILEINFO_MIME_TYPE);
+        $mimeType = $finfo->file($file['tmp_name']);
+        $allowedTypes = ['image/png', 'image/jpeg', 'image/webp'];
+        if (!in_array($mimeType, $allowedTypes)) {
+            $this->json(['error' => 'Invalid file type. Allowed: PNG, JPG, WebP'], 400);
+            return;
+        }
+
+        if ($file['size'] > 5 * 1024 * 1024) {
+            $this->json(['error' => 'File too large. Maximum 5MB.'], 400);
+            return;
+        }
+
+        $slug = $theme['slug'];
+        $uploadDir = PUBLIC_PATH . '/assets/images/themes/' . $slug . '/';
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+
+        $ext = pathinfo($file['name'], PATHINFO_EXTENSION) ?: 'jpg';
+        $filename = 'hero-' . time() . '.' . strtolower($ext);
+
+        // Delete old hero image if exists
+        if (!empty($theme['hero_image'])) {
+            $oldPath = PUBLIC_PATH . $theme['hero_image'];
+            if (file_exists($oldPath) && is_file($oldPath)) {
+                unlink($oldPath);
+            }
+        }
+
+        if (move_uploaded_file($file['tmp_name'], $uploadDir . $filename)) {
+            $webPath = '/assets/images/themes/' . $slug . '/' . $filename;
+            $this->themeModel->updateCustomTheme($themeId, ['hero_image' => $webPath]);
+
+            $this->json([
+                'success' => true,
+                'path' => $webPath,
+                'message' => 'Hero image uploaded'
+            ]);
+        } else {
+            $this->json(['error' => 'Failed to save file'], 500);
+        }
+    }
+
+    /**
+     * Remove theme-specific hero image
+     */
+    public function removeThemeHeroImage(): void
+    {
+        $this->requireValidCSRF();
+
+        $themeId = (int)$this->post('theme_id');
+        $theme = $this->themeModel->find($themeId);
+        if (!$theme) {
+            $this->json(['error' => 'Theme not found'], 404);
+            return;
+        }
+
+        if (!empty($theme['hero_image'])) {
+            $path = PUBLIC_PATH . $theme['hero_image'];
+            if (file_exists($path) && is_file($path)) {
+                unlink($path);
+            }
+        }
+
+        $this->themeModel->updateCustomTheme($themeId, ['hero_image' => null]);
+        $this->json(['success' => true, 'message' => 'Hero image removed. Default gradient will be used.']);
     }
 
     private function buildHolidayHeroes(): array

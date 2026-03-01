@@ -64,6 +64,7 @@ if (isset($admin)) {
             --admin-primary-dark: <?php echo $primaryDark; ?>;
         }
     </style>
+    <?php \App\Core\Plugins\HookRegistry::doAction('page_head'); ?>
 </head>
 <body>
     <?php if (isset($admin)): ?>
@@ -191,6 +192,8 @@ if (isset($admin)) {
             <a href="/admin/2fa" class="nav-item <?php echo strpos($_SERVER['REQUEST_URI'], '/admin/2fa') === 0 ? 'active' : ''; ?>">
                 <span class="nav-icon">&#128274;</span> Two-Factor Auth
             </a>
+
+            <?php \App\Core\Plugins\HookRegistry::doAction('admin_sidebar_menu'); ?>
         </nav>
 
         <div class="sidebar-footer">

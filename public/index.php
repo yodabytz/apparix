@@ -637,6 +637,12 @@ $router->get('/admin/themes/preview-css', 'Admin\\ThemeController', 'previewCss'
 $router->post('/admin/themes/upload', 'Admin\\ThemeController', 'upload');
 $router->post('/admin/themes/activate-installed', 'Admin\\ThemeController', 'activateInstalled');
 $router->post('/admin/themes/delete-installed', 'Admin\\ThemeController', 'deleteInstalled');
+$router->post('/admin/themes/preview/start', 'Admin\\ThemeController', 'startPreview');
+$router->post('/admin/themes/preview/activate', 'Admin\\ThemeController', 'activatePreview');
+$router->post('/admin/themes/upload-logo', 'Admin\\ThemeController', 'uploadThemeLogo');
+$router->post('/admin/themes/remove-logo', 'Admin\\ThemeController', 'removeThemeLogo');
+$router->post('/admin/themes/upload-hero-image', 'Admin\\ThemeController', 'uploadThemeHeroImage');
+$router->post('/admin/themes/remove-hero-image', 'Admin\\ThemeController', 'removeThemeHeroImage');
 
 // Admin 404 error page customization
 $router->get('/admin/themes/404', 'Admin\\ThemeController', 'errorPage');
@@ -648,6 +654,58 @@ $router->get('/pricing', 'LicenseStoreController', 'pricing');
 $router->post('/license/checkout', 'LicenseStoreController', 'createCheckout');
 $router->get('/license/success', 'LicenseStoreController', 'success');
 $router->post('/license/resend', 'LicenseStoreController', 'resend');
+
+// Initialize plugins (loads active plugins and fires init hooks)
+$pluginManager = \App\Core\Plugins\PluginManager::getInstance();
+$pluginManager->init();
+
+// Community Hub plugin routes (only if plugin is active)
+if ($pluginManager->getPlugin('community-hub')) {
+    // Frontend forum routes
+    $router->get('/community', 'CommunityHub\\ForumController', 'index');
+    $router->get('/community/category/:slug', 'CommunityHub\\ForumController', 'category');
+    $router->get('/community/topic/:slug', 'CommunityHub\\ForumController', 'topic');
+    $router->get('/community/new-topic', 'CommunityHub\\ForumController', 'newTopicForm');
+    $router->get('/community/new-topic/:categorySlug', 'CommunityHub\\ForumController', 'newTopicForm');
+    $router->post('/community/topic/create', 'CommunityHub\\ForumController', 'createTopic');
+    $router->post('/community/reply/create', 'CommunityHub\\ForumController', 'createReply');
+    $router->get('/community/edit/topic/:id', 'CommunityHub\\ForumController', 'editTopicForm');
+    $router->post('/community/edit/topic/:id', 'CommunityHub\\ForumController', 'updateTopic');
+    $router->get('/community/edit/reply/:id', 'CommunityHub\\ForumController', 'editReplyForm');
+    $router->post('/community/edit/reply/:id', 'CommunityHub\\ForumController', 'updateReply');
+    $router->get('/community/user/:id', 'CommunityHub\\ForumController', 'userProfile');
+    $router->post('/community/subscribe', 'CommunityHub\\ForumController', 'subscribe');
+    $router->post('/community/unsubscribe', 'CommunityHub\\ForumController', 'unsubscribe');
+    $router->get('/community/unsubscribe', 'CommunityHub\\ForumController', 'unsubscribe');
+    $router->post('/community/report', 'CommunityHub\\ForumController', 'report');
+    $router->get('/community/edit-history/:type/:id', 'CommunityHub\\ForumController', 'editHistory');
+
+    // Admin forum routes
+    $router->get('/admin/community', 'CommunityHub\\AdminForumController', 'dashboard');
+    $router->get('/admin/community/categories', 'CommunityHub\\AdminForumController', 'categories');
+    $router->post('/admin/community/categories/store', 'CommunityHub\\AdminForumController', 'storeCategory');
+    $router->post('/admin/community/categories/update', 'CommunityHub\\AdminForumController', 'updateCategory');
+    $router->post('/admin/community/categories/delete', 'CommunityHub\\AdminForumController', 'deleteCategory');
+    $router->post('/admin/community/categories/reorder', 'CommunityHub\\AdminForumController', 'reorderCategories');
+    $router->get('/admin/community/moderation', 'CommunityHub\\AdminForumController', 'moderation');
+    $router->post('/admin/community/moderation/approve', 'CommunityHub\\AdminForumController', 'approvePost');
+    $router->post('/admin/community/moderation/reject', 'CommunityHub\\AdminForumController', 'rejectPost');
+    $router->get('/admin/community/moderators', 'CommunityHub\\AdminForumController', 'moderators');
+    $router->post('/admin/community/moderators/add', 'CommunityHub\\AdminForumController', 'addModerator');
+    $router->post('/admin/community/moderators/remove', 'CommunityHub\\AdminForumController', 'removeModerator');
+    $router->get('/admin/community/reports', 'CommunityHub\\AdminForumController', 'reports');
+    $router->post('/admin/community/reports/review', 'CommunityHub\\AdminForumController', 'reviewReport');
+    $router->get('/admin/community/topic/:id', 'CommunityHub\\AdminForumController', 'topicDetail');
+    $router->post('/admin/community/topic/lock', 'CommunityHub\\AdminForumController', 'lockTopic');
+    $router->post('/admin/community/topic/unlock', 'CommunityHub\\AdminForumController', 'unlockTopic');
+    $router->post('/admin/community/topic/pin', 'CommunityHub\\AdminForumController', 'pinTopic');
+    $router->post('/admin/community/topic/unpin', 'CommunityHub\\AdminForumController', 'unpinTopic');
+    $router->post('/admin/community/topic/close', 'CommunityHub\\AdminForumController', 'closeTopic');
+    $router->post('/admin/community/topic/delete', 'CommunityHub\\AdminForumController', 'deleteTopic');
+    $router->post('/admin/community/reply/delete', 'CommunityHub\\AdminForumController', 'deleteReply');
+    $router->get('/admin/community/settings', 'CommunityHub\\AdminForumController', 'settings');
+    $router->post('/admin/community/settings/update', 'CommunityHub\\AdminForumController', 'updateSettings');
+}
 
 // Dispatch the route
 $router->dispatch();

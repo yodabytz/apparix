@@ -56,12 +56,12 @@
 
                 <div class="form-group">
                     <label class="form-label" for="email">Email Address</label>
-                    <input type="email" id="email" name="email" class="form-input" placeholder="admin@example.com" required autofocus>
+                    <input type="email" id="email" name="email" class="form-input" placeholder="admin@example.com" required autofocus autocomplete="email">
                 </div>
 
                 <div class="form-group">
                     <label class="form-label" for="password">Password</label>
-                    <input type="password" id="password" name="password" class="form-input" placeholder="Enter your password" required>
+                    <input type="password" id="password" name="password" class="form-input" placeholder="Enter your password" required autocomplete="current-password">
                 </div>
 
                 <button type="submit" class="btn btn-primary">

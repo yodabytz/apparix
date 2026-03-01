@@ -161,7 +161,7 @@
                                              width="300"
                                              height="300">
                                         <?php if (!empty($product['video_path'])): ?>
-                                            <video class="product-video" data-src="<?php echo escape($product['video_path']); ?>" muted loop playsinline preload="none"></video>
+                                            <video class="product-video" src="<?php echo escape($product['video_path']); ?>" muted loop playsinline preload="none"></video>
                                             <span class="video-indicator">&#9658;</span>
                                         <?php endif; ?>
                                     </a>

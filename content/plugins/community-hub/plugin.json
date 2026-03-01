@@ -1,0 +1,11 @@
+{
+    "slug": "community-hub",
+    "name": "Community Hub",
+    "version": "1.0.0",
+    "type": "utility",
+    "description": "Full-featured community forum with categories, moderation, markdown posts, email notifications, and anti-spam.",
+    "author": "Apparix",
+    "price": "25.00",
+    "requires": "1.0.0",
+    "hooks": ["navbar_menu_items", "admin_sidebar_menu", "page_head"]
+}

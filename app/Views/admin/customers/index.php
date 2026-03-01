@@ -35,6 +35,11 @@
                     <tr>
                         <td>
                             <strong><?php echo escape(trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')) ?: 'No name'); ?></strong>
+                            <?php if (!empty($user['is_guest'])): ?>
+                                <span class="badge badge-guest">Guest</span>
+                            <?php else: ?>
+                                <span class="badge badge-registered">Registered</span>
+                            <?php endif; ?>
                             <?php if ($user['newsletter_subscribed']): ?>
                                 <span class="badge badge-info">Newsletter</span>
                             <?php endif; ?>
@@ -161,6 +166,18 @@
 .badge-info {
     background: #dbeafe;
     color: #1e40af;
+    margin-left: 0.5rem;
+}
+
+.badge-guest {
+    background: #fef3c7;
+    color: #92400e;
+    margin-left: 0.5rem;
+}
+
+.badge-registered {
+    background: #dcfce7;
+    color: #166534;
     margin-left: 0.5rem;
 }
 

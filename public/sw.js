@@ -4,7 +4,7 @@
  * Cache is ONLY used as an offline fallback.
  */
 
-const CACHE_NAME = 'apparix-v3';
+const CACHE_NAME = 'apparix-v4';
 const OFFLINE_URL = '/offline.html';
 
 // Minimal precache — only the offline fallback page

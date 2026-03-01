@@ -13,10 +13,137 @@ class ThemeService
     private ?array $activeTheme = null;
     private Theme $themeModel;
 
+    /** @var array|null Cached preview info if active */
+    private ?array $previewInfo = null;
+
     public function __construct()
     {
         $this->themeModel = new Theme();
-        $this->activeTheme = $this->themeModel->getActive();
+
+        // Check for signed URL-based theme preview (admin only)
+        $preview = self::validatePreviewRequest();
+        if ($preview) {
+            $this->previewInfo = $preview;
+            if ($preview['type'] === 'db' && !empty($preview['id'])) {
+                $this->activeTheme = $this->themeModel->find((int)$preview['id']);
+            } elseif ($preview['type'] === 'installed' && !empty($preview['slug'])) {
+                $this->activeTheme = $this->buildInstalledThemeRecord($preview['slug']);
+            }
+        }
+
+        if (!$this->activeTheme) {
+            $this->activeTheme = $this->themeModel->getActive();
+        }
+    }
+
+    /**
+     * Validate a theme preview request from URL parameters.
+     * Requires: ?theme_preview=slug&_pkey=signature AND valid theme_preview_token cookie.
+     * The theme_preview_token cookie is set by ThemeController::startPreview() with path=/
+     * so it's available on all pages (unlike admin_token which has path=/admin).
+     */
+    public static function validatePreviewRequest(): ?array
+    {
+        if (empty($_GET['theme_preview']) || empty($_GET['_pkey']) || empty($_COOKIE['theme_preview_token'])) {
+            return null;
+        }
+
+        $slug = preg_replace('/[^a-z0-9-]/', '', strtolower($_GET['theme_preview']));
+        $sig  = $_GET['_pkey'];
+
+        if (empty($slug) || strlen($sig) !== 16) {
+            return null;
+        }
+
+        // Validate HMAC: signature must match hash of slug using preview token as secret
+        $expected = substr(hash_hmac('sha256', 'theme-preview:' . $slug, $_COOKIE['theme_preview_token']), 0, 16);
+        if (!hash_equals($expected, $sig)) {
+            return null;
+        }
+
+        // Determine type: check if slug is a DB theme or installed-only theme
+        $themeModel = new Theme();
+        $dbTheme = $themeModel->findBySlug($slug);
+        if ($dbTheme) {
+            return ['type' => 'db', 'id' => (int)$dbTheme['id'], 'slug' => $slug, 'name' => $dbTheme['name']];
+        }
+
+        // Check installed themes directory
+        $basePath = dirname(__DIR__, 2);
+        $manifestPath = $basePath . '/content/themes/' . $slug . '/theme.json';
+        if (file_exists($manifestPath)) {
+            $manifest = json_decode(file_get_contents($manifestPath), true);
+            return ['type' => 'installed', 'slug' => $slug, 'name' => $manifest['name'] ?? $slug];
+        }
+
+        return null;
+    }
+
+    /**
+     * Generate a signed preview URL for a theme.
+     * Uses the preview token (set as cookie with path=/) as the HMAC key.
+     */
+    public static function generatePreviewUrl(string $slug, string $previewToken): string
+    {
+        $sig = substr(hash_hmac('sha256', 'theme-preview:' . $slug, $previewToken), 0, 16);
+        return '/?theme_preview=' . urlencode($slug) . '&_pkey=' . urlencode($sig);
+    }
+
+    /**
+     * Get the active preview info (null if not previewing)
+     */
+    public function getPreviewInfo(): ?array
+    {
+        return $this->previewInfo;
+    }
+
+    /**
+     * Build a synthetic theme record from an installed theme's manifest
+     */
+    private function buildInstalledThemeRecord(string $slug): ?array
+    {
+        $basePath = dirname(__DIR__, 2);
+        $manifestPath = $basePath . '/content/themes/' . $slug . '/theme.json';
+        if (!file_exists($manifestPath)) {
+            return null;
+        }
+
+        $manifest = json_decode(file_get_contents($manifestPath), true);
+        if (!$manifest) {
+            return null;
+        }
+
+        $settings = $manifest['settings'] ?? [];
+        $effects = $manifest['effects'] ?? null;
+
+        return [
+            'id' => 0,
+            'slug' => $manifest['slug'] ?? $slug,
+            'name' => $manifest['name'] ?? $slug,
+            'description' => $manifest['description'] ?? '',
+            'primary_color' => $manifest['colors']['primary'] ?? '#FF68C5',
+            'secondary_color' => $manifest['colors']['secondary'] ?? '#FF94C8',
+            'accent_color' => $manifest['colors']['accent'] ?? '#FFE4F3',
+            'heading_font' => $manifest['fonts']['heading'] ?? 'Playfair Display',
+            'body_font' => $manifest['fonts']['body'] ?? 'Inter',
+            'navbar_bg_color' => $settings['navbar_bg_color'] ?? '#FFFFFF',
+            'navbar_text_color' => $settings['navbar_text_color'] ?? '#1f2937',
+            'glow_color' => $settings['glow_color'] ?? ($manifest['colors']['secondary'] ?? '#FF68C5'),
+            'hero_bg_start' => $settings['hero_bg_start'] ?? '#0d0d1a',
+            'hero_bg_end' => $settings['hero_bg_end'] ?? '#1a1a2e',
+            'layout_style' => $settings['layout_style'] ?? 'standard',
+            'header_style' => $settings['header_style'] ?? 'standard',
+            'category_layout' => $settings['category_layout'] ?? 'grid',
+            'product_grid_columns' => (int)($settings['product_grid_columns'] ?? 4),
+            'custom_css' => '',
+            'effect_settings' => $effects ? json_encode($effects) : null,
+            'color_variants' => '{}',
+            'source' => 'installed',
+            'is_active' => 0,
+            'is_preset' => 0,
+            'theme_logo' => $manifest['logo'] ?? null,
+            'hero_image' => $manifest['hero_image'] ?? null,
+        ];
     }
 
     /**

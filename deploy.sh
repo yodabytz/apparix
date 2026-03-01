@@ -110,13 +110,7 @@ chown www-data:www-data "${TMP_DEST}"
 mv -f "${TMP_DEST}" "${UPDATE_DIR}/${TARBALL_NAME}"
 echo "Tarball deployed to ${UPDATE_DIR}/${TARBALL_NAME}"
 
-# 9. Also copy to /public/downloads/ as apparix-latest.tar.gz (for direct download links)
-TMP_PUB="${LIVE_DIR}/public/downloads/apparix-latest.tar.gz.new"
-cp "${TMP_TARBALL}" "${TMP_PUB}"
-chown www-data:www-data "${TMP_PUB}"
-mv -f "${TMP_PUB}" "${LIVE_DIR}/public/downloads/apparix-latest.tar.gz"
-
-# 9b. Copy to /storage/downloads/ for authenticated digital product downloads
+# 9. Copy to /storage/downloads/ for authenticated digital product downloads
 TMP_DL="${LIVE_DIR}/storage/downloads/apparix-latest.tar.gz.new"
 cp "${TMP_TARBALL}" "${TMP_DL}"
 chown www-data:www-data "${TMP_DL}"

@@ -25,9 +25,12 @@ $installedThemes = \App\Core\ThemeLoader::getInstalledThemes();
     <p class="section-description">Custom themes installed from theme packages.</p>
 
     <div class="theme-grid">
-        <?php foreach ($installedThemes as $theme):
+        <?php
+        $__themeModel = new \App\Models\Theme();
+        foreach ($installedThemes as $theme):
             $isActive = $active && isset($active['slug']) && $active['slug'] === $theme['slug'];
             $thumbnail = $theme['thumbnail'] ?: $theme['screenshot'];
+            $dbRecord = $__themeModel->findBySlug($theme['slug']);
         ?>
             <div class="theme-card installed-theme <?php echo $isActive ? 'active' : ''; ?>">
                 <div class="theme-preview theme-screenshot">
@@ -54,6 +57,16 @@ $installedThemes = \App\Core\ThemeLoader::getInstalledThemes();
                         <span>v<?php echo escape($theme['version']); ?></span>
                     </div>
                 </div>
+                <?php if (!$isActive): ?>
+                <div class="theme-preview-action">
+                    <form method="POST" action="/admin/themes/preview/start" class="inline-form">
+                        <?php echo csrfField(); ?>
+                        <input type="hidden" name="type" value="installed">
+                        <input type="hidden" name="theme_slug" value="<?php echo escape($theme['slug']); ?>">
+                        <button type="submit" class="btn btn-preview">&#128065; See Live Preview</button>
+                    </form>
+                </div>
+                <?php endif; ?>
                 <div class="theme-actions">
                     <?php if ($isActive): ?>
                         <span class="badge badge-success">Active</span>
@@ -63,6 +76,9 @@ $installedThemes = \App\Core\ThemeLoader::getInstalledThemes();
                             <input type="hidden" name="theme_slug" value="<?php echo escape($theme['slug']); ?>">
                             <button type="submit" class="btn btn-primary btn-sm">Activate</button>
                         </form>
+                    <?php endif; ?>
+                    <?php if ($dbRecord): ?>
+                        <a href="/admin/themes/customize?id=<?php echo $dbRecord['id']; ?>" class="btn btn-secondary btn-sm">Customize</a>
                     <?php endif; ?>
                     <button type="button" class="btn btn-danger btn-sm" onclick="deleteInstalledTheme('<?php echo escape($theme['slug']); ?>', '<?php echo escape($theme['name']); ?>')">Delete</button>
                 </div>
@@ -102,6 +118,16 @@ $installedThemes = \App\Core\ThemeLoader::getInstalledThemes();
                         <span>Header: <?php echo escape(ucfirst($theme['header_style'])); ?></span>
                     </div>
                 </div>
+                <?php if (!($active && $active['id'] == $theme['id'])): ?>
+                <div class="theme-preview-action">
+                    <form method="POST" action="/admin/themes/preview/start" class="inline-form">
+                        <?php echo csrfField(); ?>
+                        <input type="hidden" name="type" value="db">
+                        <input type="hidden" name="theme_id" value="<?php echo $theme['id']; ?>">
+                        <button type="submit" class="btn btn-preview">&#128065; See Live Preview</button>
+                    </form>
+                </div>
+                <?php endif; ?>
                 <div class="theme-actions">
                     <?php if ($active && $active['id'] == $theme['id']): ?>
                         <span class="badge badge-success">Active</span>
@@ -146,6 +172,16 @@ $installedThemes = \App\Core\ThemeLoader::getInstalledThemes();
                         <span class="color-dot" style="background: <?php echo escape($theme['accent_color']); ?>;" title="Accent"></span>
                     </div>
                 </div>
+                <?php if (!($active && $active['id'] == $theme['id'])): ?>
+                <div class="theme-preview-action">
+                    <form method="POST" action="/admin/themes/preview/start" class="inline-form">
+                        <?php echo csrfField(); ?>
+                        <input type="hidden" name="type" value="db">
+                        <input type="hidden" name="theme_id" value="<?php echo $theme['id']; ?>">
+                        <button type="submit" class="btn btn-preview">&#128065; See Live Preview</button>
+                    </form>
+                </div>
+                <?php endif; ?>
                 <div class="theme-actions">
                     <?php if ($active && $active['id'] == $theme['id']): ?>
                         <span class="badge badge-success">Active</span>
@@ -295,6 +331,35 @@ $installedThemes = \App\Core\ThemeLoader::getInstalledThemes();
     gap: 16px;
     font-size: 0.75rem;
     color: var(--admin-text-light);
+}
+
+.theme-preview-action {
+    padding: 0 16px 4px;
+}
+
+.theme-preview-action .inline-form {
+    display: block;
+}
+
+.btn-preview {
+    display: block;
+    width: 100%;
+    padding: 10px 16px;
+    background: linear-gradient(135deg, #7c3aed, #6d28d9);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    letter-spacing: 0.3px;
+}
+
+.btn-preview:hover {
+    background: linear-gradient(135deg, #6d28d9, #5b21b6);
+    box-shadow: 0 4px 14px rgba(124, 58, 237, 0.35);
+    transform: translateY(-1px);
 }
 
 .theme-actions {
@@ -478,171 +543,6 @@ $installedThemes = \App\Core\ThemeLoader::getInstalledThemes();
 }
 </style>
 
-<script>
-function deleteTheme(id, name) {
-    if (!confirm('Are you sure you want to delete the theme "' + name + '"? This cannot be undone.')) {
-        return;
-    }
-
-    fetch('/admin/themes/delete', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: 'theme_id=' + id + '&_csrf_token=' + encodeURIComponent('<?php echo csrfToken(); ?>')
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            location.reload();
-        } else {
-            alert(data.error || 'Failed to delete theme');
-        }
-    })
-    .catch(err => {
-        alert('Error deleting theme');
-        console.error(err);
-    });
-}
-
-function deleteInstalledTheme(slug, name) {
-    if (!confirm('Are you sure you want to delete the installed theme "' + name + '"? This will remove all theme files.')) {
-        return;
-    }
-
-    fetch('/admin/themes/delete-installed', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: 'theme_slug=' + encodeURIComponent(slug) + '&_csrf_token=' + encodeURIComponent('<?php echo csrfToken(); ?>')
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            location.reload();
-        } else {
-            alert(data.error || 'Failed to delete theme');
-        }
-    })
-    .catch(err => {
-        alert('Error deleting theme');
-        console.error(err);
-    });
-}
-
-function showUploadModal() {
-    document.getElementById('themeUploadModal').classList.add('active');
-}
-
-function closeUploadModal() {
-    document.getElementById('themeUploadModal').classList.remove('active');
-    resetUploadForm();
-}
-
-function resetUploadForm() {
-    document.getElementById('themeFile').value = '';
-    document.getElementById('uploadProgress').classList.remove('active');
-    document.getElementById('progressBarFill').style.width = '0%';
-    document.getElementById('uploadStatus').textContent = '';
-}
-
-// Dropzone handlers
-const dropzone = document.getElementById('uploadDropzone');
-const fileInput = document.getElementById('themeFile');
-
-if (dropzone && fileInput) {
-    dropzone.addEventListener('click', () => fileInput.click());
-
-    dropzone.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        dropzone.classList.add('dragover');
-    });
-
-    dropzone.addEventListener('dragleave', () => {
-        dropzone.classList.remove('dragover');
-    });
-
-    dropzone.addEventListener('drop', (e) => {
-        e.preventDefault();
-        dropzone.classList.remove('dragover');
-        if (e.dataTransfer.files.length) {
-            fileInput.files = e.dataTransfer.files;
-            handleFileSelect();
-        }
-    });
-
-    fileInput.addEventListener('change', handleFileSelect);
-}
-
-function handleFileSelect() {
-    const file = fileInput.files[0];
-    if (!file) return;
-
-    if (!file.name.endsWith('.zip')) {
-        alert('Please select a ZIP file');
-        return;
-    }
-
-    uploadTheme(file);
-}
-
-function uploadTheme(file) {
-    const progress = document.getElementById('uploadProgress');
-    const progressFill = document.getElementById('progressBarFill');
-    const status = document.getElementById('uploadStatus');
-
-    progress.classList.add('active');
-    status.textContent = 'Uploading...';
-
-    const formData = new FormData();
-    formData.append('theme_file', file);
-    formData.append('_csrf_token', '<?php echo csrfToken(); ?>');
-
-    const xhr = new XMLHttpRequest();
-
-    xhr.upload.addEventListener('progress', (e) => {
-        if (e.lengthComputable) {
-            const percent = Math.round((e.loaded / e.total) * 100);
-            progressFill.style.width = percent + '%';
-            status.textContent = 'Uploading... ' + percent + '%';
-        }
-    });
-
-    xhr.addEventListener('load', () => {
-        try {
-            const response = JSON.parse(xhr.responseText);
-            if (response.success) {
-                status.textContent = 'Theme installed successfully!';
-                setTimeout(() => location.reload(), 1000);
-            } else {
-                status.textContent = 'Error: ' + (response.error || 'Upload failed');
-                progressFill.style.background = 'var(--admin-danger)';
-            }
-        } catch (e) {
-            status.textContent = 'Error parsing response';
-            progressFill.style.background = 'var(--admin-danger)';
-        }
-    });
-
-    xhr.addEventListener('error', () => {
-        status.textContent = 'Upload failed';
-        progressFill.style.background = 'var(--admin-danger)';
-    });
-
-    xhr.open('POST', '/admin/themes/upload');
-    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
-    xhr.send(formData);
-}
-
-// Close modal on escape
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeUploadModal();
-});
-</script>
-
 <!-- Theme Upload Modal -->
 <div id="themeUploadModal" class="theme-upload-modal" onclick="if(event.target === this) closeUploadModal()">
     <div class="theme-upload-content">
@@ -667,3 +567,175 @@ document.addEventListener('keydown', (e) => {
         </div>
     </div>
 </div>
+
+<script>
+function deleteTheme(id, name) {
+    if (!confirm('Are you sure you want to delete the theme "' + name + '"? This cannot be undone.')) {
+        return;
+    }
+
+    fetch('/admin/themes/delete', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: 'theme_id=' + id + '&_csrf_token=' + encodeURIComponent('<?php echo csrfToken(); ?>')
+    })
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.error || 'Failed to delete theme');
+        }
+    })
+    .catch(function(err) {
+        alert('Error deleting theme');
+        console.error(err);
+    });
+}
+
+function deleteInstalledTheme(slug, name) {
+    if (!confirm('Are you sure you want to delete the installed theme "' + name + '"? This will remove all theme files.')) {
+        return;
+    }
+
+    fetch('/admin/themes/delete-installed', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: 'theme_slug=' + encodeURIComponent(slug) + '&_csrf_token=' + encodeURIComponent('<?php echo csrfToken(); ?>')
+    })
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.error || 'Failed to delete theme');
+        }
+    })
+    .catch(function(err) {
+        alert('Error deleting theme');
+        console.error(err);
+    });
+}
+
+function showUploadModal() {
+    document.getElementById('themeUploadModal').classList.add('active');
+}
+
+function closeUploadModal() {
+    document.getElementById('themeUploadModal').classList.remove('active');
+    resetUploadForm();
+}
+
+function resetUploadForm() {
+    document.getElementById('themeFile').value = '';
+    document.getElementById('uploadProgress').classList.remove('active');
+    document.getElementById('progressBarFill').style.width = '0%';
+    document.getElementById('uploadStatus').textContent = '';
+}
+
+// Dropzone handlers — modal HTML is above, so elements exist now
+(function() {
+    var dropzone = document.getElementById('uploadDropzone');
+    var fileInput = document.getElementById('themeFile');
+
+    if (dropzone && fileInput) {
+        dropzone.addEventListener('click', function(e) {
+            // Don't re-trigger if clicking the file input itself
+            if (e.target === fileInput) return;
+            fileInput.click();
+        });
+
+        dropzone.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            dropzone.classList.add('dragover');
+        });
+
+        dropzone.addEventListener('dragleave', function() {
+            dropzone.classList.remove('dragover');
+        });
+
+        dropzone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            dropzone.classList.remove('dragover');
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                uploadSelectedFile();
+            }
+        });
+
+        fileInput.addEventListener('change', function() {
+            uploadSelectedFile();
+        });
+    }
+})();
+
+function uploadSelectedFile() {
+    var fi = document.getElementById('themeFile');
+    var file = fi && fi.files ? fi.files[0] : null;
+    if (!file) return;
+
+    if (!file.name.toLowerCase().endsWith('.zip')) {
+        alert('Please select a ZIP file');
+        return;
+    }
+
+    var progress = document.getElementById('uploadProgress');
+    var progressFill = document.getElementById('progressBarFill');
+    var status = document.getElementById('uploadStatus');
+
+    progress.classList.add('active');
+    progressFill.style.background = 'var(--admin-primary)';
+    status.textContent = 'Uploading...';
+
+    var formData = new FormData();
+    formData.append('theme_file', file);
+    formData.append('_csrf_token', '<?php echo csrfToken(); ?>');
+
+    var xhr = new XMLHttpRequest();
+
+    xhr.upload.addEventListener('progress', function(e) {
+        if (e.lengthComputable) {
+            var percent = Math.round((e.loaded / e.total) * 100);
+            progressFill.style.width = percent + '%';
+            status.textContent = 'Uploading... ' + percent + '%';
+        }
+    });
+
+    xhr.addEventListener('load', function() {
+        try {
+            var response = JSON.parse(xhr.responseText);
+            if (response.success) {
+                progressFill.style.width = '100%';
+                status.textContent = 'Theme installed successfully!';
+                setTimeout(function() { location.reload(); }, 1000);
+            } else {
+                status.textContent = 'Error: ' + (response.error || 'Upload failed');
+                progressFill.style.background = 'var(--admin-danger)';
+            }
+        } catch (e) {
+            status.textContent = 'Error: ' + (xhr.status === 403 ? 'Blocked by firewall — check ModSecurity' : 'Unexpected response (HTTP ' + xhr.status + ')');
+            progressFill.style.background = 'var(--admin-danger)';
+        }
+    });
+
+    xhr.addEventListener('error', function() {
+        status.textContent = 'Upload failed — network error';
+        progressFill.style.background = 'var(--admin-danger)';
+    });
+
+    xhr.open('POST', '/admin/themes/upload');
+    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+    xhr.send(formData);
+}
+
+// Close modal on escape
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeUploadModal();
+});
+</script>

@@ -234,17 +234,18 @@
 
 <script>
 document.getElementById('registerForm').addEventListener('submit', async function(e) {
+    if (this.dataset.recaptchaReady) return;
     const siteKey = '<?php echo \App\Core\ReCaptcha::getSiteKey(); ?>';
     if (siteKey && typeof grecaptcha !== 'undefined') {
         e.preventDefault();
         try {
             const token = await grecaptcha.execute(siteKey, {action: 'register'});
             document.getElementById('register_recaptcha_token').value = token;
-            this.submit();
         } catch (error) {
             console.error('reCAPTCHA error:', error);
-            this.submit();
         }
+        this.dataset.recaptchaReady = '1';
+        this.requestSubmit();
     }
 });
 </script>

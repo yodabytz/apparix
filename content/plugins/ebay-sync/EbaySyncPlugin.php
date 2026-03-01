@@ -92,7 +92,10 @@ class EbaySyncPlugin implements PluginInterface
 
     public function getSettingsView(): string
     {
-        return file_get_contents(__DIR__ . '/views/settings.php');
+        $settings = $this->settings;
+        ob_start();
+        include __DIR__ . '/views/settings.php';
+        return ob_get_clean();
     }
 
     public function getSettingsSchema(): array

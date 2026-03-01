@@ -245,8 +245,10 @@ class User extends Model
         $params = [];
         $where = "";
 
+        $where = "WHERE u.email NOT LIKE '%@fake.local' AND u.email NOT LIKE '%@example.com'";
+
         if ($search) {
-            $where = "WHERE u.email LIKE ? OR u.first_name LIKE ? OR u.last_name LIKE ?";
+            $where .= " AND (u.email LIKE ? OR u.first_name LIKE ? OR u.last_name LIKE ?)";
             $searchTerm = "%{$search}%";
             $params = [$searchTerm, $searchTerm, $searchTerm];
         }
@@ -256,7 +258,7 @@ class User extends Model
 
         return $this->db->select(
             "SELECT u.id, u.email, u.first_name, u.last_name, u.phone,
-                    u.newsletter_subscribed, u.created_at,
+                    u.is_guest, u.newsletter_subscribed, u.created_at,
                     COUNT(DISTINCT o.id) as order_count,
                     COALESCE(SUM(o.total), 0) as total_spent
              FROM {$this->table} u
@@ -275,10 +277,10 @@ class User extends Model
     public function countUsers(?string $search = null): int
     {
         $params = [];
-        $where = "";
+        $where = "WHERE email NOT LIKE '%@fake.local' AND email NOT LIKE '%@example.com'";
 
         if ($search) {
-            $where = "WHERE email LIKE ? OR first_name LIKE ? OR last_name LIKE ?";
+            $where .= " AND (email LIKE ? OR first_name LIKE ? OR last_name LIKE ?)";
             $searchTerm = "%{$search}%";
             $params = [$searchTerm, $searchTerm, $searchTerm];
         }

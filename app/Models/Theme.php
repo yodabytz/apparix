@@ -114,7 +114,9 @@ class Theme extends Model
             'category_layout' => $customizations['category_layout'] ?? $preset['category_layout'],
             'product_grid_columns' => $customizations['product_grid_columns'] ?? $preset['product_grid_columns'],
             'custom_css' => $customizations['custom_css'] ?? '',
-            'effect_settings' => $customizations['effect_settings'] ?? $preset['effect_settings'] ?? json_encode($this->getDefaultEffectSettings())
+            'effect_settings' => $customizations['effect_settings'] ?? $preset['effect_settings'] ?? json_encode($this->getDefaultEffectSettings()),
+            'theme_logo' => $customizations['theme_logo'] ?? $preset['theme_logo'] ?? null,
+            'hero_image' => $customizations['hero_image'] ?? $preset['hero_image'] ?? null
         ];
 
         // Generate color variants
@@ -142,7 +144,8 @@ class Theme extends Model
             'name', 'description', 'primary_color', 'secondary_color', 'accent_color',
             'navbar_bg_color', 'navbar_text_color', 'glow_color',
             'heading_font', 'body_font', 'layout_style', 'header_style',
-            'category_layout', 'sidebar_menu_mode', 'product_grid_columns', 'custom_css', 'effect_settings'
+            'category_layout', 'sidebar_menu_mode', 'product_grid_columns', 'custom_css', 'effect_settings',
+            'theme_logo', 'hero_image'
         ];
 
         $updateData = array_intersect_key($data, array_flip($allowed));

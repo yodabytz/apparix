@@ -26,6 +26,66 @@
                        class="form-control" required>
             </div>
 
+            <!-- Theme Logo -->
+            <div class="form-section collapsible" data-section="theme-logo">
+                <h3 class="section-toggle">
+                    <span>Theme Logo</span>
+                    <svg class="toggle-chevron" width="12" height="12" viewBox="0 0 12 12"><path d="M3 4.5L6 7.5L9 4.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                </h3>
+                <div class="section-content">
+                    <p class="section-help">Upload a custom logo for this theme. If none is set, the store logo from Site Settings will be used.</p>
+
+                    <div class="theme-image-upload" id="themeLogoUpload">
+                        <div class="image-preview-box" id="themeLogoPreview">
+                            <?php if (!empty($theme['theme_logo'])): ?>
+                                <img src="<?php echo escape($theme['theme_logo']); ?>" alt="Theme Logo" style="max-height:80px;">
+                            <?php else: ?>
+                                <span class="placeholder-text">Using store default logo</span>
+                            <?php endif; ?>
+                        </div>
+                        <div class="upload-actions">
+                            <label class="btn btn-secondary btn-sm">
+                                Upload Logo
+                                <input type="file" id="themeLogoFile" accept="image/png,image/jpeg,image/svg+xml,image/webp,image/gif" style="display:none;">
+                            </label>
+                            <?php if (!empty($theme['theme_logo'])): ?>
+                            <button type="button" class="btn btn-danger btn-sm" id="removeThemeLogo">Remove</button>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hero Background Image -->
+            <div class="form-section collapsible" data-section="hero-image">
+                <h3 class="section-toggle">
+                    <span>Hero Background Image</span>
+                    <svg class="toggle-chevron" width="12" height="12" viewBox="0 0 12 12"><path d="M3 4.5L6 7.5L9 4.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                </h3>
+                <div class="section-content">
+                    <p class="section-help">Upload a background image for the hero section. If none is set, the theme's gradient colors will be used.</p>
+
+                    <div class="theme-image-upload" id="heroImageUpload">
+                        <div class="image-preview-box image-preview-wide" id="heroImagePreview">
+                            <?php if (!empty($theme['hero_image'])): ?>
+                                <img src="<?php echo escape($theme['hero_image']); ?>" alt="Hero Image" style="max-height:120px;width:100%;object-fit:cover;">
+                            <?php else: ?>
+                                <span class="placeholder-text">Using default gradient</span>
+                            <?php endif; ?>
+                        </div>
+                        <div class="upload-actions">
+                            <label class="btn btn-secondary btn-sm">
+                                Upload Image
+                                <input type="file" id="heroImageFile" accept="image/png,image/jpeg,image/webp" style="display:none;">
+                            </label>
+                            <?php if (!empty($theme['hero_image'])): ?>
+                            <button type="button" class="btn btn-danger btn-sm" id="removeHeroImage">Remove</button>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Colors -->
             <div class="form-section collapsible" data-section="colors">
                 <h3 class="section-toggle">
@@ -1267,6 +1327,40 @@
         position: static;
     }
 }
+
+/* Theme image upload sections */
+.theme-image-upload {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.image-preview-box {
+    background: #f8f9fa;
+    border: 2px dashed #dee2e6;
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+    min-height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.image-preview-box img {
+    border-radius: 4px;
+}
+.image-preview-wide {
+    min-height: 80px;
+}
+.placeholder-text {
+    color: #999;
+    font-size: 0.85rem;
+    font-style: italic;
+}
+.upload-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
 </style>
 
 <script>
@@ -1537,5 +1631,117 @@ document.addEventListener('DOMContentLoaded', function() {
 
     saveBtn.addEventListener('click', function() { saveTheme(false); });
     saveCloseBtn.addEventListener('click', function() { saveTheme(true); });
+
+    // ── Theme Logo Upload ──
+    var themeLogoFile = document.getElementById('themeLogoFile');
+    if (themeLogoFile) {
+        themeLogoFile.addEventListener('change', function() {
+            if (!this.files || !this.files[0]) return;
+            var formData = new FormData();
+            formData.append('theme_logo', this.files[0]);
+            formData.append('theme_id', document.querySelector('input[name="theme_id"]').value);
+            formData.append('csrf_token', document.querySelector('input[name="csrf_token"]').value);
+
+            fetch('/admin/themes/upload-logo', { method: 'POST', body: formData })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.success) {
+                        var preview = document.getElementById('themeLogoPreview');
+                        preview.innerHTML = '<img src="' + data.path + '?v=' + Date.now() + '" alt="Theme Logo" style="max-height:80px;">';
+                        var actions = preview.nextElementSibling;
+                        if (!document.getElementById('removeThemeLogo')) {
+                            var rmBtn = document.createElement('button');
+                            rmBtn.type = 'button';
+                            rmBtn.className = 'btn btn-danger btn-sm';
+                            rmBtn.id = 'removeThemeLogo';
+                            rmBtn.textContent = 'Remove';
+                            actions.appendChild(rmBtn);
+                            bindRemoveThemeLogo(rmBtn);
+                        }
+                        showNotification(data.message, 'success');
+                    } else {
+                        showNotification(data.error || 'Upload failed', 'error');
+                    }
+                })
+                .catch(function() { showNotification('Upload failed', 'error'); });
+            this.value = '';
+        });
+    }
+
+    function bindRemoveThemeLogo(btn) {
+        btn.addEventListener('click', function() {
+            var formData = new FormData();
+            formData.append('theme_id', document.querySelector('input[name="theme_id"]').value);
+            formData.append('csrf_token', document.querySelector('input[name="csrf_token"]').value);
+
+            fetch('/admin/themes/remove-logo', { method: 'POST', body: formData })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.success) {
+                        document.getElementById('themeLogoPreview').innerHTML = '<span class="placeholder-text">Using store default logo</span>';
+                        btn.remove();
+                        showNotification(data.message, 'success');
+                    }
+                });
+        });
+    }
+    var rmLogoBtn = document.getElementById('removeThemeLogo');
+    if (rmLogoBtn) bindRemoveThemeLogo(rmLogoBtn);
+
+    // ── Hero Image Upload ──
+    var heroImageFile = document.getElementById('heroImageFile');
+    if (heroImageFile) {
+        heroImageFile.addEventListener('change', function() {
+            if (!this.files || !this.files[0]) return;
+            var formData = new FormData();
+            formData.append('hero_image', this.files[0]);
+            formData.append('theme_id', document.querySelector('input[name="theme_id"]').value);
+            formData.append('csrf_token', document.querySelector('input[name="csrf_token"]').value);
+
+            fetch('/admin/themes/upload-hero-image', { method: 'POST', body: formData })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.success) {
+                        var preview = document.getElementById('heroImagePreview');
+                        preview.innerHTML = '<img src="' + data.path + '?v=' + Date.now() + '" alt="Hero Image" style="max-height:120px;width:100%;object-fit:cover;">';
+                        var actions = preview.nextElementSibling;
+                        if (!document.getElementById('removeHeroImage')) {
+                            var rmBtn = document.createElement('button');
+                            rmBtn.type = 'button';
+                            rmBtn.className = 'btn btn-danger btn-sm';
+                            rmBtn.id = 'removeHeroImage';
+                            rmBtn.textContent = 'Remove';
+                            actions.appendChild(rmBtn);
+                            bindRemoveHeroImage(rmBtn);
+                        }
+                        showNotification(data.message, 'success');
+                    } else {
+                        showNotification(data.error || 'Upload failed', 'error');
+                    }
+                })
+                .catch(function() { showNotification('Upload failed', 'error'); });
+            this.value = '';
+        });
+    }
+
+    function bindRemoveHeroImage(btn) {
+        btn.addEventListener('click', function() {
+            var formData = new FormData();
+            formData.append('theme_id', document.querySelector('input[name="theme_id"]').value);
+            formData.append('csrf_token', document.querySelector('input[name="csrf_token"]').value);
+
+            fetch('/admin/themes/remove-hero-image', { method: 'POST', body: formData })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.success) {
+                        document.getElementById('heroImagePreview').innerHTML = '<span class="placeholder-text">Using default gradient</span>';
+                        btn.remove();
+                        showNotification(data.message, 'success');
+                    }
+                });
+        });
+    }
+    var rmHeroBtn = document.getElementById('removeHeroImage');
+    if (rmHeroBtn) bindRemoveHeroImage(rmHeroBtn);
 });
 </script>

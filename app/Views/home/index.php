@@ -20,6 +20,14 @@ $heroTaglineInterval = (int)setting('hero_tagline_interval', '8');
 $heroOverlayOpacity = setting('hero_overlay_opacity', '0.12');
 $heroBgImage = setting('hero_background_image', '');
 
+// Theme-specific hero image override (takes priority over site setting)
+$__ts = new \App\Core\ThemeService();
+$__themeHeroImage = $__ts->getActiveTheme()['hero_image'] ?? null;
+if ($__themeHeroImage) {
+    $heroBgStyle = 'image';
+    $heroBgImage = $__themeHeroImage;
+}
+
 // Holiday hero override — check if an active holiday has custom hero content
 $holidayBadge = '';
 $holidayHeroKey = '';
@@ -127,7 +135,7 @@ if (!$heroShowShimmer) $heroClasses[] = 'hero-no-shimmer';
                                      width="300"
                                      height="300">
                                 <?php if (!empty($product['video_path'])): ?>
-                                    <video class="product-video" data-src="<?php echo escape($product['video_path']); ?>" muted loop playsinline preload="none"></video>
+                                    <video class="product-video" src="<?php echo escape($product['video_path']); ?>" muted loop playsinline preload="none"></video>
                                     <span class="video-indicator">&#9658;</span>
                                 <?php endif; ?>
                             </a>
