@@ -104,7 +104,8 @@ class ReCaptcha
     }
 
     /**
-     * Get JavaScript to include reCAPTCHA
+     * Get JavaScript to lazy-load reCAPTCHA on first form interaction
+     * Avoids loading ~500KB Google script on every page until actually needed
      */
     public static function getScript(): string
     {
@@ -112,7 +113,13 @@ class ReCaptcha
         if (empty($siteKey)) {
             return '';
         }
-        return '<script defer src="https://www.google.com/recaptcha/api.js?render=' . htmlspecialchars($siteKey) . '"></script>';
+        $escapedKey = htmlspecialchars($siteKey);
+        return '<script>
+(function(){var loaded=false;function loadRC(){if(loaded)return;loaded=true;var s=document.createElement("script");s.src="https://www.google.com/recaptcha/api.js?render=' . $escapedKey . '";document.head.appendChild(s);}
+document.addEventListener("focusin",function(e){if(e.target&&(e.target.tagName==="INPUT"||e.target.tagName==="TEXTAREA"||e.target.tagName==="SELECT"))loadRC();},{once:true});
+document.addEventListener("submit",function(){loadRC();},{once:true,capture:true});
+})();
+</script>';
     }
 
     /**

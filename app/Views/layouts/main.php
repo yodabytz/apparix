@@ -703,13 +703,12 @@ $bodyClasses = trim($bodyClasses);
 
     <!-- Header canvas effect -->
     <?php
-    // Holidays override the canvas effect with themed animations
     $holidayCanvasOverride = false;
     $holidayCanvasEffects = [
         'christmas'    => ['effect' => 'snowfall',    'opacity' => 1, 'location' => 'hero', 'color1' => '#ffffff', 'color2' => '#c8e8ff'],
         'valentines'   => ['effect' => 'bokeh',       'opacity' => 1, 'location' => 'hero', 'color1' => '#ff4d6d', 'color2' => '#ff8fa3'],
-        'stpatricks'   => ['effect' => 'stars',        'opacity' => 1, 'location' => 'hero', 'color1' => '#2ecc71', 'color2' => '#a8e6cf'],
-        'halloween'    => ['effect' => 'haunted',      'opacity' => 1, 'location' => 'hero', 'color1' => '#ff6b1a', 'color2' => '#9b59b6'],
+        'stpatricks'   => ['effect' => 'stars',       'opacity' => 1, 'location' => 'hero', 'color1' => '#2ecc71', 'color2' => '#a8e6cf'],
+        'halloween'    => ['effect' => 'haunted',     'opacity' => 1, 'location' => 'hero', 'color1' => '#ff6b1a', 'color2' => '#9b59b6'],
         'easter'       => ['effect' => 'bokeh',       'opacity' => 1, 'location' => 'hero', 'color1' => '#c9a0dc', 'color2' => '#f8b4d9'],
         'independence' => ['effect' => 'fireworks',   'opacity' => 1, 'location' => 'hero', 'color1' => '#ff3c3c', 'color2' => '#5078ff'],
         'newyear'      => ['effect' => 'fireworks',   'opacity' => 1, 'location' => 'hero', 'color1' => '#ffd700', 'color2' => '#c0c0c0'],
