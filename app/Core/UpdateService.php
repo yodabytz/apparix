@@ -428,6 +428,7 @@ class UpdateService
             // Customer-installed plugins and themes
             'content/plugins',
             'content/themes',
+            'public/content',
 
             // Composer dependencies (customer may have different versions)
             'vendor',
@@ -513,6 +514,21 @@ class UpdateService
             if (is_dir($srcPath)) {
                 $this->copyDirectory($srcPath, $destPath, $exclude, $failures);
             } else {
+                // Safety: don't overwrite a valid file with an empty or corrupt source
+                $srcSize = @filesize($srcPath);
+                if ($srcSize === 0 && file_exists($destPath) && filesize($destPath) > 0) {
+                    // Source is empty but destination has content — skip to avoid data loss
+                    $failures[] = $relativePath . ' (source empty, skipped)';
+                    continue;
+                }
+                // Safety: verify PHP files are valid text, not binary garbage from extraction
+                if (str_ends_with($file, '.php') && $srcSize > 0) {
+                    $header = @file_get_contents($srcPath, false, null, 0, 32);
+                    if ($header !== false && !mb_check_encoding($header, 'UTF-8') && !mb_check_encoding($header, 'ASCII')) {
+                        $failures[] = $relativePath . ' (corrupt source, skipped)';
+                        continue;
+                    }
+                }
                 if (!@copy($srcPath, $destPath)) {
                     $failures[] = $relativePath;
                 } else {
