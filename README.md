@@ -302,13 +302,123 @@ sudo systemctl reload apache2
 
 Navigate to `https://yourdomain.com/install` in your browser and follow the setup wizard:
 
-1. **Requirements Check** - Verifies PHP version and extensions
-2. **Database Setup** - Enter MySQL credentials
-3. **Store Information** - Name, URL, contact email
-4. **Admin Account** - Create your admin login
-5. **Integrations** - Stripe, Email, reCAPTCHA (can skip and configure later)
-6. **Theme Selection** - Choose your store's look
-7. **Complete** - Installation finishes
+1. **License Key** - Enter your Apparix license key ([get one here](https://apparix.app/pricing))
+2. **Requirements Check** - Verifies PHP version and extensions
+3. **Database Setup** - Enter MySQL credentials
+4. **Store Information** - Name, URL, contact email
+5. **Admin Account** - Create your admin login
+6. **Integrations** - Stripe, Email, reCAPTCHA (can skip and configure later)
+7. **Theme Selection** - Choose your store's look
+8. **Complete** - Installation finishes
+
+---
+
+## Docker Installation
+
+Apparix is also available as a Docker image for quick deployment.
+
+**Docker Hub:** [hub.docker.com/r/apparixapp/apparix](https://hub.docker.com/r/apparixapp/apparix)
+
+### 1. Create a Project Directory
+
+```bash
+mkdir apparix && cd apparix
+```
+
+### 2. Create docker-compose.yml
+
+```yaml
+version: '3.8'
+services:
+  app:
+    image: apparixapp/apparix:latest
+    ports:
+      - "80:80"
+    env_file: .env
+    volumes:
+      - storage:/var/www/html/storage
+      - uploads:/var/www/html/public/uploads
+      - themes:/var/www/html/content/themes
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: mariadb:10.11
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASS}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASS}
+    volumes:
+      - dbdata:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  storage:
+  uploads:
+  themes:
+  dbdata:
+```
+
+### 3. Create .env
+
+```env
+# Application
+APP_NAME="My Store"
+APP_URL=http://localhost
+APP_DEBUG=false
+
+# License (required — get one at https://apparix.app/pricing)
+LICENSE_KEY=APX-XXXXX-XXXXX-XXXXX-XXXXX
+
+# Database
+DB_HOST=db
+DB_NAME=apparix_ecommerce
+DB_USER=apparix
+DB_PASS=changeme
+DB_ROOT_PASS=changeme_root
+```
+
+### 4. Start Everything
+
+```bash
+docker compose up -d
+```
+
+### 5. Run the Installer
+
+Check the container logs for your database credentials:
+
+```bash
+docker logs apparix-app
+```
+
+Then visit `http://localhost/install` and follow the setup wizard. You'll need your **license key** and the **database credentials** shown in the logs.
+
+### SSL / HTTPS
+
+The Docker image serves HTTP on port 80. For production, put a reverse proxy in front with SSL:
+
+- **Nginx Proxy Manager** — easiest option, web UI for SSL certs
+- **Traefik** — automatic Let's Encrypt with Docker labels
+- **Cloudflare** — point DNS to your server with proxy enabled
+
+Update `APP_URL` in your `.env` to `https://yourdomain.com` after setting up SSL.
+
+### Updating
+
+```bash
+docker compose pull
+docker compose down
+docker compose up -d
+```
 
 ---
 
