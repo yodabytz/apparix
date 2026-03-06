@@ -801,7 +801,7 @@ Access the admin panel at: `https://yourdomain.com/admin`
 | Feature | Standard (Free) | Professional | Business | Enterprise |
 |---------|----------------|--------------|----------|------------|
 | Orders/Month | 50 | 500 | Unlimited | Unlimited |
-| Products | 100 | 1,000 | Unlimited | Unlimited |
+| Products | 50 | 1,000 | Unlimited | Unlimited |
 | Admin Users | 5 | 15 | 50 | Unlimited |
 | Digital Products | ✓ | ✓ | ✓ | ✓ |
 | Themes | Basic | All | All | All + Custom |
