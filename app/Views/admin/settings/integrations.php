@@ -145,6 +145,15 @@
                 </div>
 
                 <div class="form-group">
+                    <label for="custom_css">Custom CSS</label>
+                    <textarea name="custom_css" id="custom_css"
+                              class="form-control code-textarea" rows="6"
+                              placeholder="/* Add custom CSS styles */
+.my-class { color: red; }"><?php echo escape($settings['custom_css'] ?? ''); ?></textarea>
+                    <span class="form-help">Custom styles injected into &lt;head&gt;. Do not include &lt;style&gt; tags — they are added automatically.</span>
+                </div>
+
+                <div class="form-group">
                     <label for="custom_head_scripts">Custom Head Scripts</label>
                     <textarea name="custom_head_scripts" id="custom_head_scripts"
                               class="form-control code-textarea" rows="6"
@@ -158,6 +167,14 @@
                               class="form-control code-textarea" rows="6"
                               placeholder="<!-- Add any custom scripts to be placed before </body> -->"><?php echo escape($settings['custom_body_scripts']); ?></textarea>
                     <span class="form-help">Scripts placed before &lt;/body&gt;. Include full &lt;script&gt; tags.</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="custom_footer_html">Custom Footer HTML</label>
+                    <textarea name="custom_footer_html" id="custom_footer_html"
+                              class="form-control code-textarea" rows="6"
+                              placeholder="<p><a href='/care-guides'>Care Guides</a> | <a href='/blog'>Blog</a></p>"><?php echo escape($settings['custom_footer_html'] ?? ''); ?></textarea>
+                    <span class="form-help">HTML displayed above the copyright line in the footer. Use for extra links, text, or content that persists through updates.</span>
                 </div>
             </div>
 

@@ -72,6 +72,14 @@
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta property="og:image:alt" content="<?php echo $pageTitle; ?>">
+    <?php if (isset($product)): ?>
+    <meta property="product:price:amount" content="<?php echo escape($product['sale_price'] ?? $product['price']); ?>">
+    <meta property="product:price:currency" content="USD">
+    <meta property="product:availability" content="<?php echo (($product['inventory_count'] ?? 0) > 0) ? 'in stock' : 'out of stock'; ?>">
+    <meta property="product:condition" content="new">
+    <meta property="product:brand" content="<?php echo escape(setting('store_name') ?: appName()); ?>">
+    <meta property="product:retailer_item_id" content="<?php echo escape($product['sku'] ?? $product['id']); ?>">
+    <?php endif; ?>
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
@@ -107,7 +115,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preload" href="<?php echo $themeService->getGoogleFontsUrl(); ?>" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link href="<?php echo $themeService->getGoogleFontsUrl(); ?>" rel="stylesheet"></noscript>
-    <link rel="stylesheet" href="/assets/css/main.css?v=111">
+    <link rel="stylesheet" href="/assets/css/main.css?v=117">
     <?php
     // Load installed theme CSS (if any)
     $installedThemeCss = \App\Core\ThemeLoader::getThemeCss();
@@ -123,10 +131,17 @@
     <style id="theme-variables"><?php echo $themeCss; ?></style>
     <?php endif; ?>
     <?php
+    $__activeThemeHead = $themeService->getActiveTheme();
+    $__logoHeightHead = $__activeThemeHead['logo_height'] ?? setting('logo_height');
+    if ($__logoHeightHead) { $__logoHeightHead = max(20, (int)$__logoHeightHead); } ?>
+    <?php if ($__logoHeightHead): ?>
+    <style>.navbar-brand .logo img{height:auto !important;max-height:<?php echo $__logoHeightHead; ?>px !important;width:auto !important;object-fit:unset !important;margin-bottom:8px !important}@media(max-width:768px){.navbar-brand .logo img{max-height:<?php echo min((int)$__logoHeightHead, 80); ?>px !important}}</style>
+    <?php endif; ?>
+    <?php
     $holidayPreview = $themeService->getHolidayPreview();
     $activeHoliday = \App\Core\HolidayEffects::getActiveHoliday($holidayPreview);
     ?>
-    <?php if ($activeHoliday): ?>
+    <?php if ($activeHoliday && ($themeService->isHolidayEffectsEnabled() || $holidayPreview)): ?>
     <link rel="preload" href="/assets/css/holidays.css?v=13" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link rel="stylesheet" href="/assets/css/holidays.css?v=13"></noscript>
     <?php endif; ?>
@@ -162,7 +177,7 @@
     <script type="application/ld+json">
     {
         "@context": "https://schema.org",
-        "@type": "Organization",
+        "@type": "OnlineStore",
         "name": "<?php echo escape(appName()); ?>",
         "url": "<?php echo escape($storeUrl); ?>",
         "logo": "<?php echo escape($logoUrl); ?>",
@@ -172,9 +187,33 @@
             "@type": "ContactPoint",
             "contactType": "customer service",
             "email": "<?php echo escape(setting('store_email') ?: 'support@' . ($_SERVER['HTTP_HOST'] ?? 'example.com')); ?>"
+        },
+        "hasMerchantReturnPolicy": {
+            "@type": "MerchantReturnPolicy",
+            "applicableCountry": "US",
+            "returnPolicyCategory": "https://schema.org/MerchantReturnFiniteReturnWindow",
+            "merchantReturnDays": 30,
+            "returnMethod": "https://schema.org/ReturnByMail",
+            "returnFees": "https://schema.org/ReturnFeesCustomerResponsibility",
+            "returnPolicyCountry": "US"
         }
     }
     </script>
+    <?php if ($isHomePage): ?>
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "<?php echo escape(appName()); ?>",
+        "url": "<?php echo escape($storeUrl); ?>",
+        "potentialAction": {
+            "@type": "SearchAction",
+            "target": "<?php echo escape($storeUrl); ?>/products?search={search_term_string}",
+            "query-input": "required name=search_term_string"
+        }
+    }
+    </script>
+    <?php endif; ?>
     <?php if (isset($jsonLd)): ?>
     <script type="application/ld+json">
     <?php echo $jsonLd; ?>
@@ -671,15 +710,21 @@
     }
     </style>
     <?php \App\Core\Plugins\HookRegistry::doAction('page_head'); ?>
+    <?php $__customCss = setting('custom_css'); if ($__customCss): ?>
+    <style><?php echo $__customCss; ?></style>
+    <?php endif; ?>
+    <?php $__customHead = setting('custom_head_scripts'); if ($__customHead): ?>
+    <?php echo $__customHead; ?>
+    <?php endif; ?>
 </head>
 <?php
 $bodyClasses = $themeService->getBodyClasses();
-if ($activeHoliday) {
+$holidayEffectsEnabled = $activeHoliday && ($themeService->isHolidayEffectsEnabled() || $holidayPreview);
+if ($activeHoliday && $holidayEffectsEnabled) {
     $bodyClasses .= ' ' . $activeHoliday['class'];
 }
 $bodyClasses = trim($bodyClasses);
 ?>
-<?php $holidayEffectsEnabled = $activeHoliday && ($themeService->isHolidayEffectsEnabled() || $holidayPreview); ?>
 <body<?php echo $bodyClasses ? ' class="' . escape($bodyClasses) . '"' : ''; ?><?php if ($activeHoliday): ?> data-holiday-effects="<?php echo $holidayEffectsEnabled ? 'enabled' : 'disabled'; ?>"<?php endif; ?>>
     <!-- Google Tag Manager (noscript) -->
     <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-MK6Z5DFB"
@@ -766,10 +811,39 @@ $bodyClasses = trim($bodyClasses);
         <div class="container">
             <div class="navbar-brand">
                 <?php
+                $__storeLogo = setting('store_logo');
                 $__themeLogo = $themeService->getActiveTheme()['theme_logo'] ?? null;
-                $__displayLogo = $__themeLogo ?: (setting('store_logo') ?: '/assets/images/apparix-logo.png');
+                $__displayLogo = $__themeLogo ?: ($__storeLogo ?: '/assets/images/apparix-logo.png');
+                // Text logo: settings override, then theme.json fallback
+                $__logoTextVal = setting('logo_text');
+                if (!$__logoTextVal) {
+                    $__themeLogoText = \App\Core\ThemeLoader::getConfig('logo_text');
+                    $__logoTextVal = $__themeLogoText['text'] ?? '';
+                    $__logoTextColor = $__themeLogoText['color'] ?? '';
+                    $__logoTextHl = $__themeLogoText['highlight'] ?? '';
+                    $__logoTextHc = $__themeLogoText['highlight_color'] ?? '';
+                } else {
+                    $__logoTextColor = setting('logo_text_color') ?: '';
+                    $__logoTextHl = setting('logo_text_highlight') ?: '';
+                    $__logoTextHc = setting('logo_text_highlight_color') ?: '';
+                }
                 ?>
-                <a href="/" class="logo"><img src="<?php echo escape($__displayLogo); ?>?v=2" alt="<?php echo appName(); ?>"></a>
+                <?php if ($__logoTextVal): ?>
+                    <a href="/" class="logo logo-text-link"<?php if ($__logoTextColor) echo ' style="color:' . htmlspecialchars($__logoTextColor) . '"'; ?>><?php
+                        $__lt = htmlspecialchars($__logoTextVal);
+                        $__hl = $__logoTextHl;
+                        $__hc = $__logoTextHc ?: 'inherit';
+                        if ($__hl && ($__pos = strpos($__lt, htmlspecialchars($__hl))) !== false) {
+                            echo substr($__lt, 0, $__pos);
+                            echo '<span style="color:' . htmlspecialchars($__hc) . '">' . htmlspecialchars($__hl) . '</span>';
+                            echo substr($__lt, $__pos + strlen(htmlspecialchars($__hl)));
+                        } else {
+                            echo $__lt;
+                        }
+                    ?></a>
+                <?php else: ?>
+                    <a href="/" class="logo"><img src="<?php echo escape($__displayLogo); ?>?v=2" alt="<?php echo appName(); ?>"></a>
+                <?php endif; ?>
             </div>
             <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Toggle menu" aria-expanded="false">
                 <span></span>
@@ -927,6 +1001,9 @@ $bodyClasses = trim($bodyClasses);
             </div>
             <?php endif; ?>
 
+            <?php $__customFooter = setting('custom_footer_html'); if ($__customFooter): ?>
+            <div class="custom-footer-content"><?php echo $__customFooter; ?></div>
+            <?php endif; ?>
             <p class="footer-copy">&copy; <?php echo date('Y'); ?> <?php echo appName(); ?>. All rights reserved.</p>
             <?php
             $footMenuItems = setting('footer_menu', [
@@ -1669,6 +1746,9 @@ $bodyClasses = trim($bodyClasses);
     $installedThemeJs = \App\Core\ThemeLoader::getThemeJs();
     if ($installedThemeJs): ?>
     <script src="<?php echo escape($installedThemeJs); ?>"></script>
+    <?php endif; ?>
+    <?php $__customBody = setting('custom_body_scripts'); if ($__customBody): ?>
+    <?php echo $__customBody; ?>
     <?php endif; ?>
 
 </body>

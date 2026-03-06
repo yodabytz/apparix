@@ -107,45 +107,55 @@ class SettingsController extends Controller
             'store_phone' => 'string',
             'store_currency' => 'string',
             'store_currency_symbol' => 'string',
+            'logo_height' => 'string',
+            'logo_text' => 'string',
+            'logo_text_color' => 'string',
+            'logo_text_highlight' => 'string',
+            'logo_text_highlight_color' => 'string',
         ];
 
+        $formId = $_POST['_form'] ?? 'store-info';
+
         foreach ($fields as $field => $type) {
-            $value = $this->post($field);
+            $value = $_POST[$field] ?? null;
             if ($value !== null) {
                 $this->settingModel->set($field, $value, $type, 'store', true);
             }
         }
 
-        // Handle checkbox (boolean) settings - unchecked checkbox won't be in POST
-        $showPoweredBy = $this->post('show_powered_by') ? '1' : '0';
-        $this->settingModel->set('show_powered_by', $showPoweredBy, 'boolean', 'store', true);
+        // Only process checkboxes and tax when submitted from the store-info form
+        if ($formId === 'store-info') {
+            // Handle checkbox (boolean) settings - unchecked checkbox won't be in POST
+            $showPoweredBy = $this->post('show_powered_by') ? '1' : '0';
+            $this->settingModel->set('show_powered_by', $showPoweredBy, 'boolean', 'store', true);
 
-        $maintenanceMode = $this->post('maintenance_mode') ? '1' : '0';
-        $this->settingModel->set('maintenance_mode', $maintenanceMode, 'boolean', 'store', false);
+            $maintenanceMode = $this->post('maintenance_mode') ? '1' : '0';
+            $this->settingModel->set('maintenance_mode', $maintenanceMode, 'boolean', 'store', false);
 
-        $maintenanceEnabled = $this->post('maintenance_enabled') ? '1' : '0';
-        $this->settingModel->set('maintenance_enabled', $maintenanceEnabled, 'boolean', 'store', false);
+            $maintenanceEnabled = $this->post('maintenance_enabled') ? '1' : '0';
+            $this->settingModel->set('maintenance_enabled', $maintenanceEnabled, 'boolean', 'store', false);
 
-        $enableDownloads = $this->post('enable_downloads_section') ? '1' : '0';
-        $this->settingModel->set('enable_downloads_section', $enableDownloads, 'boolean', 'store', false);
+            $enableDownloads = $this->post('enable_downloads_section') ? '1' : '0';
+            $this->settingModel->set('enable_downloads_section', $enableDownloads, 'boolean', 'store', false);
 
-        // Tax settings
-        $taxEnabled = $this->post('tax_enabled') ? '1' : '0';
-        $this->settingModel->set('tax_enabled', $taxEnabled, 'boolean', 'store', true);
+            // Tax settings
+            $taxEnabled = $this->post('tax_enabled') ? '1' : '0';
+            $this->settingModel->set('tax_enabled', $taxEnabled, 'boolean', 'store', true);
 
-        $taxRate = $this->post('tax_rate');
-        if ($taxRate !== null) {
-            $this->settingModel->set('tax_rate', $taxRate, 'string', 'store', true);
-        }
+            $taxRate = $this->post('tax_rate');
+            if ($taxRate !== null) {
+                $this->settingModel->set('tax_rate', $taxRate, 'string', 'store', true);
+            }
 
-        $taxLabel = $this->post('tax_label');
-        if ($taxLabel !== null) {
-            $this->settingModel->set('tax_label', $taxLabel, 'string', 'store', true);
-        }
+            $taxLabel = $this->post('tax_label');
+            if ($taxLabel !== null) {
+                $this->settingModel->set('tax_label', $taxLabel, 'string', 'store', true);
+            }
 
-        $taxRegion = $this->post('tax_region');
-        if ($taxRegion !== null) {
-            $this->settingModel->set('tax_region', trim($taxRegion), 'string', 'store', true);
+            $taxRegion = $this->post('tax_region');
+            if ($taxRegion !== null) {
+                $this->settingModel->set('tax_region', trim($taxRegion), 'string', 'store', true);
+            }
         }
 
         // Clear cache
@@ -448,8 +458,10 @@ class SettingsController extends Controller
             'pinterest_tag_id' => $this->settingModel->get('pinterest_tag_id', ''),
             'snapchat_pixel_id' => $this->settingModel->get('snapchat_pixel_id', ''),
             'microsoft_uet_tag_id' => $this->settingModel->get('microsoft_uet_tag_id', ''),
+            'custom_css' => $this->settingModel->get('custom_css', ''),
             'custom_head_scripts' => $this->settingModel->get('custom_head_scripts', ''),
             'custom_body_scripts' => $this->settingModel->get('custom_body_scripts', ''),
+            'custom_footer_html' => $this->settingModel->get('custom_footer_html', ''),
         ];
 
         $this->render('admin.settings.integrations', [
@@ -476,8 +488,10 @@ class SettingsController extends Controller
             'pinterest_tag_id',
             'snapchat_pixel_id',
             'microsoft_uet_tag_id',
+            'custom_css',
             'custom_head_scripts',
             'custom_body_scripts',
+            'custom_footer_html',
         ];
 
         foreach ($fields as $field) {
