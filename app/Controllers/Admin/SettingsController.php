@@ -112,6 +112,11 @@ class SettingsController extends Controller
             'logo_text_color' => 'string',
             'logo_text_highlight' => 'string',
             'logo_text_highlight_color' => 'string',
+            'logo_text_font' => 'string',
+            'logo_text_size' => 'string',
+            'logo_text_weight' => 'string',
+            'logo_text_stretch' => 'string',
+            'logo_text_spacing' => 'string',
         ];
 
         $formId = $_POST['_form'] ?? 'store-info';

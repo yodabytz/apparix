@@ -127,6 +127,8 @@ class BotBlocker
         // Feed readers
         'Feedfetcher',
         'Feedly',
+        // Apparix update client
+        'Apparix-Update',
     ];
 
     /**
@@ -173,6 +175,13 @@ class BotBlocker
         // from internal requests, update checks, cron jobs, etc.)
         $serverIp = $_SERVER['SERVER_ADDR'] ?? '';
         if ($ip === $serverIp || $ip === '127.0.0.1' || $ip === '::1') {
+            return true;
+        }
+
+        // In Docker, SERVER_ADDR is the container IP, not the host's public IP.
+        // Allow whitelisting the host IP via environment variable.
+        $hostIp = $_ENV['HOST_IP'] ?? ($_SERVER['HOST_IP'] ?? '');
+        if ($hostIp && $ip === $hostIp) {
             return true;
         }
 

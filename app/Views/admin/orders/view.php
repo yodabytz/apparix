@@ -28,6 +28,9 @@
                             <?php if (!empty($item['variant_name'])): ?>
                                 <div class="item-variant"><?= htmlspecialchars($item['variant_name']) ?></div>
                             <?php endif; ?>
+                            <?php if (!empty($item['is_backorder'])): ?>
+                                <span class="backorder-badge">Backorder</span>
+                            <?php endif; ?>
                             <div class="item-sku">SKU: <?= htmlspecialchars($item['sku'] ?? 'N/A') ?></div>
                             <?php if (!empty($item['manufacturer'])): ?>
                                 <div class="item-manufacturer">From: <?= htmlspecialchars($item['manufacturer']) ?></div>

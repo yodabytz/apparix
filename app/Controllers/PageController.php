@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Core\Controller;
 use App\Core\ReCaptcha;
+use App\Models\Page;
 
 class PageController extends Controller
 {
@@ -458,6 +459,35 @@ class PageController extends Controller
 </html>";
 
         sendEmail($email, $subject, $html, ['html' => true]);
+    }
+
+    /**
+     * Show a custom page by slug
+     */
+    public function showPage(): void
+    {
+        $slug = $this->get('slug');
+        if (!$slug) {
+            $this->redirect('/');
+            return;
+        }
+
+        $pageModel = new Page();
+        $page = $pageModel->findBySlug($slug);
+
+        if (!$page) {
+            $this->show404();
+            return;
+        }
+
+        $metaTitle = $page['meta_title'] ?: $page['title'];
+        $metaDescription = $page['meta_description'] ?? '';
+
+        $this->render('pages/show', [
+            'title' => $metaTitle,
+            'metaDescription' => $metaDescription,
+            'page' => $page
+        ]);
     }
 
 }

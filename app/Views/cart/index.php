@@ -65,6 +65,9 @@
                                         <?php if (!empty($item['variant_name'])): ?>
                                             <small class="variant-info"><?php echo escape($item['variant_name']); ?></small>
                                         <?php endif; ?>
+                                        <?php if (!empty($item['is_backorder'])): ?>
+                                            <span class="backorder-badge">Backorder</span>
+                                        <?php endif; ?>
                                     </div>
                                 </div>
                             </div>
@@ -77,7 +80,7 @@
                                     <input type="hidden" name="cart_item_id" value="<?php echo $item['id']; ?>">
                                     <div class="qty-inputs-small">
                                         <button type="button" class="qty-btn-small" onclick="decrementCartQty(this)">−</button>
-                                        <input type="number" name="quantity" value="<?php echo $item['quantity']; ?>" min="1" max="<?php echo $item['inventory_count']; ?>" class="qty-input-small">
+                                        <input type="number" name="quantity" value="<?php echo $item['quantity']; ?>" min="1" max="<?php echo !empty($item['is_backorder']) ? 10 : $item['inventory_count']; ?>" class="qty-input-small">
                                         <button type="button" class="qty-btn-small" onclick="incrementCartQty(this)">+</button>
                                     </div>
                                 </form>

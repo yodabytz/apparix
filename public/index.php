@@ -195,6 +195,17 @@ if (!$licenseResult['valid']) {
         http_response_code(403);
         $errorCode = $licenseResult['code'] ?? 'INVALID_LICENSE';
         $errorMessage = $licenseResult['error'] ?? 'License validation failed';
+
+        // Return JSON for AJAX and API requests instead of HTML
+        $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
+                  strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+        $isApi = strpos($requestPath, '/api/') === 0;
+        if ($isAjax || $isApi) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => $errorMessage, 'code' => $errorCode]);
+            exit;
+        }
+
         $errorDetails = true;
         $currentDomain = $_SERVER['HTTP_HOST'] ?? 'unknown';
         include __DIR__ . '/license-required.php';
@@ -399,6 +410,9 @@ $router->get('/terms', 'PageController', 'terms');
 $router->get('/contact', 'PageController', 'contact');
 $router->post('/contact', 'PageController', 'sendContact');
 
+// Custom pages
+$router->get('/pages/:slug', 'PageController', 'showPage');
+
 // Support chat API
 $router->post('/api/support-chat', 'PageController', 'supportChat');
 
@@ -501,6 +515,14 @@ $router->post('/admin/coupons/delete', 'Admin\\CouponController', 'delete');
 $router->get('/admin/coupons/generate-code', 'Admin\\CouponController', 'generateCode');
 $router->post('/admin/coupons/toggle-status', 'Admin\\CouponController', 'toggleStatus');
 
+// Admin pages routes
+$router->get('/admin/pages', 'Admin\\PageController', 'index');
+$router->get('/admin/pages/create', 'Admin\\PageController', 'create');
+$router->post('/admin/pages/store', 'Admin\\PageController', 'store');
+$router->get('/admin/pages/:id/edit', 'Admin\\PageController', 'edit');
+$router->post('/admin/pages/update', 'Admin\\PageController', 'update');
+$router->post('/admin/pages/delete', 'Admin\\PageController', 'delete');
+
 // Admin category routes
 $router->get('/admin/categories', 'Admin\\CategoryController', 'index');
 $router->post('/admin/categories/store', 'Admin\\CategoryController', 'store');
@@ -600,14 +622,16 @@ $router->post('/admin/settings/test-email', 'Admin\\SettingsController', 'testEm
 $router->get('/admin/settings/menus', 'Admin\\SettingsController', 'menus');
 $router->post('/admin/settings/menus', 'Admin\\SettingsController', 'updateMenus');
 
-// Admin releases management (for this site - manages releases)
-$router->get('/admin/releases', 'Admin\\ReleaseController', 'index');
-$router->get('/admin/releases/create', 'Admin\\ReleaseController', 'create');
-$router->post('/admin/releases/store', 'Admin\\ReleaseController', 'store');
-$router->get('/admin/releases/:id/edit', 'Admin\\ReleaseController', 'edit');
-$router->post('/admin/releases/update', 'Admin\\ReleaseController', 'update');
-$router->post('/admin/releases/delete', 'Admin\\ReleaseController', 'delete');
-$router->get('/admin/releases/logs', 'Admin\\ReleaseController', 'logs');
+// Admin releases management (mothership only - manages releases for distribution)
+if (strpos(appUrl(), 'apparix.app') !== false) {
+    $router->get('/admin/releases', 'Admin\\ReleaseController', 'index');
+    $router->get('/admin/releases/create', 'Admin\\ReleaseController', 'create');
+    $router->post('/admin/releases/store', 'Admin\\ReleaseController', 'store');
+    $router->get('/admin/releases/:id/edit', 'Admin\\ReleaseController', 'edit');
+    $router->post('/admin/releases/update', 'Admin\\ReleaseController', 'update');
+    $router->post('/admin/releases/delete', 'Admin\\ReleaseController', 'delete');
+    $router->get('/admin/releases/logs', 'Admin\\ReleaseController', 'logs');
+}
 
 // Admin software updates (for customer sites - checks/installs updates)
 $router->get('/admin/updates', 'Admin\\UpdateController', 'index');
@@ -615,6 +639,8 @@ $router->post('/admin/updates/check', 'Admin\\UpdateController', 'check');
 $router->post('/admin/updates/install', 'Admin\\UpdateController', 'install');
 $router->get('/admin/updates/version', 'Admin\\UpdateController', 'version');
 $router->post('/admin/updates/cleanup-backups', 'Admin\\UpdateController', 'cleanupBackups');
+$router->get('/admin/updates/download', 'Admin\\UpdateController', 'download');
+$router->post('/admin/updates/restore', 'Admin\\UpdateController', 'restore');
 
 // Admin plugin routes
 $router->get('/admin/plugins', 'Admin\\PluginController', 'index');
@@ -630,6 +656,7 @@ $router->get('/admin/themes', 'Admin\\ThemeController', 'index');
 $router->post('/admin/themes/activate', 'Admin\\ThemeController', 'activate');
 $router->get('/admin/themes/customize', 'Admin\\ThemeController', 'customize');
 $router->post('/admin/themes/save', 'Admin\\ThemeController', 'save');
+$router->post('/admin/themes/quick-preview', 'Admin\\ThemeController', 'quickPreview');
 $router->get('/admin/themes/create', 'Admin\\ThemeController', 'create');
 $router->post('/admin/themes/create', 'Admin\\ThemeController', 'create');
 $router->post('/admin/themes/delete', 'Admin\\ThemeController', 'delete');
@@ -643,6 +670,10 @@ $router->post('/admin/themes/upload-logo', 'Admin\\ThemeController', 'uploadThem
 $router->post('/admin/themes/remove-logo', 'Admin\\ThemeController', 'removeThemeLogo');
 $router->post('/admin/themes/upload-hero-image', 'Admin\\ThemeController', 'uploadThemeHeroImage');
 $router->post('/admin/themes/remove-hero-image', 'Admin\\ThemeController', 'removeThemeHeroImage');
+$router->post('/admin/themes/upload-navbar-bg-image', 'Admin\\ThemeController', 'uploadNavbarBgImage');
+$router->post('/admin/themes/remove-navbar-bg-image', 'Admin\\ThemeController', 'removeNavbarBgImage');
+$router->post('/admin/themes/upload-footer-bg-image', 'Admin\\ThemeController', 'uploadFooterBgImage');
+$router->post('/admin/themes/remove-footer-bg-image', 'Admin\\ThemeController', 'removeFooterBgImage');
 
 // Admin 404 error page customization
 $router->get('/admin/themes/404', 'Admin\\ThemeController', 'errorPage');

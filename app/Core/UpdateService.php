@@ -83,11 +83,17 @@ class UpdateService
     {
         $cacheFile = BASE_PATH . '/storage/cache/update_check.json';
 
-        // Check if cache exists and is fresh
+        // Check if cache exists, is fresh, AND matches the current version
         if (file_exists($cacheFile)) {
             $cached = json_decode(file_get_contents($cacheFile), true);
             if ($cached && isset($cached['checked_at']) && (time() - $cached['checked_at']) < $cacheSeconds) {
-                return $cached;
+                // Invalidate cache if version has changed since last check
+                // (e.g., an update was installed between cache writes)
+                if (isset($cached['current_version']) && $cached['current_version'] !== $this->currentVersion) {
+                    @unlink($cacheFile);
+                } else {
+                    return $cached;
+                }
             }
         }
 
@@ -155,7 +161,10 @@ class UpdateService
                 return $extractResult;
             }
 
-            // Step 4: Apply update
+            // Step 4: Snapshot customer theme settings before applying update
+            $themeSnapshot = $this->snapshotThemeSettings();
+
+            // Step 5: Apply update
             $applyResult = $this->applyUpdate($extractResult['path']);
             if (!$applyResult['success']) {
                 $this->restoreBackup($backupResult['backup_path']);
@@ -164,19 +173,25 @@ class UpdateService
                 return $applyResult;
             }
 
-            // Step 5: Update version file
+            // Step 6: Update version file
             $this->updateVersionFile($targetVersion);
 
-            // Step 6: Run post-update migrations
+            // Step 7: Run post-update migrations
             $this->runMigrations();
 
-            // Step 7: Cleanup
+            // Step 8: Restore customer theme settings (migrations may have reset them)
+            $this->restoreThemeSettings($themeSnapshot);
+
+            // Step 9: Cleanup
             $this->cleanupTemp();
 
-            // Step 8: Clear update cache so dashboard reflects new version
+            // Step 10: Clear update cache and OPcache so dashboard reflects new version
             $this->clearUpdateCache();
+            if (function_exists('opcache_reset')) {
+                opcache_reset();
+            }
 
-            // Step 9: Report success
+            // Step 11: Report success
             $this->reportUpdateStatus($targetVersion, 'installed');
 
             error_reporting($previousErrorReporting);
@@ -187,9 +202,13 @@ class UpdateService
                 'version' => $targetVersion
             ];
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             error_reporting($previousErrorReporting);
-            $this->reportUpdateStatus($targetVersion, 'failed', $e->getMessage());
+            try {
+                $this->reportUpdateStatus($targetVersion, 'failed', $e->getMessage());
+            } catch (\Throwable $ignore) {
+                // Don't let report failure mask the real error
+            }
             return [
                 'success' => false,
                 'error' => 'Update failed: ' . $e->getMessage()
@@ -362,7 +381,7 @@ class UpdateService
                 'success' => true,
                 'path' => $extractPath
             ];
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             return [
                 'success' => false,
                 'error' => 'Failed to extract update: ' . $e->getMessage()
@@ -588,7 +607,7 @@ class UpdateService
                 'success' => true,
                 'backup_path' => $gzPath
             ];
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             return [
                 'success' => false,
                 'error' => 'Failed to create backup: ' . $e->getMessage()
@@ -631,7 +650,8 @@ class UpdateService
             $phar = new \PharData($backupPath);
             $phar->extractTo(BASE_PATH, null, true);
             return true;
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            error_log("Backup restore failed: " . $e->getMessage());
             return false;
         }
     }
@@ -659,6 +679,68 @@ class UpdateService
         $content .= "];\n";
 
         file_put_contents(BASE_PATH . '/version.php', $content);
+    }
+
+    /**
+     * Snapshot all theme settings before an update so they can be restored after migrations.
+     * This prevents migrations from resetting customer-customized theme values.
+     */
+    private function snapshotThemeSettings(): array
+    {
+        try {
+            $db = \App\Core\Database::getInstance();
+            $themes = $db->select("SELECT * FROM themes");
+            $settings = $db->select("SELECT * FROM settings");
+            return ['themes' => $themes, 'settings' => $settings];
+        } catch (\Throwable $e) {
+            error_log("Theme snapshot failed: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Restore theme settings from a pre-update snapshot.
+     * Overwrites any values that migrations may have changed back to the customer's original settings.
+     */
+    private function restoreThemeSettings(array $snapshot): void
+    {
+        if (empty($snapshot)) {
+            return;
+        }
+
+        try {
+            $db = \App\Core\Database::getInstance();
+            $pdo = $db->getConnection();
+
+            // Restore theme rows
+            if (!empty($snapshot['themes'])) {
+                foreach ($snapshot['themes'] as $theme) {
+                    $id = $theme['id'];
+                    unset($theme['id'], $theme['created_at'], $theme['updated_at']);
+
+                    $sets = [];
+                    $vals = [];
+                    foreach ($theme as $col => $val) {
+                        $sets[] = "`{$col}` = ?";
+                        $vals[] = $val;
+                    }
+                    $vals[] = $id;
+
+                    $pdo->prepare("UPDATE themes SET " . implode(', ', $sets) . " WHERE id = ?")
+                        ->execute($vals);
+                }
+            }
+
+            // Restore settings rows
+            if (!empty($snapshot['settings'])) {
+                foreach ($snapshot['settings'] as $setting) {
+                    $pdo->prepare("UPDATE settings SET setting_value = ? WHERE setting_key = ?")
+                        ->execute([$setting['setting_value'], $setting['setting_key']]);
+                }
+            }
+        } catch (\Throwable $e) {
+            error_log("Theme settings restore failed: " . $e->getMessage());
+        }
     }
 
     /**
@@ -707,30 +789,39 @@ class UpdateService
                 $migrationRan = false;
 
                 // Method 1: mysql CLI (handles PREPARE/EXECUTE, DELIMITER, etc.)
-                if (function_exists('exec')) {
-                    $dbHost = $_ENV['DB_HOST'] ?? 'localhost';
-                    $dbName = $_ENV['DB_NAME'] ?? '';
-                    $dbUser = $_ENV['DB_USER'] ?? '';
-                    $dbPass = $_ENV['DB_PASS'] ?? '';
+                // Check both function_exists AND that exec is not in disable_functions
+                $execAvailable = function_exists('exec')
+                    && !in_array('exec', array_map('trim', explode(',', ini_get('disable_functions') ?: '')));
 
-                    $cmd = sprintf(
-                        'mysql -h %s -u %s -p%s %s < %s 2>&1',
-                        escapeshellarg($dbHost),
-                        escapeshellarg($dbUser),
-                        escapeshellarg($dbPass),
-                        escapeshellarg($dbName),
-                        escapeshellarg($file)
-                    );
+                if ($execAvailable) {
+                    try {
+                        $dbHost = $_ENV['DB_HOST'] ?? 'localhost';
+                        $dbName = $_ENV['DB_NAME'] ?? '';
+                        $dbUser = $_ENV['DB_USER'] ?? '';
+                        $dbPass = $_ENV['DB_PASS'] ?? '';
 
-                    $output = [];
-                    $exitCode = 0;
-                    exec($cmd, $output, $exitCode);
+                        $cmd = sprintf(
+                            'mysql --skip-ssl -h %s -u %s -p%s %s < %s 2>&1',
+                            escapeshellarg($dbHost),
+                            escapeshellarg($dbUser),
+                            escapeshellarg($dbPass),
+                            escapeshellarg($dbName),
+                            escapeshellarg($file)
+                        );
 
-                    if ($exitCode === 0) {
-                        $migrationRan = true;
-                    } else {
-                        $errorMsg = implode("\n", $output);
-                        error_log("Migration CLI failed for {$migration} (exit {$exitCode}): {$errorMsg}, trying PDO...");
+                        $output = [];
+                        $exitCode = 0;
+                        exec($cmd, $output, $exitCode);
+
+                        if ($exitCode === 0) {
+                            $migrationRan = true;
+                        } else {
+                            $errorMsg = implode("\n", $output);
+                            error_log("Migration CLI failed for {$migration} (exit {$exitCode}): {$errorMsg}, trying PDO...");
+                        }
+                    } catch (\Throwable $e) {
+                        // exec() may throw Error if disabled at runtime
+                        error_log("Migration CLI unavailable for {$migration}: " . $e->getMessage() . ", trying PDO...");
                     }
                 }
 
@@ -742,33 +833,81 @@ class UpdateService
                         continue;
                     }
 
-                    // Strip DELIMITER commands and split on semicolons
-                    $sql = preg_replace('/DELIMITER\s+[^\n]+/i', '', $sql);
-                    $statements = array_filter(array_map('trim', explode(';', $sql)));
+                    $dsn = 'mysql:host=' . ($_ENV['DB_HOST'] ?? 'localhost') . ';dbname=' . ($_ENV['DB_NAME'] ?? '') . ';charset=utf8mb4';
+                    $pdoOpts = [
+                        \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
+                        \PDO::MYSQL_ATTR_USE_BUFFERED_QUERY => true,
+                    ];
+                    $dbUser = $_ENV['DB_USER'] ?? '';
+                    $dbPasswd = $_ENV['DB_PASS'] ?? '';
 
-                    $pdo = $db->getConnection();
-                    foreach ($statements as $stmt) {
-                        if (empty($stmt)) continue;
+                    // If migration uses PREPARE/EXECUTE, run it as one multi-statement
+                    // since splitting on semicolons breaks prepared statement flows
+                    if (preg_match('/\bPREPARE\b.*\bEXECUTE\b/is', $sql)) {
+                        // Multi-statement execution: new PDO with MULTI_STATEMENTS emulation
+                        $multiPdo = new \PDO($dsn, $dbUser, $dbPasswd, $pdoOpts);
+                        // Strip comments only, keep full SQL intact
+                        $cleanSql = preg_replace('/^--.*$/m', '', $sql);
+                        $cleanSql = preg_replace('/DELIMITER\s+[^\n]+/i', '', $cleanSql);
                         try {
-                            $pdo->exec($stmt);
+                            $multiPdo->setAttribute(\PDO::ATTR_EMULATE_PREPARES, true);
+                            $multiPdo->exec($cleanSql);
+                            // Drain all result sets from multi-statement exec
+                            // (prevents "unbuffered queries" error on next use)
                         } catch (\PDOException $e) {
-                            // Skip "already exists" errors (1060, 1061, 1050)
-                            if (!in_array($e->getCode(), ['42S01', '42S21', '42000']) &&
-                                !preg_match('/Duplicate|already exists/i', $e->getMessage())) {
-                                error_log("Migration PDO error in {$migration}: " . $e->getMessage());
+                            if (!preg_match('/Duplicate|already exists/i', $e->getMessage())) {
+                                error_log("Migration PDO multi-stmt error in {$migration}: " . $e->getMessage());
                             }
                         }
+                        $multiPdo = null;
+                    } else {
+                        // Simple migration: split on semicolons and run each
+                        $cleanSql = preg_replace('/DELIMITER\s+[^\n]+/i', '', $sql);
+                        $cleanSql = preg_replace('/^--.*$/m', '', $cleanSql);
+                        $statements = array_filter(array_map('trim', explode(';', $cleanSql)));
+
+                        $migrationPdo = new \PDO($dsn, $dbUser, $dbPasswd, $pdoOpts);
+                        foreach ($statements as $stmt) {
+                            if (empty($stmt)) continue;
+                            try {
+                                $migrationPdo->exec($stmt);
+                            } catch (\PDOException $e) {
+                                if (!in_array($e->getCode(), ['42S01', '42S21', '42000']) &&
+                                    !preg_match('/Duplicate|already exists/i', $e->getMessage())) {
+                                    error_log("Migration PDO error in {$migration}: " . $e->getMessage());
+                                }
+                                // If connection is poisoned (error 2014), reconnect
+                                if (strpos($e->getMessage(), '2014') !== false) {
+                                    $migrationPdo = null;
+                                    $migrationPdo = new \PDO($dsn, $dbUser, $dbPasswd, $pdoOpts);
+                                }
+                            }
+                        }
+                        $migrationPdo = null;
                     }
                     $migrationRan = true;
                 }
 
-                // Record migration
-                $db->insert(
-                    "INSERT INTO migrations (migration) VALUES (?)",
-                    [$migration]
-                );
-            } catch (\Exception $e) {
-                // Log but don't fail on migration errors
+                // Record migration — use a fresh connection in case the app's
+                // singleton PDO was poisoned by multi-statement migrations
+                try {
+                    $db->insert(
+                        "INSERT INTO migrations (migration) VALUES (?)",
+                        [$migration]
+                    );
+                } catch (\Throwable $recordErr) {
+                    // App DB connection may be stale; try a direct insert
+                    try {
+                        $recordPdo = new \PDO($dsn, $dbUser, $dbPasswd, $pdoOpts);
+                        $recordPdo->prepare("INSERT IGNORE INTO migrations (migration) VALUES (?)")
+                            ->execute([$migration]);
+                        $recordPdo = null;
+                    } catch (\Throwable $recordErr2) {
+                        error_log("Failed to record migration {$migration}: " . $recordErr2->getMessage());
+                    }
+                }
+            } catch (\Throwable $e) {
+                // Log but don't fail on migration errors (catch both Exception and Error)
                 error_log("Migration error in {$migration}: " . $e->getMessage());
             }
         }

@@ -12,39 +12,40 @@ class Cart extends Model
     /**
      * Add item to cart (with optional variant)
      */
-    public function addItem($productId, $quantity = 1, $sessionId = null, $userId = null, $variantId = null)
+    public function addItem($productId, $quantity = 1, $sessionId = null, $userId = null, $variantId = null, $isBackorder = 0)
     {
         $db = Database::getInstance();
 
         // Build query based on whether we're checking by user or session, and whether variant exists
+        // Also match on is_backorder so normal and backorder items stay separate
         if ($userId) {
             if ($variantId) {
                 $existingItem = $db->selectOne(
-                    "SELECT id, quantity FROM {$this->table} WHERE product_id = ? AND user_id = ? AND variant_id = ?",
-                    [$productId, $userId, $variantId]
+                    "SELECT id, quantity FROM {$this->table} WHERE product_id = ? AND user_id = ? AND variant_id = ? AND is_backorder = ?",
+                    [$productId, $userId, $variantId, $isBackorder]
                 );
             } else {
                 $existingItem = $db->selectOne(
-                    "SELECT id, quantity FROM {$this->table} WHERE product_id = ? AND user_id = ? AND variant_id IS NULL",
-                    [$productId, $userId]
+                    "SELECT id, quantity FROM {$this->table} WHERE product_id = ? AND user_id = ? AND variant_id IS NULL AND is_backorder = ?",
+                    [$productId, $userId, $isBackorder]
                 );
             }
         } else {
             if ($variantId) {
                 $existingItem = $db->selectOne(
-                    "SELECT id, quantity FROM {$this->table} WHERE product_id = ? AND session_id = ? AND variant_id = ?",
-                    [$productId, $sessionId, $variantId]
+                    "SELECT id, quantity FROM {$this->table} WHERE product_id = ? AND session_id = ? AND variant_id = ? AND is_backorder = ?",
+                    [$productId, $sessionId, $variantId, $isBackorder]
                 );
             } else {
                 $existingItem = $db->selectOne(
-                    "SELECT id, quantity FROM {$this->table} WHERE product_id = ? AND session_id = ? AND variant_id IS NULL",
-                    [$productId, $sessionId]
+                    "SELECT id, quantity FROM {$this->table} WHERE product_id = ? AND session_id = ? AND variant_id IS NULL AND is_backorder = ?",
+                    [$productId, $sessionId, $isBackorder]
                 );
             }
         }
 
         if ($existingItem) {
-            // Update quantity
+            // Update quantity for matching item (same product + variant + backorder status)
             $newQuantity = $existingItem['quantity'] + $quantity;
             return $db->update(
                 "UPDATE {$this->table} SET quantity = ? WHERE id = ?",
@@ -53,8 +54,8 @@ class Cart extends Model
         } else {
             // Insert new item
             return $db->insert(
-                "INSERT INTO {$this->table} (product_id, variant_id, quantity, session_id, user_id) VALUES (?, ?, ?, ?, ?)",
-                [$productId, $variantId, $quantity, $sessionId, $userId]
+                "INSERT INTO {$this->table} (product_id, variant_id, quantity, session_id, user_id, is_backorder) VALUES (?, ?, ?, ?, ?, ?)",
+                [$productId, $variantId, $quantity, $sessionId, $userId, $isBackorder]
             );
         }
     }
@@ -72,11 +73,13 @@ class Cart extends Model
                 c.product_id,
                 c.variant_id,
                 c.quantity,
+                c.is_backorder,
                 p.name,
                 p.slug,
                 p.price,
                 p.sale_price,
                 p.inventory_count as product_inventory,
+                p.allow_backorder,
                 p.weight_oz,
                 p.ships_free,
                 p.ships_free_us,
@@ -230,6 +233,7 @@ class Cart extends Model
         return $db->selectOne(
             "SELECT c.*,
                     p.inventory_count as product_inventory,
+                    p.allow_backorder,
                     v.inventory_count as variant_inventory
              FROM {$this->table} c
              LEFT JOIN products p ON c.product_id = p.id

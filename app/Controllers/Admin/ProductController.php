@@ -195,6 +195,7 @@ class ProductController extends Controller
         $price = floatval($this->post('price', 0));
         $salePrice = $this->post('sale_price') ? floatval($this->post('sale_price')) : null;
         $inventory = intval($this->post('inventory_count', 0));
+        $allowBackorder = $this->post('allow_backorder') ? 1 : 0;
         $isActive = $this->post('is_active') ? 1 : 0;
         $featured = $this->post('featured') ? 1 : 0;
         $manufacturer = trim($this->post('manufacturer', '')) ?: null;
@@ -223,9 +224,9 @@ class ProductController extends Controller
 
         // Create product
         $productId = $db->insert(
-            "INSERT INTO products (name, slug, sku, manufacturer, description, price, sale_price, inventory_count, is_active, featured, is_digital, is_license_product, download_file, download_limit, custom_date, custom_date_label, supplier_email)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            [$name, $slug, $sku, $manufacturer, $description, $price, $salePrice, $inventory, $isActive, $featured, $isDigital, $isLicenseProduct, $downloadFile, $downloadLimit, $customDate, $customDateLabel, $supplierEmail]
+            "INSERT INTO products (name, slug, sku, manufacturer, description, price, sale_price, inventory_count, allow_backorder, is_active, featured, is_digital, is_license_product, download_file, download_limit, custom_date, custom_date_label, supplier_email)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [$name, $slug, $sku, $manufacturer, $description, $price, $salePrice, $inventory, $allowBackorder, $isActive, $featured, $isDigital, $isLicenseProduct, $downloadFile, $downloadLimit, $customDate, $customDateLabel, $supplierEmail]
         );
 
         // Handle categories
@@ -445,6 +446,7 @@ class ProductController extends Controller
         $cost = $this->post('cost') !== '' ? floatval($this->post('cost')) : null;
         $costNotApplicable = $this->post('cost_not_applicable') ? 1 : 0;
         $inventory = intval($this->post('inventory_count', 0));
+        $allowBackorder = $this->post('allow_backorder') ? 1 : 0;
         $processingTime = trim($this->post('processing_time', '')) ?: null;
         $isActive = $this->post('is_active') ? 1 : 0;
         $featured = $this->post('featured') ? 1 : 0;
@@ -489,9 +491,9 @@ class ProductController extends Controller
 
         $db->update(
             "UPDATE products SET name = ?, slug = ?, sku = ?, manufacturer = ?, description = ?, meta_keywords = ?, meta_description = ?,
-             price = ?, sale_price = ?, cost = ?, cost_not_applicable = ?, inventory_count = ?, processing_time = ?, is_active = ?, featured = ?, sort_order = ?,
+             price = ?, sale_price = ?, cost = ?, cost_not_applicable = ?, inventory_count = ?, allow_backorder = ?, processing_time = ?, is_active = ?, featured = ?, sort_order = ?,
              is_digital = ?, is_license_product = ?, download_file = ?, download_limit = ?, custom_date = ?, custom_date_label = ?, supplier_email = ?, updated_at = NOW() WHERE id = ?",
-            [$name, $slug, $sku, $manufacturer, $description, $metaKeywords, $metaDescription, $price, $salePrice, $cost, $costNotApplicable, $inventory, $processingTime, $isActive, $featured, $sortOrder, $isDigital, $isLicenseProduct, $downloadFile, $downloadLimit, $customDate, $customDateLabel, $supplierEmail, $id]
+            [$name, $slug, $sku, $manufacturer, $description, $metaKeywords, $metaDescription, $price, $salePrice, $cost, $costNotApplicable, $inventory, $allowBackorder, $processingTime, $isActive, $featured, $sortOrder, $isDigital, $isLicenseProduct, $downloadFile, $downloadLimit, $customDate, $customDateLabel, $supplierEmail, $id]
         );
 
         // Check and send back-in-stock notifications if inventory was restored

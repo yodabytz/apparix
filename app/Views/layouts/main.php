@@ -63,7 +63,7 @@
     <link rel="canonical" href="<?php echo htmlspecialchars($storeUrl . ($_SERVER['REQUEST_URI'] ?? '/'), ENT_QUOTES, 'UTF-8'); ?>">
 
     <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="<?php echo isset($product) ? 'product' : 'website'; ?>">
+    <meta property="og:type" content="<?php echo (isset($product) && isset($product['price'])) ? 'product' : 'website'; ?>">
     <meta property="og:site_name" content="<?php echo appName(); ?>">
     <meta property="og:url" content="<?php echo htmlspecialchars($storeUrl . ($_SERVER['REQUEST_URI'] ?? '/'), ENT_QUOTES, 'UTF-8'); ?>">
     <meta property="og:title" content="<?php echo $pageTitle; ?>">
@@ -72,8 +72,8 @@
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta property="og:image:alt" content="<?php echo $pageTitle; ?>">
-    <?php if (isset($product)): ?>
-    <meta property="product:price:amount" content="<?php echo escape($product['sale_price'] ?? $product['price']); ?>">
+    <?php if (isset($product) && isset($product['price'])): ?>
+    <meta property="product:price:amount" content="<?php echo escape($product['sale_price'] ?? $product['price'] ?? ''); ?>">
     <meta property="product:price:currency" content="USD">
     <meta property="product:availability" content="<?php echo (($product['inventory_count'] ?? 0) > 0) ? 'in stock' : 'out of stock'; ?>">
     <meta property="product:condition" content="new">
@@ -115,7 +115,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preload" href="<?php echo $themeService->getGoogleFontsUrl(); ?>" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link href="<?php echo $themeService->getGoogleFontsUrl(); ?>" rel="stylesheet"></noscript>
-    <link rel="stylesheet" href="/assets/css/main.css?v=117">
+    <link rel="stylesheet" href="/assets/css/main.css?v=118">
     <?php
     // Load installed theme CSS (if any)
     $installedThemeCss = \App\Core\ThemeLoader::getThemeCss();
@@ -829,7 +829,29 @@ $bodyClasses = trim($bodyClasses);
                 }
                 ?>
                 <?php if ($__logoTextVal): ?>
-                    <a href="/" class="logo logo-text-link"<?php if ($__logoTextColor) echo ' style="color:' . htmlspecialchars($__logoTextColor) . '"'; ?>><?php
+                    <?php
+                    // Store Settings override theme defaults (user's explicit choice wins)
+                    $__activeTheme = $themeService->getActiveTheme();
+                    $__logoFont = setting('logo_text_font') ?: '';
+                    if (!$__logoFont) $__logoFont = $__activeTheme['logo_text_font'] ?? '';
+                    $__logoSize = setting('logo_text_size') ?: '';
+                    if (!$__logoSize) $__logoSize = $__activeTheme['logo_text_size'] ?? '';
+                    $__logoWeight = setting('logo_text_weight') ?: '';
+                    if (!$__logoWeight) $__logoWeight = $__activeTheme['logo_text_weight'] ?? '';
+                    $__logoStretch = setting('logo_text_stretch') ?: '';
+                    if (!$__logoStretch) $__logoStretch = $__activeTheme['logo_text_stretch'] ?? '';
+                    $__logoSpacing = setting('logo_text_spacing') ?: '';
+                    if (!$__logoSpacing) $__logoSpacing = $__activeTheme['logo_text_spacing'] ?? '';
+                    $__styleParts = [];
+                    if ($__logoTextColor) $__styleParts[] = 'color:' . htmlspecialchars($__logoTextColor);
+                    if ($__logoFont) $__styleParts[] = 'font-family:\'' . htmlspecialchars($__logoFont) . '\',var(--font-heading,sans-serif)';
+                    if ($__logoSize) $__styleParts[] = 'font-size:' . (int)$__logoSize . 'px';
+                    if ($__logoWeight) $__styleParts[] = 'font-weight:' . htmlspecialchars($__logoWeight);
+                    if ($__logoStretch) $__styleParts[] = 'font-stretch:' . htmlspecialchars($__logoStretch);
+                    if ($__logoSpacing) $__styleParts[] = 'letter-spacing:' . htmlspecialchars($__logoSpacing);
+                    $__logoStyle = $__styleParts ? ' style="' . implode(';', $__styleParts) . '"' : '';
+                    ?>
+                    <a href="/" class="logo logo-text-link"<?php echo $__logoStyle; ?>><?php
                         $__lt = htmlspecialchars($__logoTextVal);
                         $__hl = $__logoTextHl;
                         $__hc = $__logoTextHc ?: 'inherit';
@@ -998,6 +1020,17 @@ $bodyClasses = trim($bodyClasses);
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
                 </a>
                 <?php endif; ?>
+            </div>
+            <?php endif; ?>
+
+            <?php
+            $__footerPages = (new \App\Models\Page())->getFooterPages();
+            if (!empty($__footerPages)):
+            ?>
+            <div class="footer-pages" style="margin-bottom: 1rem;">
+                <?php foreach ($__footerPages as $__fp): ?>
+                    <a href="/pages/<?php echo escape($__fp['slug']); ?>" style="margin: 0 0.5rem; color: inherit; text-decoration: underline;"><?php echo escape($__fp['footer_label'] ?: $__fp['title']); ?></a>
+                <?php endforeach; ?>
             </div>
             <?php endif; ?>
 

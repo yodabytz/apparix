@@ -116,7 +116,8 @@ class Theme extends Model
             'custom_css' => $customizations['custom_css'] ?? '',
             'effect_settings' => $customizations['effect_settings'] ?? $preset['effect_settings'] ?? json_encode($this->getDefaultEffectSettings()),
             'theme_logo' => $customizations['theme_logo'] ?? $preset['theme_logo'] ?? null,
-            'hero_image' => $customizations['hero_image'] ?? $preset['hero_image'] ?? null
+            'hero_image' => $customizations['hero_image'] ?? $preset['hero_image'] ?? null,
+            'logo_height' => $customizations['logo_height'] ?? $preset['logo_height'] ?? null
         ];
 
         // Generate color variants
@@ -142,10 +143,13 @@ class Theme extends Model
         // Allowed fields to update
         $allowed = [
             'name', 'description', 'primary_color', 'secondary_color', 'accent_color',
-            'navbar_bg_color', 'navbar_text_color', 'glow_color',
+            'navbar_bg_color', 'navbar_text_color', 'navbar_bg_image',
+            'footer_bg_color', 'footer_text_color', 'footer_bg_image', 'glow_color',
+            'hero_bg_start', 'hero_bg_end',
             'heading_font', 'body_font', 'layout_style', 'header_style',
             'category_layout', 'sidebar_menu_mode', 'product_grid_columns', 'custom_css', 'effect_settings',
-            'theme_logo', 'hero_image'
+            'theme_logo', 'hero_image', 'logo_height',
+            'logo_text_weight', 'logo_text_stretch', 'logo_text_spacing'
         ];
 
         $updateData = array_intersect_key($data, array_flip($allowed));
@@ -240,30 +244,51 @@ class Theme extends Model
     {
         return [
             'heading' => [
-                'Playfair Display' => 'Playfair Display (Elegant Serif)',
-                'Inter' => 'Inter (Modern Sans)',
-                'Lora' => 'Lora (Classic Serif)',
-                'Montserrat' => 'Montserrat (Clean Sans)',
-                'Cormorant Garamond' => 'Cormorant Garamond (Refined Serif)',
-                'Poppins' => 'Poppins (Geometric Sans)',
-                'Libre Baskerville' => 'Libre Baskerville (Traditional Serif)',
-                'Raleway' => 'Raleway (Elegant Sans)',
+                'Barlow Condensed' => 'Barlow Condensed (Narrow Sans)',
+                'Bebas Neue' => 'Bebas Neue (Display Sans)',
                 'Cinzel' => 'Cinzel (Celtic / Medieval)',
                 'Cinzel Decorative' => 'Cinzel Decorative (Ornate Celtic)',
+                'Cormorant Garamond' => 'Cormorant Garamond (Refined Serif)',
+                'Crimson Text' => 'Crimson Text (Classic Serif)',
+                'Dancing Script' => 'Dancing Script (Handwritten)',
                 'EB Garamond' => 'EB Garamond (Historical Serif)',
+                'Great Vibes' => 'Great Vibes (Script)',
+                'Inter' => 'Inter (Modern Sans)',
+                'Josefin Sans' => 'Josefin Sans (Geometric)',
+                'Lato' => 'Lato (Warm Sans)',
+                'Libre Baskerville' => 'Libre Baskerville (Traditional Serif)',
+                'Lora' => 'Lora (Classic Serif)',
+                'Merriweather' => 'Merriweather (Readable Serif)',
+                'Montserrat' => 'Montserrat (Clean Sans)',
+                'Nunito' => 'Nunito (Rounded Sans)',
+                'Orbitron' => 'Orbitron (Futuristic)',
+                'Oswald' => 'Oswald (Condensed Sans)',
+                'Philosopher' => 'Philosopher (Elegant Sans)',
+                'Playfair Display' => 'Playfair Display (Elegant Serif)',
+                'Poppins' => 'Poppins (Geometric Sans)',
+                'Raleway' => 'Raleway (Elegant Sans)',
+                'Righteous' => 'Righteous (Bold Display)',
+                'Roboto' => 'Roboto (Neutral Sans)',
+                'Sacramento' => 'Sacramento (Cursive)',
+                'Source Serif Pro' => 'Source Serif Pro (Professional Serif)',
                 'Spectral' => 'Spectral (Dignified Serif)',
+                'Staatliches' => 'Staatliches (Condensed Display)',
+                'Ubuntu' => 'Ubuntu (Friendly Sans)',
             ],
             'body' => [
-                'Inter' => 'Inter (Highly Readable)',
-                'Open Sans' => 'Open Sans (Friendly)',
-                'Roboto' => 'Roboto (Neutral)',
-                'Lato' => 'Lato (Warm)',
-                'Source Sans Pro' => 'Source Sans Pro (Professional)',
-                'Nunito' => 'Nunito (Rounded)',
-                'Work Sans' => 'Work Sans (Contemporary)',
                 'Crimson Text' => 'Crimson Text (Classic Serif)',
                 'EB Garamond' => 'EB Garamond (Historical)',
+                'Inter' => 'Inter (Highly Readable)',
+                'Lato' => 'Lato (Warm)',
                 'Lora' => 'Lora (Warm Serif)',
+                'Merriweather' => 'Merriweather (Readable Serif)',
+                'Nunito' => 'Nunito (Rounded)',
+                'Open Sans' => 'Open Sans (Friendly)',
+                'Poppins' => 'Poppins (Geometric)',
+                'Roboto' => 'Roboto (Neutral)',
+                'Source Sans Pro' => 'Source Sans Pro (Professional)',
+                'Ubuntu' => 'Ubuntu (Friendly)',
+                'Work Sans' => 'Work Sans (Contemporary)',
             ]
         ];
     }

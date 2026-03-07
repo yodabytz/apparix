@@ -13,6 +13,10 @@
             <div style="color: var(--admin-text-light); font-size: 0.875rem; margin-top: 0.25rem;">
                 Released: <?php echo escape($versionInfo['release_date'] ?? 'Unknown'); ?>
             </div>
+            <a href="https://status.apparix.app" target="_blank" rel="noopener" style="display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; font-size: 0.8rem; color: #2186c4; text-decoration: none;">
+                <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#22c55e;"></span>
+                System Status &amp; Announcements
+            </a>
         </div>
         <div>
             <button type="button" class="btn btn-primary" onclick="checkForUpdates()" id="checkBtn">
@@ -97,6 +101,7 @@
                 <th>Backup</th>
                 <th>Size</th>
                 <th>Created</th>
+                <th style="text-align: right;">Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -105,6 +110,10 @@
                 <td><code><?php echo escape($backup['filename']); ?></code></td>
                 <td><?php echo formatBytes($backup['size']); ?></td>
                 <td><?php echo date('M j, Y g:i A', $backup['created']); ?></td>
+                <td style="text-align: right; white-space: nowrap;">
+                    <a href="/admin/updates/download?file=<?php echo urlencode($backup['filename']); ?>" class="btn btn-sm btn-outline" title="Download backup">Download</a>
+                    <button type="button" class="btn btn-sm" style="background:#dc2626;color:#fff;border:none;margin-left:4px;" onclick="confirmRestore('<?php echo escape($backup['filename']); ?>')" title="Restore from this backup">Restore</button>
+                </td>
             </tr>
             <?php endforeach; ?>
         </tbody>
@@ -131,7 +140,10 @@ function checkForUpdates() {
             'X-Requested-With': 'XMLHttpRequest'
         }
     })
-    .then(r => r.json())
+    .then(r => {
+        if (!r.ok) return r.text().then(t => { throw new Error('Server returned ' + r.status); });
+        return r.text().then(t => { try { return JSON.parse(t); } catch(e) { throw new Error('Invalid response from server'); } });
+    })
     .then(data => {
         hideAllStatus();
 
@@ -211,7 +223,10 @@ function installUpdate() {
         },
         body: '_csrf_token=' + encodeURIComponent(csrfToken) + '&version=' + encodeURIComponent(pendingVersion)
     })
-    .then(r => r.json())
+    .then(r => {
+        if (!r.ok) return r.text().then(t => { throw new Error('Server returned ' + r.status); });
+        return r.text().then(t => { try { return JSON.parse(t); } catch(e) { throw new Error('Invalid response from server'); } });
+    })
     .then(data => {
         clearInterval(stageInterval);
 
@@ -261,7 +276,10 @@ function cleanupBackups() {
         },
         body: '_csrf_token=' + encodeURIComponent(csrfToken) + '&keep=5'
     })
-    .then(r => r.json())
+    .then(r => {
+        if (!r.ok) return r.text().then(t => { throw new Error('Server returned ' + r.status); });
+        return r.text().then(t => { try { return JSON.parse(t); } catch(e) { throw new Error('Invalid response from server'); } });
+    })
     .then(data => {
         if (data.success) {
             showStatus(data.message, 'success');
@@ -271,6 +289,9 @@ function cleanupBackups() {
         } else {
             showStatus(data.error || 'Failed to cleanup backups', 'error');
         }
+    })
+    .catch(err => {
+        showStatus('Error: ' + err.message, 'error');
     });
 }
 
@@ -310,6 +331,48 @@ function hideAllStatus() {
 function ucfirst(str) {
     return str.charAt(0).toUpperCase() + str.slice(1);
 }
+
+function confirmRestore(filename) {
+    const msg = 'WARNING: Rolling back will revert all application code to this backup version.\n\n' +
+        '• Your data (products, orders, customers, images) will NOT be affected.\n' +
+        '• Features added after this backup version will be removed.\n' +
+        '• Database migrations cannot be reversed automatically.\n\n' +
+        'Type ROLLBACK to confirm:';
+
+    const input = prompt(msg);
+    if (input !== 'ROLLBACK') {
+        if (input !== null) {
+            showStatus('Rollback cancelled — you must type ROLLBACK exactly.', 'error');
+        }
+        return;
+    }
+
+    showStatus('Restoring from backup... Do not close this page.', 'info');
+
+    fetch('/admin/updates/restore', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: '_csrf_token=' + encodeURIComponent(csrfToken) + '&file=' + encodeURIComponent(filename) + '&confirmation=ROLLBACK'
+    })
+    .then(r => {
+        if (!r.ok) return r.text().then(t => { throw new Error('Server returned ' + r.status); });
+        return r.text().then(t => { try { return JSON.parse(t); } catch(e) { throw new Error('Invalid response from server'); } });
+    })
+    .then(data => {
+        if (data.success) {
+            showStatus(data.message, 'success');
+            setTimeout(() => location.reload(), 2000);
+        } else {
+            showStatus('Restore failed: ' + (data.error || 'Unknown error'), 'error');
+        }
+    })
+    .catch(err => {
+        showStatus('Restore error: ' + err.message, 'error');
+    });
+}
 </script>
 
 <?php
@@ -320,3 +383,9 @@ function formatBytes($bytes) {
     return $bytes . ' B';
 }
 ?>
+<script>
+if (new URLSearchParams(window.location.search).has('autocheck')) {
+    history.replaceState(null, '', '/admin/updates');
+    checkForUpdates();
+}
+</script>

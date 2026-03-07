@@ -117,3 +117,27 @@ INSERT INTO themes (
     '{"button_glow":{"enabled":true,"intensity":"subtle"},"hover_animations":{"enabled":true,"speed":"normal"},"background_animation":{"enabled":false,"style":"dots"},"page_transitions":{"enabled":true,"style":"fade-up"},"shimmer_effects":{"enabled":false},"shadow_style":"soft","border_radius":"slightly-rounded","card_hover":{"enabled":true,"style":"lift"}}',
     '/* Celtic ornamental styling */\n.section-title, h1, h2, h3 { letter-spacing: 0.05em; }\n.navbar { border-bottom: 2px solid #C9A84C; }\n.product-card { border: 1px solid #E0D4B8; }\n.product-card:hover { border-color: #C9A84C; }\n.btn-primary { border: 1px solid rgba(201,168,76,0.3); }\n.footer { border-top: 2px solid #C9A84C; }\n.breadcrumb a { color: #1B5E3A; }\n.category-sidebar .category-item.active { border-left: 3px solid #C9A84C; }'
 ) ON DUPLICATE KEY UPDATE name = VALUES(name);
+
+-- Summit Ridge Theme
+INSERT INTO themes (
+    slug, name, description, is_preset, is_active,
+    primary_color, secondary_color, accent_color,
+    navbar_bg_color, navbar_text_color, footer_bg_color, footer_text_color, glow_color,
+    hero_bg_start, hero_bg_end,
+    color_variants,
+    heading_font, body_font,
+    layout_style, header_style, category_layout, product_grid_columns,
+    effect_settings
+) VALUES (
+    'summitridge',
+    'Summit Ridge',
+    'Rugged and earthy, designed for outdoor gear, adventure brands, and nature-inspired stores',
+    1, 0,
+    '#1B2A1F', '#C47B3A', '#F0EBE3',
+    '#141E17', '#FFFFFF', '#141E17', '#FFFFFF', '#C47B3A',
+    '#0F1A12', '#1B2A1F',
+    '{"primary_light":"#203225","primary_dark":"#152118","primary_50":"#273C2C","secondary_light":"#EB9345","secondary_dark":"#9C622E","accent_light":"#FFFFF9","accent_dark":"#A8A49E"}',
+    'Barlow Condensed', 'Inter',
+    'full-width', 'standard', 'grid', 4,
+    '{"button_glow":{"enabled":false,"intensity":"medium"},"hover_animations":{"enabled":true,"speed":"normal"},"background_animation":{"enabled":false,"style":"circles","opacity":0.5},"header_effect":{"enabled":false,"style":"swirl","location":"navbar","opacity":0.5},"page_transitions":{"enabled":false,"style":"fade-up"},"shimmer_effects":{"enabled":false},"shadow_style":"subtle","border_radius":"slightly-rounded","card_hover":{"enabled":true,"style":"lift"}}'
+) ON DUPLICATE KEY UPDATE name = VALUES(name), heading_font = VALUES(heading_font), body_font = VALUES(body_font);

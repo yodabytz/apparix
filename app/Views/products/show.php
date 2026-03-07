@@ -193,11 +193,18 @@
                         $initialStock = (int)$product['inventory_count'];
                     }
                     ?>
-                    <p id="stockStatus" class="<?php echo $initialStock > 0 ? 'in-stock' : 'out-of-stock'; ?>">
+                    <?php $canBackorder = !empty($product['allow_backorder']); ?>
+                    <p id="stockStatus" class="<?php
+                        if ($initialStock > 0) echo 'in-stock';
+                        elseif ($canBackorder && !$hasVariants) echo 'backorder-status';
+                        else echo 'out-of-stock';
+                    ?>">
                         <?php if ($hasVariants): ?>
-                            <?php echo $initialStock > 0 ? 'Select Options' : 'Out of Stock'; ?>
+                            <?php echo $initialStock > 0 ? 'Select Options' : ($canBackorder ? 'Select Options' : 'Out of Stock'); ?>
                         <?php elseif ($initialStock > 0): ?>
                             In Stock
+                        <?php elseif ($canBackorder): ?>
+                            Out of Stock &mdash; Available for Backorder
                         <?php else: ?>
                             Out of Stock
                         <?php endif; ?>
@@ -230,11 +237,20 @@
                 </div>
                 <?php endif; ?>
 
+                <!-- Backorder Acknowledgment -->
+                <div id="backorderAcknowledge" class="backorder-acknowledge" style="display: <?php echo (!$hasVariants && $initialStock <= 0 && $canBackorder) ? 'block' : 'none'; ?>;">
+                    <label class="backorder-checkbox-label">
+                        <input type="checkbox" id="backorderCheckbox" onchange="toggleBackorderBtn()">
+                        <span>I understand this item is currently out of stock and shipping may be delayed.</span>
+                    </label>
+                </div>
+
                 <!-- Add to Cart -->
                 <form action="/cart/add" method="POST" class="add-to-cart-section" id="addToCartForm">
                     <?php echo csrfField(); ?>
                     <input type="hidden" name="product_id" value="<?php echo $product['id']; ?>">
                     <input type="hidden" name="variant_id" id="variantId" value="">
+                    <input type="hidden" name="is_backorder" id="isBackorder" value="0">
 
                     <?php if (!empty($product['options'])): ?>
                         <?php foreach ($product['options'] as $option): ?>
@@ -246,13 +262,23 @@
                         <label for="quantity">Quantity:</label>
                         <div class="qty-inputs">
                             <button type="button" class="qty-btn" onclick="decrementQty()">&minus;</button>
-                            <input type="number" id="quantity" name="quantity" value="1" min="1" max="<?php echo $initialStock ?: 1; ?>">
+                            <input type="number" id="quantity" name="quantity" value="1" min="1" max="<?php echo ($initialStock > 0) ? $initialStock : ($canBackorder ? 10 : 1); ?>">
                             <button type="button" class="qty-btn" onclick="incrementQty()">+</button>
                         </div>
                     </div>
 
-                    <button type="submit" class="btn btn-primary btn-large" id="addToCartBtn" <?php echo ($hasVariants || $initialStock <= 0) ? 'disabled' : ''; ?>>
-                        <?php echo $hasVariants ? 'Select Options' : ($initialStock > 0 ? 'Add to Cart' : 'Out of Stock'); ?>
+                    <button type="submit" class="btn btn-primary btn-large" id="addToCartBtn" <?php
+                        if ($hasVariants) echo 'disabled';
+                        elseif ($initialStock <= 0 && !$canBackorder) echo 'disabled';
+                        elseif ($initialStock <= 0 && $canBackorder) echo 'disabled';
+                        // if in stock and no variants, button is enabled (no disabled attr)
+                    ?>>
+                        <?php
+                        if ($hasVariants) echo 'Select Options';
+                        elseif ($initialStock > 0) echo 'Add to Cart';
+                        elseif ($canBackorder) echo 'Backorder';
+                        else echo 'Out of Stock';
+                        ?>
                     </button>
                 </form>
 
@@ -596,6 +622,7 @@
 const variants = <?php echo json_encode($product['variants'] ?? []); ?>;
 const hasOptions = <?php echo !empty($product['options']) ? 'true' : 'false'; ?>;
 const basePrice = <?php echo $product['sale_price'] ?: $product['price']; ?>;
+const allowBackorder = <?php echo !empty($product['allow_backorder']) ? 'true' : 'false'; ?>;
 const allProductImages = <?php echo json_encode($product['images'] ?? []); ?>;
 const visibleThumbnails = 5;
 
@@ -1029,6 +1056,14 @@ function formatPrice(price) {
     return '$' + parseFloat(price).toFixed(2);
 }
 
+function toggleBackorderBtn() {
+    const checkbox = document.getElementById('backorderCheckbox');
+    const btn = document.getElementById('addToCartBtn');
+    if (checkbox && btn && btn.textContent.trim() === 'Backorder') {
+        btn.disabled = !checkbox.checked;
+    }
+}
+
 // Handle option selection
 if (hasOptions) {
     const optionSelects = document.querySelectorAll('.option-select');
@@ -1107,6 +1142,10 @@ if (hasOptions) {
             const priceNote = document.querySelector('.price-note');
             if (priceNote) priceNote.style.display = 'none';
 
+            const backorderAck = document.getElementById('backorderAcknowledge');
+            const backorderCheckbox = document.getElementById('backorderCheckbox');
+            const isBackorderInput = document.getElementById('isBackorder');
+
             if (matchingVariant.inventory_count > 0 && matchingVariant.is_active == 1) {
                 const stock = parseInt(matchingVariant.inventory_count);
                 if (stock <= 3) {
@@ -1119,13 +1158,30 @@ if (hasOptions) {
                 btn.textContent = 'Add to Cart';
                 btn.disabled = false;
                 document.getElementById('quantity').max = stock;
+                if (backorderAck) backorderAck.style.display = 'none';
+                if (backorderCheckbox) backorderCheckbox.checked = false;
+                if (isBackorderInput) isBackorderInput.value = '0';
                 // Hide notify button when in stock
+                updateNotifyButton(false, matchingVariant.id, '');
+            } else if (allowBackorder) {
+                stockStatus.textContent = 'Out of Stock \u2014 Available for Backorder';
+                stockStatus.className = 'backorder-status';
+                btn.textContent = 'Backorder';
+                btn.disabled = true;
+                document.getElementById('quantity').max = 10;
+                if (backorderAck) backorderAck.style.display = 'block';
+                if (backorderCheckbox) backorderCheckbox.checked = false;
+                if (isBackorderInput) isBackorderInput.value = '1';
+                // Hide notify button — they can backorder instead
                 updateNotifyButton(false, matchingVariant.id, '');
             } else {
                 stockStatus.textContent = 'Out of Stock';
                 stockStatus.className = 'out-of-stock';
                 btn.textContent = 'Out of Stock';
                 btn.disabled = true;
+                if (backorderAck) backorderAck.style.display = 'none';
+                if (backorderCheckbox) backorderCheckbox.checked = false;
+                if (isBackorderInput) isBackorderInput.value = '0';
                 // Show notify button when out of stock - build variant name from selections
                 const variantName = buildVariantName();
                 updateNotifyButton(true, matchingVariant.id, variantName);
@@ -1145,6 +1201,14 @@ if (hasOptions) {
             alert('Please select all options before adding to cart.');
         }
     });
+}
+
+// Set backorder flag for non-variant products that are out of stock
+if (!hasOptions && allowBackorder) {
+    const stockEl = document.getElementById('stockStatus');
+    if (stockEl && stockEl.classList.contains('backorder-status')) {
+        document.getElementById('isBackorder').value = '1';
+    }
 }
 
 // Favorites functionality

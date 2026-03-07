@@ -34,6 +34,22 @@ class ThemeService
         if (!$this->activeTheme) {
             $this->activeTheme = $this->themeModel->getActive();
         }
+
+        // Quick preview: ?theme_quick_preview=<token>
+        // Reads unsaved theme data from a temp file created by ThemeController::quickPreview()
+        if (!empty($_GET['theme_quick_preview']) && $this->activeTheme) {
+            $token = preg_replace('/[^a-f0-9]/', '', $_GET['theme_quick_preview']);
+            $filePath = dirname(__DIR__, 2) . '/storage/theme_previews/' . $token . '.json';
+            if ($token && file_exists($filePath)) {
+                $overrides = json_decode(file_get_contents($filePath), true);
+                if (is_array($overrides)) {
+                    foreach ($overrides as $key => $val) {
+                        $this->activeTheme[$key] = $val;
+                    }
+                    $this->previewInfo = ['type' => 'quick', 'slug' => 'quick-preview', 'name' => 'Quick Preview'];
+                }
+            }
+        }
     }
 
     /**
@@ -189,6 +205,18 @@ class ThemeService
         $navbarText = $theme['navbar_text_color'] ?? '#1f2937';
         $css .= "    --navbar-bg: {$navbarBg};\n";
         $css .= "    --navbar-text: {$navbarText};\n";
+        if (!empty($theme['navbar_bg_image'])) {
+            $css .= "    --navbar-bg-image: url('" . $theme['navbar_bg_image'] . "');\n";
+        }
+
+        // Footer colors
+        $footerBg = $theme['footer_bg_color'] ?? '#12121f';
+        $footerText = $theme['footer_text_color'] ?? '#FFFFFF';
+        $css .= "    --footer-bg: {$footerBg};\n";
+        $css .= "    --footer-text: {$footerText};\n";
+        if (!empty($theme['footer_bg_image'])) {
+            $css .= "    --footer-bg-image: url('" . $theme['footer_bg_image'] . "');\n";
+        }
 
         // Page background color (very light tint of primary)
         $pageBg = $this->generatePageBackground($theme['primary_color']);
@@ -437,6 +465,21 @@ class ThemeService
                         $loadedFonts[] = $extraFont;
                     }
                 }
+            }
+        }
+
+        // Include logo font — load BOTH theme and setting fonts if different
+        $loadedFonts = $loadedFonts ?? [$headingFont, $bodyFont];
+        $themeLogoFont = $this->activeTheme['logo_text_font'] ?? '';
+        $settingLogoFont = setting('logo_text_font') ?: '';
+        $logoWeight = setting('logo_text_weight') ?: '700';
+        foreach ([$themeLogoFont, $settingLogoFont] as $logoFont) {
+            if ($logoFont && !in_array($logoFont, $loadedFonts)) {
+                $fontName = str_replace(' ', '+', $logoFont);
+                $weights = array_unique(['400', '700', $logoWeight]);
+                sort($weights);
+                $fonts[] = "family={$fontName}:wght@" . implode(';', $weights);
+                $loadedFonts[] = $logoFont;
             }
         }
 

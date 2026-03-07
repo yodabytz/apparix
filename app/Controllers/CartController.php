@@ -91,6 +91,7 @@ class CartController extends Controller
         $productId = $this->post('product_id');
         $quantity = intval($this->post('quantity', 1));
         $variantId = $this->post('variant_id') ?: null;
+        $isBackorder = $this->post('is_backorder') ? 1 : 0;
 
         // Validate product exists
         $product = $this->productModel->find($productId);
@@ -119,7 +120,23 @@ class CartController extends Controller
             $inventoryCount = $variant['inventory_count'];
         }
 
-        if ($inventoryCount < $quantity) {
+        // Server-side backorder validation: only allow if product has allow_backorder enabled AND item is actually out of stock
+        if ($isBackorder) {
+            if (empty($product['allow_backorder'])) {
+                http_response_code(400);
+                return $this->json(['error' => 'This product does not allow backorders']);
+            }
+            // Don't allow backorder on in-stock items — treat as normal order
+            if ($inventoryCount >= $quantity) {
+                $isBackorder = 0;
+            } else {
+                // Cap backorder qty at 10
+                if ($quantity > 10) {
+                    http_response_code(400);
+                    return $this->json(['error' => 'Maximum backorder quantity is 10']);
+                }
+            }
+        } elseif ($inventoryCount < $quantity) {
             http_response_code(400);
             return $this->json(['error' => 'Insufficient inventory']);
         }
@@ -128,7 +145,7 @@ class CartController extends Controller
         $userId = auth() ? auth()['id'] : null;
 
         try {
-            $this->cartModel->addItem($productId, $quantity, $sessionId, $userId, $variantId);
+            $this->cartModel->addItem($productId, $quantity, $sessionId, $userId, $variantId, $isBackorder);
 
             $cartCount = $this->cartModel->getCount($sessionId, $userId);
             $cartTotal = $this->cartModel->getTotal($sessionId, $userId);
@@ -176,17 +193,27 @@ class CartController extends Controller
             return $this->json(['error' => 'Cart item not found']);
         }
 
-        // Check available inventory
-        $availableStock = $cartItem['variant_id']
-            ? ($cartItem['variant_inventory'] ?? 0)
-            : ($cartItem['product_inventory'] ?? 0);
+        // Check available inventory (skip for backorder items, cap at 10)
+        if (!empty($cartItem['is_backorder'])) {
+            if ($quantity > 10) {
+                http_response_code(400);
+                return $this->json([
+                    'error' => 'Maximum backorder quantity is 10',
+                    'available' => 10
+                ]);
+            }
+        } else {
+            $availableStock = $cartItem['variant_id']
+                ? ($cartItem['variant_inventory'] ?? 0)
+                : ($cartItem['product_inventory'] ?? 0);
 
-        if ($quantity > $availableStock) {
-            http_response_code(400);
-            return $this->json([
-                'error' => "Only {$availableStock} items available in stock",
-                'available' => $availableStock
-            ]);
+            if ($quantity > $availableStock) {
+                http_response_code(400);
+                return $this->json([
+                    'error' => "Only {$availableStock} items available in stock",
+                    'available' => $availableStock
+                ]);
+            }
         }
 
         try {

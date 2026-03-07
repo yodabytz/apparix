@@ -205,7 +205,13 @@ class ThemeController extends Controller
             'sidebar_menu_mode' => $this->post('sidebar_menu_mode', $theme['sidebar_menu_mode'] ?? 'hover'),
             'product_grid_columns' => (int)$this->post('product_grid_columns', $theme['product_grid_columns']),
             'custom_css' => $this->post('custom_css', ''),
-            'effect_settings' => json_encode($effectSettings)
+            'effect_settings' => json_encode($effectSettings),
+            'logo_height' => $this->post('logo_height') ? (int)$this->post('logo_height') : null,
+            'logo_text_font' => $this->post('logo_text_font') ?: null,
+            'logo_text_size' => $this->post('logo_text_size') ? (int)$this->post('logo_text_size') : null,
+            'logo_text_weight' => $this->post('logo_text_weight') ?: null,
+            'logo_text_stretch' => $this->post('logo_text_stretch') ?: null,
+            'logo_text_spacing' => $this->post('logo_text_spacing') ?: null
         ];
 
         // Validate colors are valid hex
@@ -682,6 +688,99 @@ class ThemeController extends Controller
     }
 
     /**
+     * Quick preview — stores unsaved theme form data in a temp file and returns a preview URL.
+     * Called via AJAX from the theme customize page.
+     */
+    public function quickPreview(): void
+    {
+        $this->requireValidCSRF();
+
+        // Collect all overridable theme fields from the form
+        $keys = [
+            'primary_color', 'secondary_color', 'accent_color', 'glow_color',
+            'navbar_bg_color', 'navbar_text_color', 'footer_bg_color', 'footer_text_color',
+            'hero_bg_start', 'hero_bg_end', 'heading_font', 'body_font',
+            'header_style', 'layout_style', 'category_layout', 'product_grid_columns',
+            'logo_text_font', 'logo_text_size', 'logo_text_weight', 'logo_text_stretch', 'logo_text_spacing'
+        ];
+
+        $data = [];
+        foreach ($keys as $key) {
+            $val = $this->post($key);
+            if ($val !== null && $val !== '') {
+                // Validate color fields
+                if (str_contains($key, 'color') || str_contains($key, 'bg_start') || str_contains($key, 'bg_end')) {
+                    if (!preg_match('/^#[0-9A-Fa-f]{6}$/', $val)) continue;
+                }
+                $data[$key] = $val;
+            }
+        }
+
+        // Build effect settings from form fields (same logic as save())
+        $effectSettings = [
+            'button_glow' => [
+                'enabled' => (bool)$this->post('effect_button_glow_enabled'),
+                'intensity' => $this->post('effect_button_glow_intensity', 'medium')
+            ],
+            'hover_animations' => [
+                'enabled' => (bool)$this->post('effect_hover_enabled'),
+                'speed' => $this->post('effect_hover_speed', 'normal')
+            ],
+            'background_animation' => [
+                'enabled' => (bool)$this->post('effect_background_enabled'),
+                'style' => $this->post('effect_background_style', 'circles'),
+                'opacity' => max(0.05, min(1, (float)$this->post('effect_background_opacity', '0.5')))
+            ],
+            'header_effect' => [
+                'enabled' => (bool)$this->post('effect_header_enabled'),
+                'style' => $this->post('effect_header_style', 'swirl'),
+                'location' => in_array($this->post('effect_header_location'), ['navbar', 'hero']) ? $this->post('effect_header_location') : 'navbar',
+                'opacity' => max(0.05, min(1, (float)$this->post('effect_header_opacity', '0.5')))
+            ],
+            'page_transitions' => [
+                'enabled' => (bool)$this->post('effect_page_transitions_enabled'),
+                'style' => $this->post('effect_page_transitions_style', 'fade-up')
+            ],
+            'shimmer_effects' => [
+                'enabled' => (bool)$this->post('effect_shimmer_enabled')
+            ],
+            'shadow_style' => $this->post('effect_shadow_style', 'soft'),
+            'border_radius' => $this->post('effect_border_radius', 'rounded'),
+            'card_hover' => [
+                'enabled' => (bool)$this->post('effect_card_hover_enabled'),
+                'style' => $this->post('effect_card_hover_style', 'lift')
+            ],
+            'holiday_effects' => [
+                'enabled' => (bool)$this->post('effect_holiday_enabled'),
+                'preview' => $this->post('holiday_preview_holiday', 'none'),
+                'heroes' => $this->buildHolidayHeroes()
+            ]
+        ];
+        $data['effect_settings'] = json_encode($effectSettings);
+
+        // Generate a unique preview token and store data
+        $token = bin2hex(random_bytes(16));
+        $storagePath = dirname(__DIR__, 3) . '/storage/theme_previews';
+        if (!is_dir($storagePath)) {
+            mkdir($storagePath, 0755, true);
+        }
+
+        // Clean up old preview files (older than 1 hour)
+        foreach (glob($storagePath . '/*.json') as $file) {
+            if (filemtime($file) < time() - 3600) {
+                @unlink($file);
+            }
+        }
+
+        file_put_contents($storagePath . '/' . $token . '.json', json_encode($data));
+
+        $this->json([
+            'success' => true,
+            'preview_url' => '/?theme_quick_preview=' . $token
+        ]);
+    }
+
+    /**
      * Start a live preview — sets preview cookie and redirects with signed URL
      */
     public function startPreview(): void
@@ -870,7 +969,7 @@ class ThemeController extends Controller
         $finfo = new \finfo(FILEINFO_MIME_TYPE);
         $mimeType = $finfo->file($file['tmp_name']);
 
-        if (!in_array($mimeType, $allowedTypes) || $file['size'] > 2 * 1024 * 1024) {
+        if (!in_array($mimeType, $allowedTypes) || $file['size'] > 5 * 1024 * 1024) {
             return;
         }
 
@@ -949,8 +1048,8 @@ class ThemeController extends Controller
             return;
         }
 
-        if ($file['size'] > 2 * 1024 * 1024) {
-            $this->json(['error' => 'File too large. Maximum 2MB.'], 400);
+        if ($file['size'] > 5 * 1024 * 1024) {
+            $this->json(['error' => 'File too large. Maximum 5MB.'], 400);
             return;
         }
 
@@ -1049,8 +1148,7 @@ class ThemeController extends Controller
             mkdir($uploadDir, 0755, true);
         }
 
-        $ext = pathinfo($file['name'], PATHINFO_EXTENSION) ?: 'jpg';
-        $filename = 'hero-' . time() . '.' . strtolower($ext);
+        $filename = 'hero-' . time();
 
         // Delete old hero image if exists
         if (!empty($theme['hero_image'])) {
@@ -1060,7 +1158,54 @@ class ThemeController extends Controller
             }
         }
 
-        if (move_uploaded_file($file['tmp_name'], $uploadDir . $filename)) {
+        // Resize and convert to WebP for fast loading
+        $tmpPath = $file['tmp_name'];
+        $webpFilename = $filename . '.webp';
+        $converted = false;
+        $maxWidth = 1920;
+
+        if ($mimeType === 'image/jpeg') {
+            $img = imagecreatefromjpeg($tmpPath);
+        } elseif ($mimeType === 'image/png') {
+            $img = imagecreatefrompng($tmpPath);
+            imagepalettetotruecolor($img);
+            imagealphablending($img, true);
+            imagesavealpha($img, true);
+        } elseif ($mimeType === 'image/webp') {
+            $img = imagecreatefromwebp($tmpPath);
+        } else {
+            $img = null;
+        }
+
+        if ($img) {
+            $origW = imagesx($img);
+            $origH = imagesy($img);
+
+            // Downscale if wider than 1920px
+            if ($origW > $maxWidth) {
+                $newH = (int)round($origH * ($maxWidth / $origW));
+                $resized = imagecreatetruecolor($maxWidth, $newH);
+                imagealphablending($resized, false);
+                imagesavealpha($resized, true);
+                imagecopyresampled($resized, $img, 0, 0, 0, 0, $maxWidth, $newH, $origW, $origH);
+                imagedestroy($img);
+                $img = $resized;
+            }
+
+            if (imagewebp($img, $uploadDir . $webpFilename, 80)) {
+                $filename = $webpFilename;
+                $converted = true;
+            }
+            imagedestroy($img);
+        }
+
+        if (!$converted) {
+            $ext = pathinfo($file['name'], PATHINFO_EXTENSION) ?: 'jpg';
+            $filename = $filename . '.' . strtolower($ext);
+            move_uploaded_file($tmpPath, $uploadDir . $filename);
+        }
+
+        if ($converted || file_exists($uploadDir . $filename)) {
             $webPath = '/assets/images/themes/' . $slug . '/' . $filename;
             $this->themeModel->updateCustomTheme($themeId, ['hero_image' => $webPath]);
 
@@ -1097,6 +1242,274 @@ class ThemeController extends Controller
 
         $this->themeModel->updateCustomTheme($themeId, ['hero_image' => null]);
         $this->json(['success' => true, 'message' => 'Hero image removed. Default gradient will be used.']);
+    }
+
+    /**
+     * Upload navbar background image
+     */
+    public function uploadNavbarBgImage(): void
+    {
+        $this->requireValidCSRF();
+
+        $themeId = (int)$this->post('theme_id');
+        $theme = $this->themeModel->find($themeId);
+        if (!$theme) {
+            $this->json(['error' => 'Theme not found'], 404);
+            return;
+        }
+
+        $file = $_FILES['navbar_bg_image'] ?? null;
+        if (!$file || $file['error'] !== UPLOAD_ERR_OK) {
+            $this->json(['error' => 'No file uploaded'], 400);
+            return;
+        }
+
+        $finfo = new \finfo(FILEINFO_MIME_TYPE);
+        $mimeType = $finfo->file($file['tmp_name']);
+        $allowedTypes = ['image/png', 'image/jpeg', 'image/webp'];
+        if (!in_array($mimeType, $allowedTypes)) {
+            $this->json(['error' => 'Invalid file type. Allowed: PNG, JPG, WebP'], 400);
+            return;
+        }
+
+        if ($file['size'] > 5 * 1024 * 1024) {
+            $this->json(['error' => 'File too large. Maximum 5MB.'], 400);
+            return;
+        }
+
+        $slug = $theme['slug'];
+        $uploadDir = PUBLIC_PATH . '/assets/images/themes/' . $slug . '/';
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+
+        $filename = 'navbar-bg-' . time();
+
+        // Delete old navbar bg image if exists
+        if (!empty($theme['navbar_bg_image'])) {
+            $oldPath = PUBLIC_PATH . $theme['navbar_bg_image'];
+            if (file_exists($oldPath) && is_file($oldPath)) {
+                unlink($oldPath);
+            }
+        }
+
+        // Resize and convert to WebP
+        $tmpPath = $file['tmp_name'];
+        $webpFilename = $filename . '.webp';
+        $converted = false;
+        $maxWidth = 1920;
+
+        if ($mimeType === 'image/jpeg') {
+            $img = imagecreatefromjpeg($tmpPath);
+        } elseif ($mimeType === 'image/png') {
+            $img = imagecreatefrompng($tmpPath);
+            imagepalettetotruecolor($img);
+            imagealphablending($img, true);
+            imagesavealpha($img, true);
+        } elseif ($mimeType === 'image/webp') {
+            $img = imagecreatefromwebp($tmpPath);
+        } else {
+            $img = null;
+        }
+
+        if ($img) {
+            $origW = imagesx($img);
+            $origH = imagesy($img);
+
+            if ($origW > $maxWidth) {
+                $newH = (int)round($origH * ($maxWidth / $origW));
+                $resized = imagecreatetruecolor($maxWidth, $newH);
+                imagealphablending($resized, false);
+                imagesavealpha($resized, true);
+                imagecopyresampled($resized, $img, 0, 0, 0, 0, $maxWidth, $newH, $origW, $origH);
+                imagedestroy($img);
+                $img = $resized;
+            }
+
+            if (imagewebp($img, $uploadDir . $webpFilename, 80)) {
+                $filename = $webpFilename;
+                $converted = true;
+            }
+            imagedestroy($img);
+        }
+
+        if (!$converted) {
+            $ext = pathinfo($file['name'], PATHINFO_EXTENSION) ?: 'jpg';
+            $filename = $filename . '.' . strtolower($ext);
+            move_uploaded_file($tmpPath, $uploadDir . $filename);
+        }
+
+        if ($converted || file_exists($uploadDir . $filename)) {
+            $webPath = '/assets/images/themes/' . $slug . '/' . $filename;
+            $this->themeModel->updateCustomTheme($themeId, ['navbar_bg_image' => $webPath]);
+
+            $this->json([
+                'success' => true,
+                'path' => $webPath,
+                'message' => 'Header background uploaded'
+            ]);
+        } else {
+            $this->json(['error' => 'Failed to save file'], 500);
+        }
+    }
+
+    /**
+     * Remove navbar background image
+     */
+    public function removeNavbarBgImage(): void
+    {
+        $this->requireValidCSRF();
+
+        $themeId = (int)$this->post('theme_id');
+        $theme = $this->themeModel->find($themeId);
+        if (!$theme) {
+            $this->json(['error' => 'Theme not found'], 404);
+            return;
+        }
+
+        if (!empty($theme['navbar_bg_image'])) {
+            $path = PUBLIC_PATH . $theme['navbar_bg_image'];
+            if (file_exists($path) && is_file($path)) {
+                unlink($path);
+            }
+        }
+
+        $this->themeModel->updateCustomTheme($themeId, ['navbar_bg_image' => null]);
+        $this->json(['success' => true, 'message' => 'Header background removed.']);
+    }
+
+    /**
+     * Upload footer background image
+     */
+    public function uploadFooterBgImage(): void
+    {
+        $this->requireValidCSRF();
+
+        $themeId = (int)$this->post('theme_id');
+        $theme = $this->themeModel->find($themeId);
+        if (!$theme) {
+            $this->json(['error' => 'Theme not found'], 404);
+            return;
+        }
+
+        $file = $_FILES['footer_bg_image'] ?? null;
+        if (!$file || $file['error'] !== UPLOAD_ERR_OK) {
+            $this->json(['error' => 'No file uploaded'], 400);
+            return;
+        }
+
+        $finfo = new \finfo(FILEINFO_MIME_TYPE);
+        $mimeType = $finfo->file($file['tmp_name']);
+        $allowedTypes = ['image/png', 'image/jpeg', 'image/webp'];
+        if (!in_array($mimeType, $allowedTypes)) {
+            $this->json(['error' => 'Invalid file type. Allowed: PNG, JPG, WebP'], 400);
+            return;
+        }
+
+        if ($file['size'] > 5 * 1024 * 1024) {
+            $this->json(['error' => 'File too large. Maximum 5MB.'], 400);
+            return;
+        }
+
+        $slug = $theme['slug'];
+        $uploadDir = PUBLIC_PATH . '/assets/images/themes/' . $slug . '/';
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+
+        $filename = 'footer-bg-' . time();
+
+        // Delete old footer bg image if exists
+        if (!empty($theme['footer_bg_image'])) {
+            $oldPath = PUBLIC_PATH . $theme['footer_bg_image'];
+            if (file_exists($oldPath) && is_file($oldPath)) {
+                unlink($oldPath);
+            }
+        }
+
+        // Resize and convert to WebP
+        $tmpPath = $file['tmp_name'];
+        $webpFilename = $filename . '.webp';
+        $converted = false;
+        $maxWidth = 1920;
+
+        if ($mimeType === 'image/jpeg') {
+            $img = imagecreatefromjpeg($tmpPath);
+        } elseif ($mimeType === 'image/png') {
+            $img = imagecreatefrompng($tmpPath);
+            imagepalettetotruecolor($img);
+            imagealphablending($img, true);
+            imagesavealpha($img, true);
+        } elseif ($mimeType === 'image/webp') {
+            $img = imagecreatefromwebp($tmpPath);
+        } else {
+            $img = null;
+        }
+
+        if ($img) {
+            $origW = imagesx($img);
+            $origH = imagesy($img);
+
+            if ($origW > $maxWidth) {
+                $newH = (int)round($origH * ($maxWidth / $origW));
+                $resized = imagecreatetruecolor($maxWidth, $newH);
+                imagealphablending($resized, false);
+                imagesavealpha($resized, true);
+                imagecopyresampled($resized, $img, 0, 0, 0, 0, $maxWidth, $newH, $origW, $origH);
+                imagedestroy($img);
+                $img = $resized;
+            }
+
+            if (imagewebp($img, $uploadDir . $webpFilename, 80)) {
+                $filename = $webpFilename;
+                $converted = true;
+            }
+            imagedestroy($img);
+        }
+
+        if (!$converted) {
+            $ext = pathinfo($file['name'], PATHINFO_EXTENSION) ?: 'jpg';
+            $filename = $filename . '.' . strtolower($ext);
+            move_uploaded_file($tmpPath, $uploadDir . $filename);
+        }
+
+        if ($converted || file_exists($uploadDir . $filename)) {
+            $webPath = '/assets/images/themes/' . $slug . '/' . $filename;
+            $this->themeModel->updateCustomTheme($themeId, ['footer_bg_image' => $webPath]);
+
+            $this->json([
+                'success' => true,
+                'path' => $webPath,
+                'message' => 'Footer background uploaded'
+            ]);
+        } else {
+            $this->json(['error' => 'Failed to save file'], 500);
+        }
+    }
+
+    /**
+     * Remove footer background image
+     */
+    public function removeFooterBgImage(): void
+    {
+        $this->requireValidCSRF();
+
+        $themeId = (int)$this->post('theme_id');
+        $theme = $this->themeModel->find($themeId);
+        if (!$theme) {
+            $this->json(['error' => 'Theme not found'], 404);
+            return;
+        }
+
+        if (!empty($theme['footer_bg_image'])) {
+            $path = PUBLIC_PATH . $theme['footer_bg_image'];
+            if (file_exists($path) && is_file($path)) {
+                unlink($path);
+            }
+        }
+
+        $this->themeModel->updateCustomTheme($themeId, ['footer_bg_image' => null]);
+        $this->json(['success' => true, 'message' => 'Footer background removed.']);
     }
 
     private function buildHolidayHeroes(): array

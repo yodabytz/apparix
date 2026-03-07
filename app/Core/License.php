@@ -147,12 +147,9 @@ class License
 
         if (empty($licenseKey)) {
             self::$cachedResult = [
-                'valid' => true,
-                'edition' => 'free',
-                'edition_code' => 'F',
-                'domain_locked' => false,
-                'key' => '',
-                'is_free' => true
+                'valid' => false,
+                'error' => 'No license key configured',
+                'code' => 'NO_LICENSE'
             ];
             return self::$cachedResult;
         }
@@ -304,7 +301,24 @@ class License
      */
     private static function getCurrentDomain(): string
     {
-        $domain = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? 'localhost';
+        $domain = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? '';
+
+        // In Docker/proxy setups, HTTP_HOST may be 'localhost' or container hostname.
+        // Fall back to APP_URL from .env which always has the real domain.
+        if (empty($domain) || $domain === 'localhost' || $domain === '_') {
+            $appUrl = $_ENV['APP_URL'] ?? '';
+            if ($appUrl) {
+                $parsed = parse_url($appUrl, PHP_URL_HOST);
+                if ($parsed) {
+                    $domain = $parsed;
+                }
+            }
+        }
+
+        if (empty($domain)) {
+            $domain = 'localhost';
+        }
+
         // Remove port if present
         $domain = preg_replace('/:\d+$/', '', $domain);
         // Remove www

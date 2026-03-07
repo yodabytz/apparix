@@ -573,6 +573,26 @@ class CheckoutController extends Controller
             // CRITICAL: Lock and validate inventory FIRST to prevent race conditions
             // Using SELECT ... FOR UPDATE to acquire exclusive locks on inventory rows
             foreach ($items as $item) {
+                // Skip inventory validation for backorder items (re-verify allow_backorder is still on)
+                if (!empty($item['is_backorder'])) {
+                    $backorderCheck = $db->selectOne(
+                        "SELECT allow_backorder FROM products WHERE id = ? FOR UPDATE",
+                        [$item['product_id']]
+                    );
+                    if (empty($backorderCheck['allow_backorder'])) {
+                        $db->rollback();
+                        $errorMsg = "Sorry, '{$item['name']}' is no longer available for backorder.";
+                        if ($this->isAjaxRequest()) {
+                            $this->json(['error' => $errorMsg, 'inventory_error' => true], 400);
+                        } else {
+                            setFlash('error', $errorMsg);
+                            $this->redirect('/cart');
+                        }
+                        return;
+                    }
+                    continue;
+                }
+
                 if (!empty($item['variant_id'])) {
                     // Lock variant row and check inventory
                     $lockedInventory = $db->selectOne(
@@ -699,30 +719,35 @@ class CheckoutController extends Controller
                     $productName .= ' - ' . $item['variant_name'];
                 }
 
+                $isBackorder = !empty($item['is_backorder']) ? 1 : 0;
                 $db->insert(
-                    "INSERT INTO order_items (order_id, product_id, variant_id, product_name, variant_name, product_sku, quantity, price, cost, total)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                    [$orderId, $item['product_id'], $item['variant_id'] ?? null, $productName, $variantName, $item['sku'], $item['quantity'], $itemPrice, $item['unit_cost'] ?? null, $itemTotal]
+                    "INSERT INTO order_items (order_id, product_id, variant_id, product_name, variant_name, product_sku, quantity, price, cost, total, is_backorder)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    [$orderId, $item['product_id'], $item['variant_id'] ?? null, $productName, $variantName, $item['sku'], $item['quantity'], $itemPrice, $item['unit_cost'] ?? null, $itemTotal, $isBackorder]
                 );
 
-                // Decrement inventory (skip for digital products, rows are already locked by FOR UPDATE above)
-                $productInfo = $db->selectOne("SELECT is_digital FROM products WHERE id = ?", [$item['product_id']]);
-                if (!$productInfo || !$productInfo['is_digital']) {
-                    if (!empty($item['variant_id'])) {
-                        $affected = $db->update(
-                            "UPDATE product_variants SET inventory_count = inventory_count - ? WHERE id = ? AND inventory_count >= ?",
-                            [$item['quantity'], $item['variant_id'], $item['quantity']]
-                        );
-                        if ($affected === 0) {
-                            throw new \Exception("Inventory depleted for {$item['name']} during checkout");
-                        }
-                    } else {
-                        $affected = $db->update(
-                            "UPDATE products SET inventory_count = inventory_count - ? WHERE id = ? AND inventory_count >= ?",
-                            [$item['quantity'], $item['product_id'], $item['quantity']]
-                        );
-                        if ($affected === 0) {
-                            throw new \Exception("Inventory depleted for {$item['name']} during checkout");
+                // Decrement inventory (skip for digital products and backorder items, rows are already locked by FOR UPDATE above)
+                if ($isBackorder) {
+                    // Backorder items: no inventory to decrement
+                } else {
+                    $productInfo = $db->selectOne("SELECT is_digital FROM products WHERE id = ?", [$item['product_id']]);
+                    if (!$productInfo || !$productInfo['is_digital']) {
+                        if (!empty($item['variant_id'])) {
+                            $affected = $db->update(
+                                "UPDATE product_variants SET inventory_count = inventory_count - ? WHERE id = ? AND inventory_count >= ?",
+                                [$item['quantity'], $item['variant_id'], $item['quantity']]
+                            );
+                            if ($affected === 0) {
+                                throw new \Exception("Inventory depleted for {$item['name']} during checkout");
+                            }
+                        } else {
+                            $affected = $db->update(
+                                "UPDATE products SET inventory_count = inventory_count - ? WHERE id = ? AND inventory_count >= ?",
+                                [$item['quantity'], $item['product_id'], $item['quantity']]
+                            );
+                            if ($affected === 0) {
+                                throw new \Exception("Inventory depleted for {$item['name']} during checkout");
+                            }
                         }
                     }
                 }

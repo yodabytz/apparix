@@ -45,7 +45,7 @@ if (isset($admin)) {
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/assets/css/admin.css?v=28">
+    <link rel="stylesheet" href="/assets/css/admin.css?v=29">
     <?php
     // Get theme colors from ThemeService to match admin panel with site theme
     $themeService = \App\Core\ThemeService::getInstance();
@@ -145,6 +145,9 @@ if (isset($admin)) {
             <a href="/admin/reviews" class="nav-item <?php echo strpos($_SERVER['REQUEST_URI'], '/admin/reviews') === 0 ? 'active' : ''; ?>">
                 <span class="nav-icon">&#11088;</span> Reviews
             </a>
+            <a href="/admin/pages" class="nav-item <?php echo strpos($_SERVER['REQUEST_URI'], '/admin/pages') === 0 ? 'active' : ''; ?>">
+                <span class="nav-icon">&#128196;</span> Pages
+            </a>
             <a href="/admin/visitors" class="nav-item <?php echo strpos($_SERVER['REQUEST_URI'], '/admin/visitors') === 0 ? 'active' : ''; ?>">
                 <span class="nav-icon">&#128200;</span> Visitors
             </a>
@@ -178,9 +181,11 @@ if (isset($admin)) {
             <a href="/admin/plugins" class="nav-item <?php echo strpos($_SERVER['REQUEST_URI'], '/admin/plugins') === 0 ? 'active' : ''; ?>">
                 <span class="nav-icon">&#128268;</span> Plugins
             </a>
+            <?php if (strpos(appUrl(), 'apparix.app') !== false): ?>
             <a href="/admin/releases" class="nav-item <?php echo strpos($_SERVER['REQUEST_URI'], '/admin/releases') === 0 ? 'active' : ''; ?>">
                 <span class="nav-icon">&#128230;</span> Releases
             </a>
+            <?php endif; ?>
             <a href="/admin/updates" class="nav-item <?php echo strpos($_SERVER['REQUEST_URI'], '/admin/updates') === 0 ? 'active' : ''; ?>">
                 <span class="nav-icon">&#128259;</span> Updates<?php if ($updateAvailable): ?><span class="order-badge" title="v<?php echo escape($updateAvailable); ?> available">1</span><?php endif; ?>
             </a>
@@ -226,7 +231,7 @@ if (isset($admin)) {
                 <span style="color: #1e40af; font-size: 14px;">
                     <strong>Update available:</strong> Apparix v<?php echo escape($updateAvailable); ?> is ready to install.
                 </span>
-                <a href="/admin/updates" style="background: #2563eb; color: #fff; padding: 6px 16px; border-radius: 6px; font-size: 13px; font-weight: 500; text-decoration: none;">
+                <a href="/admin/updates?autocheck=1" style="background: #2563eb; color: #fff; padding: 6px 16px; border-radius: 6px; font-size: 13px; font-weight: 500; text-decoration: none;">
                     View Update
                 </a>
             </div>

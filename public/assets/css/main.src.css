@@ -2121,19 +2121,6 @@ body.layout-full-width .container {
 }
 
 @media (max-width: 480px) {
-    .navbar .container {
-        flex-direction: column;
-        height: auto;
-        padding: 1rem;
-        gap: 1rem;
-    }
-
-    .navbar-menu {
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 1rem;
-    }
-
     .products-grid {
         display: grid !important;
         grid-template-columns: 1fr !important;

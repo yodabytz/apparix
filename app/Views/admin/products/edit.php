@@ -101,6 +101,14 @@
                     </div>
 
                     <div class="form-group">
+                        <label class="form-checkbox">
+                            <input type="checkbox" name="allow_backorder" value="1" <?php echo !empty($product['allow_backorder']) ? 'checked' : ''; ?>>
+                            <span>Allow Backorder</span>
+                        </label>
+                        <small style="color: var(--admin-text-light);">Allow customers to purchase when out of stock. They must acknowledge delayed shipping.</small>
+                    </div>
+
+                    <div class="form-group">
                         <label class="form-label" for="processing_time">Processing Time</label>
                         <input type="text" id="processing_time" name="processing_time" class="form-input" value="<?php echo escape($product['processing_time'] ?? ''); ?>" placeholder="e.g., 3-5 business days">
                         <small style="color: var(--admin-text-light);">Time to prepare order before shipping. Leave blank to use default.</small>
