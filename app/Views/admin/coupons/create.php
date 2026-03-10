@@ -106,7 +106,7 @@
         <div class="form-row">
             <div class="form-group">
                 <label class="checkbox-label">
-                    <input type="checkbox" name="requires_account" value="1" checked>
+                    <input type="checkbox" name="requires_account" value="1">
                     Requires customer account
                 </label>
                 <small class="form-help">Customer must be logged in to use this coupon</small>
