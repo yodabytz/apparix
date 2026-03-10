@@ -72,10 +72,7 @@ if (!$botBlocker->check()) {
     exit; // Blocked — BotBlocker already sent 403
 }
 
-// Security headers
-header('X-Content-Type-Options: nosniff');
-header('X-Frame-Options: SAMEORIGIN');
-header('X-XSS-Protection: 1; mode=block');
+// Security headers (X-Frame-Options, X-Content-Type-Options, X-XSS-Protection set by nginx)
 header('Referrer-Policy: strict-origin-when-cross-origin');
 header('Content-Security-Policy: default-src \'self\'; script-src \'self\' \'unsafe-inline\' https://js.stripe.com https://cdn.jsdelivr.net https://pagead2.googlesyndication.com https://www.googletagservices.com https://adservice.google.com https://www.googletagmanager.com https://www.google-analytics.com https://www.google.com https://www.gstatic.com; frame-src https://js.stripe.com https://googleads.g.doubleclick.net https://www.google.com https://tpc.googlesyndication.com https://www.recaptcha.net; style-src \'self\' \'unsafe-inline\' https://fonts.googleapis.com; font-src \'self\' https://fonts.gstatic.com; img-src \'self\' data: https:; connect-src \'self\' https://pagead2.googlesyndication.com https://www.google-analytics.com https://analytics.google.com https://www.google.com https://www.gstatic.com');
 
@@ -220,11 +217,16 @@ if (strpos($visitorIp, ',') !== false) {
     $visitorIp = trim(explode(',', $visitorIp)[0]);
 }
 $excludedIps = ['97.102.234.155']; // Owner IPs to exclude from tracking
+$nonPagePaths = ['/manifest.json', '/robots.txt', '/sitemap.xml', '/favicon.ico', '/favicon-32x32.png', '/apple-touch-icon.png', '/android-chrome-192x192.png', '/android-chrome-512x512.png', '/sw.js', '/browserconfig.xml', '/site.webmanifest'];
 $skipTracking = str_starts_with($requestPath, '/admin') ||
                 str_starts_with($requestPath, '/api') ||
                 str_starts_with($requestPath, '/assets') ||
+                str_starts_with($requestPath, '/storage') ||
+                str_starts_with($requestPath, '/webhook') ||
+                str_starts_with($requestPath, '/cron') ||
+                in_array($requestPath, $nonPagePaths) ||
                 in_array($visitorIp, $excludedIps) ||
-                preg_match('/\.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|map)$/i', $requestPath);
+                preg_match('/\.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|map|xml|json|txt)$/i', $requestPath);
 
 if (!$skipTracking) {
     try {
@@ -352,6 +354,8 @@ $router->get('/account/orders', 'UserController', 'orders');
 $router->get('/account/downloads', 'UserController', 'downloads');
 $router->post('/account/update-profile', 'UserController', 'updateProfile');
 $router->post('/account/change-password', 'UserController', 'changePassword');
+$router->post('/account/upload-avatar', 'UserController', 'uploadAvatar');
+$router->post('/account/remove-avatar', 'UserController', 'removeAvatar');
 
 // Newsletter routes
 $router->post('/newsletter/subscribe', 'NewsletterController', 'subscribe');
@@ -422,8 +426,10 @@ $router->post('/api/updates/check', 'Api\\UpdateController', 'check');
 $router->post('/api/updates/download', 'Api\\UpdateController', 'download');
 $router->post('/api/updates/report', 'Api\\UpdateController', 'report');
 
-// Sitemap
+// Sitemap & Robots
 $router->get('/sitemap.xml', 'SitemapController', 'index');
+$router->get('/robots.txt', 'SitemapController', 'robots');
+$router->get('/manifest.json', 'SitemapController', 'manifest');
 
 // Checkout routes
 $router->get('/checkout', 'CheckoutController', 'index');

@@ -115,6 +115,7 @@ class ProductController extends Controller
         $data = [
             'title' => $product['name'],
             'product' => $product,
+            'isProductPage' => true,
             'related' => $related,
             'latestVersion' => $latestVersion,
             'metaKeywords' => $product['meta_keywords'] ?? '',
@@ -233,7 +234,9 @@ class ProductController extends Controller
             'sort' => $sort,
             'jsonLd' => $jsonLd,
             'ogImage' => $ogImage,
-            'metaDescription' => !empty($category['description']) ? substr(strip_tags($category['description']), 0, 160) : null,
+            'metaDescription' => !empty($category['description'])
+                ? substr(strip_tags($category['description']), 0, 160)
+                : 'Shop ' . $category['name'] . ' at ' . appName() . '. Browse our collection of ' . $totalProducts . ' products with free shipping on qualifying orders.',
         ];
 
         $this->render('products.category', $data);
@@ -289,7 +292,7 @@ class ProductController extends Controller
 
         $data = [
             'title' => 'Search Results - Apparix',
-            'meta_description' => 'Search results for "' . escape($query) . '" at Apparix',
+            'meta_description' => 'Search results for "' . escape($query) . '" at ' . appName(),
             'query' => $query,
             'products' => $products,
             'productCount' => count($products),
@@ -408,19 +411,57 @@ class ProductController extends Controller
                     'url' => $baseUrl . '/products/' . $product['slug'],
                     'brand' => [
                         '@type' => 'Brand',
-                        'name' => 'Apparix'
+                        'name' => setting('store_name') ?: appName()
                     ],
                     'offers' => [
                         '@type' => 'Offer',
                         'url' => $baseUrl . '/products/' . $product['slug'],
                         'priceCurrency' => 'USD',
                         'price' => number_format((float)$price, 2, '.', ''),
+                        'priceValidUntil' => date('Y-12-31'),
                         'availability' => $inStock
                             ? 'https://schema.org/InStock'
                             : 'https://schema.org/OutOfStock',
+                        'itemCondition' => 'https://schema.org/NewCondition',
                         'seller' => [
                             '@type' => 'Organization',
-                            'name' => 'Apparix'
+                            'name' => setting('store_name') ?: appName()
+                        ],
+                        'shippingDetails' => [
+                            '@type' => 'OfferShippingDetails',
+                            'shippingRate' => [
+                                '@type' => 'MonetaryAmount',
+                                'value' => (!empty($product['ships_free']) ? '0.00' : '5.99'),
+                                'currency' => 'USD'
+                            ],
+                            'shippingDestination' => [
+                                '@type' => 'DefinedRegion',
+                                'addressCountry' => 'US'
+                            ],
+                            'deliveryTime' => [
+                                '@type' => 'ShippingDeliveryTime',
+                                'handlingTime' => [
+                                    '@type' => 'QuantitativeValue',
+                                    'minValue' => 1,
+                                    'maxValue' => 3,
+                                    'unitCode' => 'd'
+                                ],
+                                'transitTime' => [
+                                    '@type' => 'QuantitativeValue',
+                                    'minValue' => 3,
+                                    'maxValue' => 7,
+                                    'unitCode' => 'd'
+                                ]
+                            ]
+                        ],
+                        'hasMerchantReturnPolicy' => [
+                            '@type' => 'MerchantReturnPolicy',
+                            'applicableCountry' => 'US',
+                            'returnPolicyCategory' => 'https://schema.org/MerchantReturnFiniteReturnWindow',
+                            'merchantReturnDays' => 30,
+                            'returnMethod' => 'https://schema.org/ReturnByMail',
+                            'returnFees' => 'https://schema.org/ReturnFeesCustomerResponsibility',
+                            'returnPolicyCountry' => 'US'
                         ]
                     ]
                 ],

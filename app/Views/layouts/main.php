@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <?php
     // Initialize theme service early (needed for theme-color meta tag)
     $themeService = new \App\Core\ThemeService();
@@ -59,20 +59,32 @@
     <?php if (isset($metaKeywords) || ($isHomePage && $seoKeywords)): ?>
     <meta name="keywords" content="<?php echo escape($metaKeywords ?? $seoKeywords); ?>">
     <?php endif; ?>
-    <meta name="robots" content="index, follow">
-    <link rel="canonical" href="<?php echo htmlspecialchars($storeUrl . ($_SERVER['REQUEST_URI'] ?? '/'), ENT_QUOTES, 'UTF-8'); ?>">
+    <?php
+    $currentPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
+    $noIndexPages = ['/cart', '/cart/', '/login', '/register', '/account', '/checkout'];
+    $isNoIndex = in_array($currentPath, $noIndexPages) || str_starts_with($currentPath, '/account/') || str_starts_with($currentPath, '/checkout/') || str_starts_with($currentPath, '/admin');
+    // Search results should be noindex (infinite parameter URLs)
+    if (!empty($_GET['search'])) $isNoIndex = true;
+    // Canonical should be clean path without query params (except pagination)
+    $canonicalPath = $currentPath;
+    if (!empty($_GET['page']) && (int)$_GET['page'] > 1) {
+        $canonicalPath .= '?page=' . (int)$_GET['page'];
+    }
+    ?>
+    <meta name="robots" content="<?php echo $isNoIndex ? 'noindex, follow' : 'index, follow'; ?>">
+    <link rel="canonical" href="<?php echo htmlspecialchars($storeUrl . $canonicalPath, ENT_QUOTES, 'UTF-8'); ?>">
 
     <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="<?php echo (isset($product) && isset($product['price'])) ? 'product' : 'website'; ?>">
+    <meta property="og:type" content="<?php echo (!empty($isProductPage) && isset($product['price'])) ? 'product' : 'website'; ?>">
     <meta property="og:site_name" content="<?php echo appName(); ?>">
-    <meta property="og:url" content="<?php echo htmlspecialchars($storeUrl . ($_SERVER['REQUEST_URI'] ?? '/'), ENT_QUOTES, 'UTF-8'); ?>">
+    <meta property="og:url" content="<?php echo htmlspecialchars($storeUrl . $canonicalPath, ENT_QUOTES, 'UTF-8'); ?>">
     <meta property="og:title" content="<?php echo $pageTitle; ?>">
     <meta property="og:description" content="<?php echo $pageDescription; ?>">
     <meta property="og:image" content="<?php echo $pageOgImage; ?>">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta property="og:image:alt" content="<?php echo $pageTitle; ?>">
-    <?php if (isset($product) && isset($product['price'])): ?>
+    <?php if (!empty($isProductPage) && isset($product['price'])): ?>
     <meta property="product:price:amount" content="<?php echo escape($product['sale_price'] ?? $product['price'] ?? ''); ?>">
     <meta property="product:price:currency" content="USD">
     <meta property="product:availability" content="<?php echo (($product['inventory_count'] ?? 0) > 0) ? 'in stock' : 'out of stock'; ?>">
@@ -83,7 +95,7 @@
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:site" content="@<?php echo strtolower(str_replace(' ', '', appName())); ?>">
+    <meta name="twitter:site" content="@<?php echo strtolower(preg_replace('/[^a-zA-Z0-9_]/', '', str_replace(' ', '', appName()))); ?>">
     <meta name="twitter:title" content="<?php echo $pageTitle; ?>">
     <meta name="twitter:description" content="<?php echo $pageDescription; ?>">
     <meta name="twitter:image" content="<?php echo $pageOgImage; ?>">
@@ -113,6 +125,8 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://www.googletagmanager.com">
+    <link rel="preconnect" href="https://js.stripe.com">
     <link rel="preload" href="<?php echo $themeService->getGoogleFontsUrl(); ?>" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link href="<?php echo $themeService->getGoogleFontsUrl(); ?>" rel="stylesheet"></noscript>
     <link rel="stylesheet" href="/assets/css/main.css?v=118">

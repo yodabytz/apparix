@@ -7,6 +7,12 @@
 
             <!-- Main Content -->
             <div class="shop-main">
+                <?php if (!empty($category['banner_url'])): ?>
+                <a href="<?php echo escape($category['banner_url']); ?>" target="_blank" class="category-banner" style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:linear-gradient(135deg,#0d0d1a 0%,#1a1a2e 100%);border-radius:10px;margin-bottom:1.25rem;text-decoration:none;color:#fff;transition:box-shadow 0.2s;">
+                    <span style="font-size:0.9rem;font-weight:500;"><?php echo escape($category['banner_text'] ?? 'View Gallery'); ?></span>
+                    <span style="background:rgba(255,104,197,0.15);color:#FF68C5;padding:6px 14px;border-radius:20px;font-size:0.8rem;font-weight:600;">Visit Gallery &rarr;</span>
+                </a>
+                <?php endif; ?>
                 <div class="section-header">
                     <div class="header-left">
                         <h1><?php echo escape($category['name']); ?></h1>
@@ -148,7 +154,8 @@
                         }
                     }
                     </style>
-                <?php elseif (!empty($products)): ?>
+                <?php endif; ?>
+                <?php if (!empty($products)): ?>
                     <div class="products-grid">
                         <?php foreach ($products as $product): ?>
                             <div class="product-card" <?php if (!empty($product['video_path'])): ?>data-has-video="true"<?php endif; ?>>
