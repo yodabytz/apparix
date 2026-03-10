@@ -7,12 +7,13 @@ use App\Core\Controller;
 class CareGuideController extends Controller
 {
     private string $contentPath;
-    private string $baseUrl = 'https://lilyspadstudio.com';
+    private string $baseUrl;
 
     public function __construct()
     {
         parent::__construct();
         $this->contentPath = __DIR__ . '/../Content/CareGuides/';
+        $this->baseUrl = appUrl();
     }
 
     /**
@@ -252,6 +253,23 @@ class CareGuideController extends Controller
             ]
         ];
 
+        // Add HowTo schema for instructional guides
+        if ($this->isHowToGuide($guide)) {
+            $steps = $this->extractHowToSteps($guide['content'] ?? '');
+            if (!empty($steps)) {
+                $howTo = [
+                    '@type' => 'HowTo',
+                    'name' => $guide['title'],
+                    'description' => $guide['description'],
+                    'step' => $steps
+                ];
+                if (!empty($guide['readTime'])) {
+                    $howTo['totalTime'] = 'PT' . ($guide['readTime'] * 5) . 'M';
+                }
+                $jsonLd['@graph'][] = $howTo;
+            }
+        }
+
         // Add FAQ if present
         if (!empty($guide['faq'])) {
             $faqItems = [];
@@ -272,6 +290,54 @@ class CareGuideController extends Controller
         }
 
         return json_encode($jsonLd, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+    }
+
+    /**
+     * Check if a guide is instructional (HowTo)
+     */
+    private function isHowToGuide(array $guide): bool
+    {
+        $title = strtolower($guide['title'] ?? '');
+        $slug = strtolower($guide['slug'] ?? '');
+        return str_contains($title, 'how to') || str_contains($slug, 'how-to')
+            || str_contains($title, 'guide to') || str_contains($title, 'caring for')
+            || str_contains($title, 'step') || str_contains($title, 'storing');
+    }
+
+    /**
+     * Extract HowTo steps from guide HTML content
+     */
+    private function extractHowToSteps(string $html): array
+    {
+        $steps = [];
+        $position = 1;
+
+        // Extract h2/h3 sections as steps
+        if (preg_match_all('/<h[23][^>]*>(.*?)<\/h[23]>/i', $html, $matches)) {
+            foreach ($matches[1] as $heading) {
+                $name = strip_tags($heading);
+                if (empty($name)) continue;
+
+                // Get the text after this heading until the next heading
+                $pattern = '/' . preg_quote($matches[0][array_search($heading, $matches[1])], '/') . '\s*(.*?)(?=<h[23]|$)/is';
+                $text = '';
+                if (preg_match($pattern, $html, $textMatch)) {
+                    $text = trim(strip_tags($textMatch[1]));
+                    if (strlen($text) > 300) {
+                        $text = substr($text, 0, 297) . '...';
+                    }
+                }
+
+                $steps[] = [
+                    '@type' => 'HowToStep',
+                    'position' => $position++,
+                    'name' => $name,
+                    'text' => $text ?: $name
+                ];
+            }
+        }
+
+        return $steps;
     }
 
     /**

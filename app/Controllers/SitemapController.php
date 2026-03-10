@@ -98,7 +98,7 @@ class SitemapController extends Controller
 
         $robots = <<<ROBOTS
 # Robots.txt for Apparix E-Commerce
-# Allow legitimate search engines and social bots
+# Allow legitimate search engines, AI answer engines, and social bots
 
 # Default — allow all well-behaved crawlers
 User-agent: *
@@ -117,41 +117,17 @@ Disallow: /cron/
 Disallow: /install/
 Disallow: /storage/
 
-# Block aggressive/unwanted bots
+# Block aggressive scrapers and SEO crawlers
 User-agent: Bytespider
 Disallow: /
 
 User-agent: PetalBot
 Disallow: /
 
-User-agent: GPTBot
-Disallow: /
-
-User-agent: ChatGPT-User
-Disallow: /
-
 User-agent: CCBot
 Disallow: /
 
-User-agent: anthropic-ai
-Disallow: /
-
-User-agent: Claude-Web
-Disallow: /
-
-User-agent: Google-Extended
-Disallow: /
-
-User-agent: Amazonbot
-Disallow: /
-
 User-agent: Omgilibot
-Disallow: /
-
-User-agent: FacebookBot
-Disallow: /
-
-User-agent: Diffbot
 Disallow: /
 
 User-agent: MJ12bot

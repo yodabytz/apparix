@@ -513,6 +513,32 @@ class ProductController extends Controller
             $jsonLd['@graph'][0]['review'] = $reviewItems;
         }
 
+        // Add speakable property for AI/voice assistants
+        $descriptionText = strip_tags($product['description'] ?? '');
+        if (strlen($descriptionText) > 50) {
+            $jsonLd['@graph'][0]['speakable'] = [
+                '@type' => 'SpeakableSpecification',
+                'cssSelector' => ['.product-name', '.product-description']
+            ];
+        }
+
+        // Add VideoObject if product has a video
+        if (!empty($product['images'])) {
+            foreach ($product['images'] as $img) {
+                if (!empty($img['is_video']) && !empty($img['image_path'])) {
+                    $jsonLd['@graph'][] = [
+                        '@type' => 'VideoObject',
+                        'name' => $product['name'] . ' - Product Video',
+                        'description' => 'Watch ' . $product['name'] . ' in action.',
+                        'contentUrl' => $baseUrl . $img['image_path'],
+                        'thumbnailUrl' => !empty($images[0]) ? $images[0] : ($baseUrl . '/assets/images/placeholder.png'),
+                        'uploadDate' => $product['created_at'] ?? date('Y-m-d')
+                    ];
+                    break; // Only first video
+                }
+            }
+        }
+
         return json_encode($jsonLd, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
     }
 
