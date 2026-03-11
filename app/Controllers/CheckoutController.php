@@ -153,10 +153,15 @@ class CheckoutController extends Controller
             $discountAmount = $appliedCoupon['discount'] ?? 0;
         }
 
-        // Prevent stacking coupon + bundle/tier discounts unless allowed
-        if (!setting('allow_coupon_with_bundle', false) && $autoDiscountTotal > 0 && $discountAmount > 0) {
-            $discountAmount = 0;
-            unset($_SESSION['applied_coupon']);
+        // Prevent stacking coupon + bundle/tier discounts unless all auto-discounts allow it
+        if ($autoDiscountTotal > 0 && $discountAmount > 0) {
+            foreach ($autoDiscounts as $ad) {
+                if (empty($ad['allow_coupon'])) {
+                    $discountAmount = 0;
+                    unset($_SESSION['applied_coupon']);
+                    break;
+                }
+            }
         }
 
         // Calculate tax if enabled
@@ -204,6 +209,17 @@ class CheckoutController extends Controller
             ]);
 
             // Store payment breakdown in session to ensure consistency at checkout
+            // Check if any auto-discount blocks coupons
+            $couponBlockedByBundle = false;
+            if ($autoDiscountTotal > 0) {
+                foreach ($autoDiscounts as $ad) {
+                    if (empty($ad['allow_coupon'])) {
+                        $couponBlockedByBundle = true;
+                        break;
+                    }
+                }
+            }
+
             $_SESSION['payment_intent_data'] = [
                 'payment_intent_id' => $paymentIntent->id,
                 'subtotal' => $subtotal,
@@ -216,6 +232,7 @@ class CheckoutController extends Controller
                 'coupon_code' => $appliedCoupon['code'] ?? null,
                 'coupon_id' => $appliedCoupon['id'] ?? null,
                 'is_popup_coupon' => !empty($appliedCoupon['is_popup']),
+                'coupon_blocked_by_bundle' => $couponBlockedByBundle,
                 'cart_fingerprint' => $this->buildCartFingerprint($items),
                 'created_at' => time()
             ];
@@ -513,16 +530,26 @@ class CheckoutController extends Controller
         $autoDiscountAmount = 0;
         if ($paymentIntentData) {
             $autoDiscountAmount = $paymentIntentData['auto_discount_amount'] ?? 0;
+            // Use stored coupon blocking flag from payment intent
+            if (!empty($paymentIntentData['coupon_blocked_by_bundle']) && $discountAmount > 0) {
+                $discountAmount = 0;
+                $discountCodeId = null;
+            }
         } else {
             $bundleModel = new Bundle();
             $autoDiscounts = $bundleModel->calculateCartDiscounts($items);
             $autoDiscountAmount = array_sum(array_column($autoDiscounts, 'amount'));
-        }
 
-        // Prevent stacking coupon + bundle/tier discounts unless allowed
-        if (!setting('allow_coupon_with_bundle', false) && $autoDiscountAmount > 0 && $discountAmount > 0) {
-            $discountAmount = 0;
-            $discountCodeId = null;
+            // Prevent stacking coupon + bundle/tier discounts unless all allow it
+            if ($autoDiscountAmount > 0 && $discountAmount > 0) {
+                foreach ($autoDiscounts as $ad) {
+                    if (empty($ad['allow_coupon'])) {
+                        $discountAmount = 0;
+                        $discountCodeId = null;
+                        break;
+                    }
+                }
+            }
         }
 
         // Cap discounts so total never goes below zero
@@ -990,12 +1017,19 @@ class CheckoutController extends Controller
         $items = $this->cartModel->getItems($sessionId, $userId);
         $cartTotal = $this->cartModel->getTotal($sessionId, $userId);
 
-        // Block coupon codes when bundle/tier auto-discounts are active (if setting enabled)
-        if (!setting('allow_coupon_with_bundle', false)) {
-            $bundleModel = new Bundle();
-            $autoDiscounts = $bundleModel->calculateCartDiscounts($items);
-            $autoDiscountTotal = array_sum(array_column($autoDiscounts, 'amount'));
-            if ($autoDiscountTotal > 0) {
+        // Block coupon codes when bundle/tier auto-discounts are active and don't allow coupons
+        $bundleModel = new Bundle();
+        $autoDiscounts = $bundleModel->calculateCartDiscounts($items);
+        $autoDiscountTotal = array_sum(array_column($autoDiscounts, 'amount'));
+        if ($autoDiscountTotal > 0) {
+            $couponBlocked = false;
+            foreach ($autoDiscounts as $ad) {
+                if (empty($ad['allow_coupon'])) {
+                    $couponBlocked = true;
+                    break;
+                }
+            }
+            if ($couponBlocked) {
                 $this->json(['success' => false, 'error' => 'Discount codes cannot be combined with bundle or quantity tier discounts already applied to your cart']);
                 return;
             }

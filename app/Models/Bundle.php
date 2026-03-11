@@ -69,8 +69,8 @@ class Bundle
         $slug = $this->generateSlug($data['name']);
 
         $id = $this->db->insert(
-            "INSERT INTO product_bundles (name, slug, description, discount_type, discount_value, is_active, expires_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO product_bundles (name, slug, description, discount_type, discount_value, is_active, allow_coupon, expires_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 $data['name'],
                 $slug,
@@ -78,6 +78,7 @@ class Bundle
                 $data['discount_type'],
                 $data['discount_value'],
                 $data['is_active'] ?? 1,
+                $data['allow_coupon'] ?? 0,
                 !empty($data['expires_at']) ? $data['expires_at'] : null
             ]
         );
@@ -98,7 +99,7 @@ class Bundle
     public function updateBundle(int $id, array $data, array $productIds): void
     {
         $this->db->update(
-            "UPDATE product_bundles SET name = ?, description = ?, discount_type = ?, discount_value = ?, is_active = ?, expires_at = ?, updated_at = NOW()
+            "UPDATE product_bundles SET name = ?, description = ?, discount_type = ?, discount_value = ?, is_active = ?, allow_coupon = ?, expires_at = ?, updated_at = NOW()
              WHERE id = ?",
             [
                 $data['name'],
@@ -106,6 +107,7 @@ class Bundle
                 $data['discount_type'],
                 $data['discount_value'],
                 $data['is_active'] ?? 1,
+                $data['allow_coupon'] ?? 0,
                 !empty($data['expires_at']) ? $data['expires_at'] : null,
                 $id
             ]
@@ -361,6 +363,7 @@ class Bundle
                     'label' => $label,
                     'amount' => $discountAmount,
                     'bundle_id' => $bundle['id'],
+                    'allow_coupon' => (int)($bundle['allow_coupon'] ?? 0),
                 ];
             }
         }

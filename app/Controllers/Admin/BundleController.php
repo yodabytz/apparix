@@ -5,7 +5,6 @@ namespace App\Controllers\Admin;
 use App\Core\Controller;
 use App\Models\AdminUser;
 use App\Models\Bundle;
-use App\Models\Setting;
 
 class BundleController extends Controller
 {
@@ -112,6 +111,7 @@ class BundleController extends Controller
             'discount_type' => $this->post('discount_type', 'percentage'),
             'discount_value' => floatval($this->post('discount_value', 0)),
             'is_active' => $this->post('is_active') ? 1 : 0,
+            'allow_coupon' => $this->post('allow_coupon') ? 1 : 0,
             'expires_at' => $this->post('expires_at') ?: null
         ];
 
@@ -168,6 +168,7 @@ class BundleController extends Controller
             'discount_type' => $this->post('discount_type', 'percentage'),
             'discount_value' => floatval($this->post('discount_value', 0)),
             'is_active' => $this->post('is_active') ? 1 : 0,
+            'allow_coupon' => $this->post('allow_coupon') ? 1 : 0,
             'expires_at' => $this->post('expires_at') ?: null
         ];
 
@@ -224,29 +225,6 @@ class BundleController extends Controller
         } catch (\Exception $e) {
             $this->json(['success' => false, 'error' => $e->getMessage()]);
         }
-    }
-
-    /**
-     * Save bundle-related setting (AJAX)
-     */
-    public function saveSetting(): void
-    {
-        $this->requireValidCSRF();
-
-        $key = trim($this->post('key', ''));
-        $value = $this->post('value', '0');
-
-        $allowedKeys = ['allow_coupon_with_bundle'];
-        if (!in_array($key, $allowedKeys)) {
-            $this->json(['success' => false, 'error' => 'Invalid setting']);
-            return;
-        }
-
-        $settingModel = new Setting();
-        $settingModel->set($key, $value ? '1' : '0');
-
-        $this->adminModel->logActivity($this->admin['admin_id'], 'update_setting', 'settings', null, "Updated $key to " . ($value ? 'enabled' : 'disabled'));
-        $this->json(['success' => true]);
     }
 
     /**

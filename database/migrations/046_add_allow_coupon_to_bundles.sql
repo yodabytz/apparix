@@ -1,0 +1,1 @@
+ALTER TABLE product_bundles ADD COLUMN IF NOT EXISTS allow_coupon TINYINT(1) NOT NULL DEFAULT 0 AFTER is_active;

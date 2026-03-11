@@ -99,6 +99,15 @@
                     </label>
                 </div>
 
+                <div class="form-group" style="margin-top: 0.75rem;">
+                    <label class="form-checkbox">
+                        <input type="checkbox" name="allow_coupon" value="1"
+                               <?php echo ($isEdit && !empty($bundle['allow_coupon'])) ? 'checked' : ''; ?>>
+                        <span>Allow discount codes with this bundle</span>
+                    </label>
+                    <small style="color: var(--admin-text-light); display: block; margin-top: 0.25rem;">When unchecked, customers cannot combine coupon codes with this bundle discount.</small>
+                </div>
+
                 <div class="form-group" style="margin-top: 1rem;">
                     <label class="form-label" for="expires_at">Expiry Date (optional)</label>
                     <input type="datetime-local" id="expires_at" name="expires_at" class="form-input"
