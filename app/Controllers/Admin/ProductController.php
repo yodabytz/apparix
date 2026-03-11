@@ -376,6 +376,12 @@ class ProductController extends Controller
         $bundleModel = new Bundle();
         $quantityTiers = $bundleModel->getQuantityTiers($id);
 
+        // Get product FAQs
+        $faqs = $db->select(
+            "SELECT * FROM product_faqs WHERE product_id = ? ORDER BY sort_order ASC",
+            [$id]
+        );
+
         $this->render('admin.products.edit', [
             'title' => 'Edit Product: ' . $product['name'],
             'admin' => $this->admin,
@@ -390,7 +396,8 @@ class ProductController extends Controller
             'colorOptions' => $colorOptions,
             'shippingClasses' => $shippingClasses,
             'shippingOrigins' => $shippingOrigins,
-            'quantityTiers' => $quantityTiers
+            'quantityTiers' => $quantityTiers,
+            'faqs' => $faqs
         ], 'admin');
     }
 
@@ -2094,6 +2101,71 @@ class ProductController extends Controller
                 return imagewebp($image, $path, 85);
             default:
                 return false;
+        }
+    }
+
+    /**
+     * Save product FAQ items (AJAX)
+     */
+    public function saveFaq(): void
+    {
+        $this->requireAdmin();
+
+        $input = json_decode(file_get_contents('php://input'), true);
+        if (!$input || empty($input['csrf_token']) || !hash_equals(csrf_token(), $input['csrf_token'])) {
+            $this->json(['success' => false, 'error' => 'Invalid request']);
+            return;
+        }
+
+        $productId = (int)($input['product_id'] ?? 0);
+        $faqs = $input['faqs'] ?? [];
+
+        if (!$productId) {
+            $this->json(['success' => false, 'error' => 'Missing product ID']);
+            return;
+        }
+
+        // Verify product exists
+        $product = $this->productModel->find($productId);
+        if (!$product) {
+            $this->json(['success' => false, 'error' => 'Product not found']);
+            return;
+        }
+
+        $db = Database::getInstance();
+
+        try {
+            $db->beginTransaction();
+
+            // Delete existing FAQs for this product
+            $db->delete("DELETE FROM product_faqs WHERE product_id = ?", [$productId]);
+
+            // Insert new FAQs
+            $ids = [];
+            foreach ($faqs as $faq) {
+                $question = trim(strip_tags($faq['question'] ?? ''));
+                $answer = trim(strip_tags($faq['answer'] ?? ''));
+                $sortOrder = (int)($faq['sort_order'] ?? 0);
+
+                if (empty($question) || empty($answer)) continue;
+
+                // Limit lengths
+                $question = mb_substr($question, 0, 500);
+                $answer = mb_substr($answer, 0, 5000);
+
+                $id = $db->insert(
+                    "INSERT INTO product_faqs (product_id, question, answer, sort_order) VALUES (?, ?, ?, ?)",
+                    [$productId, $question, $answer, $sortOrder]
+                );
+                $ids[] = $id;
+            }
+
+            $db->commit();
+            $this->json(['success' => true, 'ids' => $ids, 'count' => count($ids)]);
+        } catch (\Exception $e) {
+            $db->rollback();
+            error_log("FAQ save error: " . $e->getMessage());
+            $this->json(['success' => false, 'error' => 'Database error']);
         }
     }
 }

@@ -12,6 +12,7 @@
     <a href="#images" class="tab" onclick="showTab('images', this)">Images (<?php echo count($images); ?>)</a>
     <a href="#options" class="tab" onclick="showTab('options', this)">Options & Variants</a>
     <a href="#shipping" class="tab" onclick="showTab('shipping', this)">Shipping</a>
+    <a href="#faq" class="tab" onclick="showTab('faq', this)">FAQ (<?php echo count($faqs ?? []); ?>)</a>
 </div>
 
 <!-- Details Tab -->
@@ -765,6 +766,43 @@
             Save Shipping Settings
         </button>
     </form>
+</div>
+
+<!-- FAQ Tab -->
+<div id="tab-faq" class="tab-content" style="display: none;">
+    <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <div>
+            <h3 style="margin: 0;">Product FAQ</h3>
+            <p style="color: #888; font-size: 0.85rem; margin: 0.25rem 0 0;">Add frequently asked questions to help customers and improve AI search visibility.</p>
+        </div>
+        <button type="button" class="btn btn-primary" onclick="addFaqItem()">+ Add FAQ</button>
+    </div>
+
+    <div id="faqItems">
+        <?php if (!empty($faqs)): ?>
+            <?php foreach ($faqs as $faq): ?>
+            <div class="faq-item" data-id="<?php echo $faq['id']; ?>" style="background: #f8f9fa; border: 1px solid #e5e7eb; border-radius: 8px; padding: 1rem; margin-bottom: 0.75rem; position: relative;">
+                <div style="display: flex; gap: 0.5rem; align-items: flex-start;">
+                    <span class="faq-drag-handle" style="cursor: grab; padding: 0.25rem; color: #aaa; font-size: 1.2rem;" title="Drag to reorder">&#9776;</span>
+                    <div style="flex: 1;">
+                        <label style="font-weight: 600; font-size: 0.85rem; color: #555;">Question</label>
+                        <input type="text" class="form-input faq-question" value="<?php echo escape($faq['question']); ?>" placeholder="e.g. What size should I order?" style="width: 100%; margin-bottom: 0.5rem;">
+                        <label style="font-weight: 600; font-size: 0.85rem; color: #555;">Answer</label>
+                        <textarea class="form-input faq-answer" rows="3" placeholder="Provide a helpful, detailed answer..." style="width: 100%;"><?php echo escape($faq['answer']); ?></textarea>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-danger" onclick="deleteFaqItem(this)" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" title="Delete">&times;</button>
+                </div>
+            </div>
+            <?php endforeach; ?>
+        <?php endif; ?>
+    </div>
+
+    <div id="faqEmpty" style="text-align: center; padding: 2rem; color: #aaa; <?php echo !empty($faqs) ? 'display:none;' : ''; ?>">
+        No FAQ items yet. Click "+ Add FAQ" to create one.
+    </div>
+
+    <button type="button" class="btn btn-primary" onclick="saveFaqs()" style="margin-top: 1rem;" id="saveFaqBtn">Save FAQ</button>
+    <span id="faqSaveStatus" style="margin-left: 0.75rem; font-size: 0.85rem; color: #15803d; display: none;">Saved!</span>
 </div>
 
 <script>
@@ -1668,4 +1706,132 @@ function toggleShippingPrice(checkbox) {
         priceGroup.style.display = 'block';
     }
 }
+
+// FAQ functions
+function addFaqItem() {
+    const container = document.getElementById('faqItems');
+    const emptyMsg = document.getElementById('faqEmpty');
+    emptyMsg.style.display = 'none';
+
+    const item = document.createElement('div');
+    item.className = 'faq-item';
+    item.setAttribute('data-id', 'new');
+    item.style.cssText = 'background: #f8f9fa; border: 1px solid #e5e7eb; border-radius: 8px; padding: 1rem; margin-bottom: 0.75rem; position: relative;';
+    item.innerHTML = '<div style="display: flex; gap: 0.5rem; align-items: flex-start;">' +
+        '<span class="faq-drag-handle" style="cursor: grab; padding: 0.25rem; color: #aaa; font-size: 1.2rem;" title="Drag to reorder">&#9776;</span>' +
+        '<div style="flex: 1;">' +
+        '<label style="font-weight: 600; font-size: 0.85rem; color: #555;">Question</label>' +
+        '<input type="text" class="form-input faq-question" value="" placeholder="e.g. What size should I order?" style="width: 100%; margin-bottom: 0.5rem;">' +
+        '<label style="font-weight: 600; font-size: 0.85rem; color: #555;">Answer</label>' +
+        '<textarea class="form-input faq-answer" rows="3" placeholder="Provide a helpful, detailed answer..." style="width: 100%;"></textarea>' +
+        '</div>' +
+        '<button type="button" class="btn btn-sm btn-danger" onclick="deleteFaqItem(this)" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" title="Delete">&times;</button>' +
+        '</div>';
+    container.appendChild(item);
+    item.querySelector('.faq-question').focus();
+}
+
+function deleteFaqItem(btn) {
+    const item = btn.closest('.faq-item');
+    item.remove();
+    const remaining = document.querySelectorAll('.faq-item');
+    if (remaining.length === 0) {
+        document.getElementById('faqEmpty').style.display = '';
+    }
+}
+
+function saveFaqs() {
+    const items = document.querySelectorAll('.faq-item');
+    const faqs = [];
+    let hasError = false;
+
+    items.forEach(function(item, index) {
+        const question = item.querySelector('.faq-question').value.trim();
+        const answer = item.querySelector('.faq-answer').value.trim();
+        if (question && answer) {
+            faqs.push({
+                id: item.getAttribute('data-id'),
+                question: question,
+                answer: answer,
+                sort_order: index
+            });
+        } else if (question || answer) {
+            hasError = true;
+            item.style.borderColor = '#ef4444';
+        }
+    });
+
+    if (hasError) {
+        alert('Each FAQ item needs both a question and an answer.');
+        return;
+    }
+
+    const btn = document.getElementById('saveFaqBtn');
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+
+    fetch('/admin/products/faq/save', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken},
+        body: JSON.stringify({product_id: productId, faqs: faqs, csrf_token: csrfToken})
+    })
+    .then(r => r.json())
+    .then(data => {
+        btn.disabled = false;
+        btn.textContent = 'Save FAQ';
+        if (data.success) {
+            const status = document.getElementById('faqSaveStatus');
+            status.style.display = 'inline';
+            setTimeout(() => status.style.display = 'none', 3000);
+            // Update data-ids for newly created items
+            if (data.ids) {
+                const faqItems = document.querySelectorAll('.faq-item');
+                data.ids.forEach(function(id, i) {
+                    if (faqItems[i]) faqItems[i].setAttribute('data-id', id);
+                });
+            }
+            // Update tab count
+            const faqTab = document.querySelector('.tab[onclick*="faq"]');
+            if (faqTab) faqTab.textContent = 'FAQ (' + faqs.length + ')';
+        } else {
+            alert('Error saving FAQ: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(function() {
+        btn.disabled = false;
+        btn.textContent = 'Save FAQ';
+        alert('Network error saving FAQ');
+    });
+}
+
+// Simple FAQ drag-and-drop reordering
+(function() {
+    let dragEl = null;
+    document.addEventListener('mousedown', function(e) {
+        if (e.target.classList.contains('faq-drag-handle')) {
+            dragEl = e.target.closest('.faq-item');
+            dragEl.style.opacity = '0.5';
+        }
+    });
+    document.addEventListener('mousemove', function(e) {
+        if (!dragEl) return;
+        const items = document.querySelectorAll('.faq-item');
+        const container = document.getElementById('faqItems');
+        for (const item of items) {
+            if (item === dragEl) continue;
+            const rect = item.getBoundingClientRect();
+            if (e.clientY < rect.top + rect.height / 2) {
+                container.insertBefore(dragEl, item);
+                return;
+            }
+        }
+        container.appendChild(dragEl);
+    });
+    document.addEventListener('mouseup', function() {
+        if (dragEl) {
+            dragEl.style.opacity = '1';
+            dragEl = null;
+        }
+    });
+})();
 </script>

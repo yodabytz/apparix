@@ -497,6 +497,7 @@ $router->post('/admin/products/remove-featured', 'Admin\\ProductController', 're
 $router->post('/admin/products/reorder', 'Admin\\ProductController', 'reorderProducts');
 $router->post('/admin/products/bulk-action', 'Admin\\ProductController', 'bulkAction');
 $router->get('/admin/products/stats', 'Admin\\ProductController', 'stats');
+$router->post('/admin/products/faq/save', 'Admin\\ProductController', 'saveFaq');
 
 // Admin customers routes
 $router->get('/admin/customers', 'Admin\\CustomerController', 'index');

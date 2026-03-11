@@ -502,6 +502,38 @@
         </div>
         <?php endif; ?>
 
+        <!-- Product FAQ Section -->
+        <?php if (!empty($faqs)): ?>
+        <div class="product-faq-section" style="margin-bottom: 2rem;">
+            <h2>Frequently Asked Questions</h2>
+            <div class="faq-accordion">
+                <?php foreach ($faqs as $faq): ?>
+                <div class="faq-accordion-item">
+                    <button type="button" class="faq-accordion-header" onclick="this.parentElement.classList.toggle('open')">
+                        <span><?php echo escape($faq['question']); ?></span>
+                        <svg class="faq-chevron" width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
+                    </button>
+                    <div class="faq-accordion-body">
+                        <p><?php echo nl2br(escape($faq['answer'])); ?></p>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        <style>
+        .product-faq-section h2 { font-size: 1.4rem; margin-bottom: 1rem; }
+        .faq-accordion-item { border-bottom: 1px solid #e5e7eb; }
+        .faq-accordion-item:first-child { border-top: 1px solid #e5e7eb; }
+        .faq-accordion-header { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 1rem 0; background: none; border: none; cursor: pointer; font-size: 1rem; font-weight: 500; color: #1f2937; text-align: left; }
+        .faq-accordion-header:hover { color: var(--primary-color, #FF68C5); }
+        .faq-chevron { transition: transform 0.2s; flex-shrink: 0; margin-left: 1rem; color: #9ca3af; }
+        .faq-accordion-item.open .faq-chevron { transform: rotate(180deg); }
+        .faq-accordion-body { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
+        .faq-accordion-item.open .faq-accordion-body { max-height: 500px; }
+        .faq-accordion-body p { padding: 0 0 1rem; margin: 0; color: #4b5563; line-height: 1.7; font-size: 0.95rem; }
+        </style>
+        <?php endif; ?>
+
         <!-- Reviews Section -->
         <div class="reviews-section" id="reviewsSection">
             <h2>Customer Reviews</h2>

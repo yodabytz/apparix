@@ -86,8 +86,20 @@ class ProductController extends Controller
         $reviewModel = new Review();
         $reviews = $reviewModel->getProductReviews($product['id'], 50);
 
+        // Get product FAQs
+        $db = $this->productModel->getDb();
+        $faqs = [];
+        try {
+            $faqs = $db->select(
+                "SELECT question, answer FROM product_faqs WHERE product_id = ? AND is_active = 1 ORDER BY sort_order ASC",
+                [$product['id']]
+            );
+        } catch (\Exception $e) {
+            // Table may not exist on older installs
+        }
+
         // Build JSON-LD structured data
-        $jsonLd = $this->buildProductJsonLd($product, $ogImage, $reviews);
+        $jsonLd = $this->buildProductJsonLd($product, $ogImage, $reviews, $faqs);
 
         // Get latest version for license products
         $latestVersion = null;
@@ -124,6 +136,7 @@ class ProductController extends Controller
             'jsonLd' => $jsonLd,
             'productBundles' => $productBundles,
             'quantityTiers' => $quantityTiers,
+            'faqs' => $faqs,
         ];
 
         $this->render('products.show', $data);
@@ -343,7 +356,7 @@ class ProductController extends Controller
     /**
      * Build JSON-LD structured data for a product
      */
-    private function buildProductJsonLd(array $product, ?string $ogImage, array $reviews = []): string
+    private function buildProductJsonLd(array $product, ?string $ogImage, array $reviews = [], array $faqs = []): string
     {
         $baseUrl = appUrl();
 
@@ -537,6 +550,25 @@ class ProductController extends Controller
                     break; // Only first video
                 }
             }
+        }
+
+        // Add FAQPage schema if product has FAQs
+        if (!empty($faqs)) {
+            $faqItems = [];
+            foreach ($faqs as $faq) {
+                $faqItems[] = [
+                    '@type' => 'Question',
+                    'name' => strip_tags($faq['question']),
+                    'acceptedAnswer' => [
+                        '@type' => 'Answer',
+                        'text' => strip_tags($faq['answer'])
+                    ]
+                ];
+            }
+            $jsonLd['@graph'][] = [
+                '@type' => 'FAQPage',
+                'mainEntity' => $faqItems
+            ];
         }
 
         return json_encode($jsonLd, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
