@@ -5,6 +5,7 @@ namespace App\Controllers\Admin;
 use App\Core\Controller;
 use App\Models\AdminUser;
 use App\Models\Bundle;
+use App\Models\Setting;
 
 class BundleController extends Controller
 {
@@ -223,6 +224,29 @@ class BundleController extends Controller
         } catch (\Exception $e) {
             $this->json(['success' => false, 'error' => $e->getMessage()]);
         }
+    }
+
+    /**
+     * Save bundle-related setting (AJAX)
+     */
+    public function saveSetting(): void
+    {
+        $this->requireValidCSRF();
+
+        $key = trim($this->post('key', ''));
+        $value = $this->post('value', '0');
+
+        $allowedKeys = ['allow_coupon_with_bundle'];
+        if (!in_array($key, $allowedKeys)) {
+            $this->json(['success' => false, 'error' => 'Invalid setting']);
+            return;
+        }
+
+        $settingModel = new Setting();
+        $settingModel->set($key, $value ? '1' : '0');
+
+        $this->adminModel->logActivity($this->admin['admin_id'], 'update_setting', 'settings', null, "Updated $key to " . ($value ? 'enabled' : 'disabled'));
+        $this->json(['success' => true]);
     }
 
     /**

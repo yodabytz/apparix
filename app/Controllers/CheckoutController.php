@@ -153,6 +153,12 @@ class CheckoutController extends Controller
             $discountAmount = $appliedCoupon['discount'] ?? 0;
         }
 
+        // Prevent stacking coupon + bundle/tier discounts unless allowed
+        if (!setting('allow_coupon_with_bundle', false) && $autoDiscountTotal > 0 && $discountAmount > 0) {
+            $discountAmount = 0;
+            unset($_SESSION['applied_coupon']);
+        }
+
         // Calculate tax if enabled
         $tax = 0;
         if (setting('tax_enabled')) {
@@ -511,6 +517,12 @@ class CheckoutController extends Controller
             $bundleModel = new Bundle();
             $autoDiscounts = $bundleModel->calculateCartDiscounts($items);
             $autoDiscountAmount = array_sum(array_column($autoDiscounts, 'amount'));
+        }
+
+        // Prevent stacking coupon + bundle/tier discounts unless allowed
+        if (!setting('allow_coupon_with_bundle', false) && $autoDiscountAmount > 0 && $discountAmount > 0) {
+            $discountAmount = 0;
+            $discountCodeId = null;
         }
 
         // Cap discounts so total never goes below zero
@@ -977,6 +989,17 @@ class CheckoutController extends Controller
         // Get cart items for validation
         $items = $this->cartModel->getItems($sessionId, $userId);
         $cartTotal = $this->cartModel->getTotal($sessionId, $userId);
+
+        // Block coupon codes when bundle/tier auto-discounts are active (if setting enabled)
+        if (!setting('allow_coupon_with_bundle', false)) {
+            $bundleModel = new Bundle();
+            $autoDiscounts = $bundleModel->calculateCartDiscounts($items);
+            $autoDiscountTotal = array_sum(array_column($autoDiscounts, 'amount'));
+            if ($autoDiscountTotal > 0) {
+                $this->json(['success' => false, 'error' => 'Discount codes cannot be combined with bundle or quantity tier discounts already applied to your cart']);
+                return;
+            }
+        }
 
         // Check if this is a popup coupon (exit-intent discount)
         $popupCouponModel = new PopupCoupon();

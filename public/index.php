@@ -511,6 +511,7 @@ $router->get('/admin/bundles/:id/edit', 'Admin\\BundleController', 'edit');
 $router->post('/admin/bundles/update', 'Admin\\BundleController', 'update');
 $router->post('/admin/bundles/delete', 'Admin\\BundleController', 'delete');
 $router->get('/admin/bundles/search-products', 'Admin\\BundleController', 'searchProducts');
+$router->post('/admin/bundles/setting', 'Admin\\BundleController', 'saveSetting');
 
 // Admin coupon routes
 $router->get('/admin/coupons', 'Admin\\CouponController', 'index');

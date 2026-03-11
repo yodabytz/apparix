@@ -3,6 +3,19 @@
     <a href="/admin/bundles/create" class="btn btn-primary">+ Create Bundle</a>
 </div>
 
+<div class="admin-card" style="margin-bottom: 1.5rem; padding: 1rem 1.25rem;">
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+        <div>
+            <strong>Allow discount codes with bundle/tier discounts</strong>
+            <p style="margin: 0.25rem 0 0; font-size: 0.85rem; color: var(--admin-text-light);">When disabled, customers cannot combine coupon codes with bundle or quantity tier discounts.</p>
+        </div>
+        <label class="toggle-switch">
+            <input type="checkbox" id="allowCouponWithBundle" <?php echo setting('allow_coupon_with_bundle', false) ? 'checked' : ''; ?> onchange="toggleBundleCouponSetting(this.checked)">
+            <span class="toggle-slider"></span>
+        </label>
+    </div>
+</div>
+
 <div class="admin-card">
     <?php if (empty($bundles)): ?>
         <div class="empty-state">
@@ -76,6 +89,24 @@
 <script>
 const csrfToken = '<?php echo csrfToken(); ?>';
 
+function toggleBundleCouponSetting(enabled) {
+    fetch('/admin/bundles/setting', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: '_csrf_token=' + encodeURIComponent(csrfToken) + '&key=allow_coupon_with_bundle&value=' + (enabled ? '1' : '0')
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (!data.success) {
+            alert(data.error || 'Failed to save setting');
+            document.getElementById('allowCouponWithBundle').checked = !enabled;
+        }
+    });
+}
+
 function deleteBundle(id, name) {
     if (!confirm('Are you sure you want to delete bundle "' + name + '"?')) return;
 
@@ -108,4 +139,10 @@ function deleteBundle(id, name) {
 }
 .badge-info { background: #17a2b8; color: white; }
 .text-danger { color: #ef4444; }
+.toggle-switch { position: relative; display: inline-block; width: 48px; height: 26px; flex-shrink: 0; }
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.toggle-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #ccc; border-radius: 26px; transition: 0.3s; }
+.toggle-slider:before { content: ""; position: absolute; height: 20px; width: 20px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.3s; }
+.toggle-switch input:checked + .toggle-slider { background: #22c55e; }
+.toggle-switch input:checked + .toggle-slider:before { transform: translateX(22px); }
 </style>
