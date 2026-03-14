@@ -1,0 +1,6 @@
+ALTER TABLE themes ADD COLUMN IF NOT EXISTS hero_image_opacity DECIMAL(3,2) NOT NULL DEFAULT 1.00;
+ALTER TABLE themes ADD COLUMN IF NOT EXISTS hero_image_position VARCHAR(50) NOT NULL DEFAULT 'center center';
+ALTER TABLE themes ADD COLUMN IF NOT EXISTS navbar_bg_image_opacity DECIMAL(3,2) NOT NULL DEFAULT 1.00;
+ALTER TABLE themes ADD COLUMN IF NOT EXISTS navbar_bg_image_position VARCHAR(50) NOT NULL DEFAULT 'center center';
+ALTER TABLE themes ADD COLUMN IF NOT EXISTS footer_bg_image_opacity DECIMAL(3,2) NOT NULL DEFAULT 1.00;
+ALTER TABLE themes ADD COLUMN IF NOT EXISTS footer_bg_image_position VARCHAR(50) NOT NULL DEFAULT 'center center';

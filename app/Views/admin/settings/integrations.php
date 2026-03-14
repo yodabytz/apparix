@@ -178,6 +178,49 @@
                 </div>
             </div>
 
+            <!-- Shipping & Tracking -->
+            <div class="settings-card">
+                <div class="card-header">
+                    <div class="card-icon" style="background: linear-gradient(135deg, #059669, #10b981);">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+                            <path d="M1 3h15v13H1z"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
+                        </svg>
+                    </div>
+                    <h2>Shipping & Tracking</h2>
+                </div>
+
+                <p style="font-size: 0.85rem; color: var(--admin-text-light, #6b7280); margin-bottom: 1rem;">
+                    Automatically update order status to "delivered" when the carrier confirms delivery. Select a tracking provider and enter your API key.
+                </p>
+
+                <div class="form-group">
+                    <label for="tracking_provider">Tracking Provider</label>
+                    <select name="tracking_provider" id="tracking_provider" class="form-control">
+                        <option value="">None (disabled)</option>
+                        <?php foreach ($trackingProviders as $slug => $info): ?>
+                        <option value="<?php echo escape($slug); ?>"<?php echo ($settings['tracking_provider'] ?? '') === $slug ? ' selected' : ''; ?>>
+                            <?php echo escape($info['name']); ?>
+                        </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
+                <div id="tracking-provider-info" style="margin-bottom: 1rem; padding: 8px 12px; background: var(--admin-bg-alt, #f3f4f6); border-radius: 6px; font-size: 0.8rem; color: var(--admin-text-light, #6b7280); display: none;"></div>
+
+                <div class="form-group">
+                    <label for="tracking_api_key">API Key</label>
+                    <input type="text" name="tracking_api_key" id="tracking_api_key"
+                           value="<?php echo escape($settings['tracking_api_key'] ?? ''); ?>"
+                           class="form-control" placeholder="Enter your tracking provider API key">
+                </div>
+
+                <?php if (!empty($settings['tracking_api_key']) && !empty($settings['tracking_provider'])): ?>
+                <div style="margin-top: 0.5rem; padding: 8px 12px; background: #d1fae5; border-radius: 6px; font-size: 0.8rem; color: #065f46;">
+                    Tracking is active via <?php echo escape($trackingProviders[$settings['tracking_provider']]['name'] ?? $settings['tracking_provider']); ?>. Shipped orders will be auto-updated to "delivered" when the carrier confirms delivery.
+                </div>
+                <?php endif; ?>
+            </div>
+
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary">Save All Settings</button>
             </div>
@@ -472,6 +515,24 @@ document.addEventListener('DOMContentLoaded', function() {
             submitBtn.textContent = originalText;
         });
     });
+
+    // Tracking provider info display
+    var providerSelect = document.getElementById('tracking_provider');
+    var providerInfo = document.getElementById('tracking-provider-info');
+    var providers = <?php echo json_encode($trackingProviders); ?>;
+
+    function updateProviderInfo() {
+        var slug = providerSelect.value;
+        if (slug && providers[slug]) {
+            providerInfo.innerHTML = providers[slug].description + ' <a href="' + providers[slug].url + '" target="_blank" rel="noopener">Get API key &rarr;</a>';
+            providerInfo.style.display = 'block';
+        } else {
+            providerInfo.style.display = 'none';
+        }
+    }
+
+    providerSelect.addEventListener('change', updateProviderInfo);
+    updateProviderInfo();
 
     function showNotification(message, type) {
         const existing = document.querySelector('.alert');

@@ -566,6 +566,7 @@ class OrderController extends Controller
         }
 
         $excludeStatuses = "'cancelled','refunded'";
+        $hideFake = "AND o.customer_email NOT LIKE '%@fake.local'";
 
         // Build period-based queries
         $periodData = [];
@@ -582,7 +583,7 @@ class OrderController extends Controller
                         COALESCE(SUM(o.actual_shipping_cost), 0) AS shipping_cost,
                         COUNT(o.id) AS order_count
                      FROM orders o
-                     WHERE o.status NOT IN ({$excludeStatuses})
+                     WHERE o.status NOT IN ({$excludeStatuses}) {$hideFake}
                        AND o.created_at >= ? AND o.created_at < DATE_ADD(?, INTERVAL 1 DAY)",
                     [$monthStart, $monthEnd]
                 );
@@ -593,7 +594,7 @@ class OrderController extends Controller
                      JOIN orders o ON o.id = oi.order_id
                      LEFT JOIN product_variants pv ON pv.id = oi.variant_id
                      LEFT JOIN products p ON p.id = oi.product_id
-                     WHERE o.status NOT IN ({$excludeStatuses})
+                     WHERE o.status NOT IN ({$excludeStatuses}) {$hideFake}
                        AND o.created_at >= ? AND o.created_at < DATE_ADD(?, INTERVAL 1 DAY)",
                     [$monthStart, $monthEnd]
                 );
@@ -601,7 +602,7 @@ class OrderController extends Controller
                 $shippingCostOnly = $db->selectOne(
                     "SELECT COALESCE(SUM(o.actual_shipping_cost), 0) AS shipping_cost
                      FROM orders o
-                     WHERE o.status NOT IN ({$excludeStatuses})
+                     WHERE o.status NOT IN ({$excludeStatuses}) {$hideFake}
                        AND o.actual_shipping_cost IS NOT NULL
                        AND o.created_at >= ? AND o.created_at < DATE_ADD(?, INTERVAL 1 DAY)",
                     [$monthStart, $monthEnd]
@@ -634,7 +635,7 @@ class OrderController extends Controller
                         COALESCE(SUM(o.total), 0) AS revenue,
                         COUNT(o.id) AS order_count
                      FROM orders o
-                     WHERE o.status NOT IN ({$excludeStatuses})
+                     WHERE o.status NOT IN ({$excludeStatuses}) {$hideFake}
                        AND o.created_at >= ? AND o.created_at < DATE_ADD(?, INTERVAL 1 DAY)",
                     [$yearStart, $yearEnd]
                 );
@@ -645,7 +646,7 @@ class OrderController extends Controller
                      JOIN orders o ON o.id = oi.order_id
                      LEFT JOIN product_variants pv ON pv.id = oi.variant_id
                      LEFT JOIN products p ON p.id = oi.product_id
-                     WHERE o.status NOT IN ({$excludeStatuses})
+                     WHERE o.status NOT IN ({$excludeStatuses}) {$hideFake}
                        AND o.created_at >= ? AND o.created_at < DATE_ADD(?, INTERVAL 1 DAY)",
                     [$yearStart, $yearEnd]
                 );
@@ -653,7 +654,7 @@ class OrderController extends Controller
                 $shippingCostOnly = $db->selectOne(
                     "SELECT COALESCE(SUM(o.actual_shipping_cost), 0) AS shipping_cost
                      FROM orders o
-                     WHERE o.status NOT IN ({$excludeStatuses})
+                     WHERE o.status NOT IN ({$excludeStatuses}) {$hideFake}
                        AND o.actual_shipping_cost IS NOT NULL
                        AND o.created_at >= ? AND o.created_at < DATE_ADD(?, INTERVAL 1 DAY)",
                     [$yearStart, $yearEnd]
@@ -685,7 +686,7 @@ class OrderController extends Controller
                         COALESCE(SUM(o.total), 0) AS revenue,
                         COUNT(o.id) AS order_count
                      FROM orders o
-                     WHERE o.status NOT IN ({$excludeStatuses})
+                     WHERE o.status NOT IN ({$excludeStatuses}) {$hideFake}
                        AND DATE(o.created_at) = ?",
                     [$date]
                 );
@@ -696,7 +697,7 @@ class OrderController extends Controller
                      JOIN orders o ON o.id = oi.order_id
                      LEFT JOIN product_variants pv ON pv.id = oi.variant_id
                      LEFT JOIN products p ON p.id = oi.product_id
-                     WHERE o.status NOT IN ({$excludeStatuses})
+                     WHERE o.status NOT IN ({$excludeStatuses}) {$hideFake}
                        AND DATE(o.created_at) = ?",
                     [$date]
                 );
@@ -704,7 +705,7 @@ class OrderController extends Controller
                 $shippingCostOnly = $db->selectOne(
                     "SELECT COALESCE(SUM(o.actual_shipping_cost), 0) AS shipping_cost
                      FROM orders o
-                     WHERE o.status NOT IN ({$excludeStatuses})
+                     WHERE o.status NOT IN ({$excludeStatuses}) {$hideFake}
                        AND o.actual_shipping_cost IS NOT NULL
                        AND DATE(o.created_at) = ?",
                     [$date]
@@ -737,7 +738,7 @@ class OrderController extends Controller
                         COALESCE(SUM(o.total), 0) AS revenue,
                         COUNT(o.id) AS order_count
                      FROM orders o
-                     WHERE o.status NOT IN ({$excludeStatuses})
+                     WHERE o.status NOT IN ({$excludeStatuses}) {$hideFake}
                        AND o.created_at >= ? AND o.created_at < DATE_ADD(?, INTERVAL 1 DAY)",
                     [$weekStart, $weekEnd]
                 );
@@ -748,7 +749,7 @@ class OrderController extends Controller
                      JOIN orders o ON o.id = oi.order_id
                      LEFT JOIN product_variants pv ON pv.id = oi.variant_id
                      LEFT JOIN products p ON p.id = oi.product_id
-                     WHERE o.status NOT IN ({$excludeStatuses})
+                     WHERE o.status NOT IN ({$excludeStatuses}) {$hideFake}
                        AND o.created_at >= ? AND o.created_at < DATE_ADD(?, INTERVAL 1 DAY)",
                     [$weekStart, $weekEnd]
                 );
@@ -756,7 +757,7 @@ class OrderController extends Controller
                 $shippingCostOnly = $db->selectOne(
                     "SELECT COALESCE(SUM(o.actual_shipping_cost), 0) AS shipping_cost
                      FROM orders o
-                     WHERE o.status NOT IN ({$excludeStatuses})
+                     WHERE o.status NOT IN ({$excludeStatuses}) {$hideFake}
                        AND o.actual_shipping_cost IS NOT NULL
                        AND o.created_at >= ? AND o.created_at < DATE_ADD(?, INTERVAL 1 DAY)",
                     [$weekStart, $weekEnd]
@@ -801,7 +802,7 @@ class OrderController extends Controller
              JOIN orders o ON o.id = oi.order_id
              LEFT JOIN product_variants pv ON pv.id = oi.variant_id
              LEFT JOIN products p ON p.id = oi.product_id
-             WHERE o.status NOT IN ({$excludeStatuses})
+             WHERE o.status NOT IN ({$excludeStatuses}) {$hideFake}
              GROUP BY oi.product_id, oi.variant_id, oi.product_name, oi.variant_name
              ORDER BY total_revenue DESC
              LIMIT 10"
@@ -817,7 +818,7 @@ class OrderController extends Controller
              JOIN orders o ON o.id = oi.order_id
              LEFT JOIN product_variants pv ON pv.id = oi.variant_id
              LEFT JOIN products p ON p.id = oi.product_id
-             WHERE o.status NOT IN ({$excludeStatuses})"
+             WHERE o.status NOT IN ({$excludeStatuses}) {$hideFake}"
         );
 
         // Shipping cost coverage
@@ -827,7 +828,8 @@ class OrderController extends Controller
                 SUM(CASE WHEN actual_shipping_cost IS NOT NULL THEN 1 ELSE 0 END) AS orders_with_shipping_cost,
                 SUM(CASE WHEN actual_shipping_cost IS NULL THEN 1 ELSE 0 END) AS orders_without_shipping_cost
              FROM orders
-             WHERE status NOT IN ({$excludeStatuses})"
+             WHERE status NOT IN ({$excludeStatuses})
+               AND customer_email NOT LIKE '%@fake.local'"
         );
 
         $this->render('admin.orders.profits', [

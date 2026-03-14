@@ -59,7 +59,16 @@ if (!$heroShowGlow) $heroClasses[] = 'hero-no-glow';
 if (!$heroShowShimmer) $heroClasses[] = 'hero-no-shimmer';
 ?>
 <!-- Hero Section -->
-<section class="<?php echo escape(implode(' ', $heroClasses)); ?>"<?php if ($heroBgStyle === 'image' && $heroBgImage): ?> style="background-image: url('<?php echo escape($heroBgImage); ?>');"<?php endif; ?>>
+<?php
+$heroInlineStyle = '';
+if ($heroBgStyle === 'image' && $heroBgImage) {
+    $__activeTheme = $__ts->getActiveTheme();
+    $heroImgPos = $__activeTheme['hero_image_position'] ?? 'center center';
+    $heroImgOpacity = $__activeTheme['hero_image_opacity'] ?? 1;
+    $heroInlineStyle = "--hero-bg-url: url('" . escape($heroBgImage) . "'); --hero-bg-position: {$heroImgPos}; --hero-bg-opacity: {$heroImgOpacity};";
+}
+?>
+<section class="<?php echo escape(implode(' ', $heroClasses)); ?>"<?php if ($heroInlineStyle): ?> style="<?php echo $heroInlineStyle; ?>"<?php endif; ?>>
     <div class="hero-content">
         <?php if ($holidayBadge): ?>
         <div class="holiday-badge holiday-badge-<?php echo escape($holidayHeroKey); ?>">

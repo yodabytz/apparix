@@ -72,12 +72,18 @@ class TwoFactorController extends Controller
             return;
         }
 
-        // Generate new secret and backup codes
-        $setupData = $this->adminModel->init2FASetup($adminId);
-        $secret = $setupData['secret'];
-        $backupCodes = $setupData['backup_codes'];
+        // Reuse existing pending secret if one exists (prevents regenerating on page refresh)
+        $existingSecret = $this->adminModel->get2FASecret($adminId);
+        if ($existingSecret) {
+            $secret = $existingSecret;
+            $backupCodes = null; // Already stored, show message to user
+        } else {
+            $setupData = $this->adminModel->init2FASetup($adminId);
+            $secret = $setupData['secret'];
+            $backupCodes = $setupData['backup_codes'];
+        }
 
-        $provisioningUri = TOTP::getProvisioningUri($secret, $this->admin['email']);
+        $provisioningUri = TOTP::getProvisioningUri($secret, $this->admin['email'], appName());
         $qrCodeUrl = TOTP::getQRCodeUrl($provisioningUri);
 
         $this->render('admin.two-factor.setup', [

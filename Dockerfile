@@ -70,6 +70,7 @@ COPY . .
 RUN composer dump-autoload --optimize --no-dev
 
 # Copy Docker configs
+COPY docker/secunx-blocklist.conf /etc/nginx/secuNX/blocklist.conf
 COPY docker/nginx.conf /etc/nginx/http.d/default.conf
 COPY docker/php.ini /usr/local/etc/php/conf.d/apparix.ini
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
@@ -80,7 +81,8 @@ COPY docker/entrypoint.sh /entrypoint.sh
 RUN rm -rf docker/ Dockerfile .dockerignore docker-compose.yml
 
 # Create required directories
-RUN mkdir -p \
+RUN mkdir -p /etc/nginx/secuNX && \
+    mkdir -p \
     storage/logs \
     storage/sessions \
     storage/cache \

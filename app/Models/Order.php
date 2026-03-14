@@ -149,7 +149,7 @@ class Order extends Model
     public function getAllOrders(int $limit = 50, int $offset = 0, ?string $status = null, ?string $search = null): array
     {
         $params = [];
-        $where = [];
+        $where = ["o.customer_email NOT LIKE '%@fake.local'"];
 
         if ($status) {
             $where[] = "o.status = ?";
@@ -163,7 +163,7 @@ class Order extends Model
             $params[] = "%$search%";
         }
 
-        $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';
+        $whereClause = 'WHERE ' . implode(' AND ', $where);
 
         $params[] = $limit;
         $params[] = $offset;
@@ -186,7 +186,7 @@ class Order extends Model
     public function countOrders(?string $status = null, ?string $search = null): int
     {
         $params = [];
-        $where = [];
+        $where = ["customer_email NOT LIKE '%@fake.local'"];
 
         if ($status) {
             $where[] = "status = ?";
@@ -200,7 +200,7 @@ class Order extends Model
             $params[] = "%$search%";
         }
 
-        $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';
+        $whereClause = 'WHERE ' . implode(' AND ', $where);
 
         $result = $this->queryOne("SELECT COUNT(*) as total FROM {$this->table} $whereClause", $params);
         return $result['total'] ?? 0;
@@ -303,7 +303,7 @@ class Order extends Model
     public function getStatusCounts(): array
     {
         $results = $this->query(
-            "SELECT status, COUNT(*) as count FROM {$this->table} GROUP BY status"
+            "SELECT status, COUNT(*) as count FROM {$this->table} WHERE customer_email NOT LIKE '%@fake.local' GROUP BY status"
         );
 
         $counts = [
@@ -333,6 +333,7 @@ class Order extends Model
             "SELECT o.*, u.first_name, u.last_name
              FROM {$this->table} o
              LEFT JOIN users u ON o.user_id = u.id
+             WHERE o.customer_email NOT LIKE '%@fake.local'
              ORDER BY o.created_at DESC
              LIMIT ?",
             [$limit]

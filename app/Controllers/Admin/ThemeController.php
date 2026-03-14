@@ -211,7 +211,13 @@ class ThemeController extends Controller
             'logo_text_size' => $this->post('logo_text_size') ? (int)$this->post('logo_text_size') : null,
             'logo_text_weight' => $this->post('logo_text_weight') ?: null,
             'logo_text_stretch' => $this->post('logo_text_stretch') ?: null,
-            'logo_text_spacing' => $this->post('logo_text_spacing') ?: null
+            'logo_text_spacing' => $this->post('logo_text_spacing') ?: null,
+            'hero_image_opacity' => max(0.05, min(1, (float)$this->post('hero_image_opacity', 1))),
+            'hero_image_position' => $this->sanitizePosition($this->post('hero_image_position', '50% 50%')),
+            'navbar_bg_image_opacity' => max(0.05, min(1, (float)$this->post('navbar_bg_image_opacity', 1))),
+            'navbar_bg_image_position' => $this->sanitizePosition($this->post('navbar_bg_image_position', '50% 50%')),
+            'footer_bg_image_opacity' => max(0.05, min(1, (float)$this->post('footer_bg_image_opacity', 1))),
+            'footer_bg_image_position' => $this->sanitizePosition($this->post('footer_bg_image_position', '50% 50%'))
         ];
 
         // Validate colors are valid hex
@@ -621,6 +627,18 @@ class ThemeController extends Controller
         }
 
         $this->json(['success' => true, 'message' => 'Theme deleted']);
+    }
+
+    /**
+     * Sanitize a CSS position value (e.g., "50% 50%")
+     */
+    private function sanitizePosition(string $value): string
+    {
+        if (preg_match('/^(\d{1,3}%)\s+(\d{1,3}%)$/', trim($value), $m)) {
+            return $m[1] . ' ' . $m[2];
+        }
+        $valid = ['center center', 'top center', 'bottom center', 'left center', 'right center', 'top left', 'top right', 'bottom left', 'bottom right'];
+        return in_array($value, $valid) ? $value : '50% 50%';
     }
 
     /**

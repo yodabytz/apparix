@@ -207,6 +207,8 @@ class ThemeService
         $css .= "    --navbar-text: {$navbarText};\n";
         if (!empty($theme['navbar_bg_image'])) {
             $css .= "    --navbar-bg-image: url('" . $theme['navbar_bg_image'] . "');\n";
+            $css .= "    --navbar-bg-image-opacity: " . ($theme['navbar_bg_image_opacity'] ?? 1) . ";\n";
+            $css .= "    --navbar-bg-image-position: " . ($theme['navbar_bg_image_position'] ?? 'center center') . ";\n";
         }
 
         // Footer colors
@@ -216,6 +218,8 @@ class ThemeService
         $css .= "    --footer-text: {$footerText};\n";
         if (!empty($theme['footer_bg_image'])) {
             $css .= "    --footer-bg-image: url('" . $theme['footer_bg_image'] . "');\n";
+            $css .= "    --footer-bg-image-opacity: " . ($theme['footer_bg_image_opacity'] ?? 1) . ";\n";
+            $css .= "    --footer-bg-image-position: " . ($theme['footer_bg_image_position'] ?? 'center center') . ";\n";
         }
 
         // Page background color (very light tint of primary)
@@ -245,6 +249,12 @@ class ThemeService
             $midB = round(($hRgbS['b'] + $hRgbE['b']) / 2);
             $heroBgMid = sprintf('#%02x%02x%02x', $midR, $midG, $midB);
             $css .= "    --hero-bg-mid: {$heroBgMid};\n";
+        }
+
+        // Hero image opacity and position
+        if (!empty($theme['hero_image'])) {
+            $css .= "    --hero-image-opacity: " . ($theme['hero_image_opacity'] ?? 1) . ";\n";
+            $css .= "    --hero-image-position: " . ($theme['hero_image_position'] ?? 'center center') . ";\n";
         }
 
         // Color variants

@@ -174,6 +174,31 @@
                         <?php endif; ?>
                     </div>
                 </div>
+
+                <?php if (!empty($theme['hero_image'])): ?>
+                <?php $heroPos = $theme['hero_image_position'] ?? '50% 50%'; ?>
+                <div style="margin-top: 1rem; padding: 1rem; background: var(--admin-bg-alt, #f8f9fa); border-radius: 8px;">
+                    <div style="margin-bottom: 1rem;">
+                        <label for="hero-image-opacity" style="font-size: 0.85rem; font-weight: 600; color: var(--admin-text-light);">
+                            Opacity: <span id="hero-opacity-value"><?php echo ($theme['hero_image_opacity'] ?? 1); ?></span>
+                        </label>
+                        <input type="range" name="hero_image_opacity" id="hero-image-opacity"
+                               min="0.05" max="1" step="0.05"
+                               value="<?php echo ($theme['hero_image_opacity'] ?? 1); ?>"
+                               class="form-control" style="width: 100%;">
+                    </div>
+                    <div>
+                        <label style="font-size: 0.85rem; font-weight: 600; color: var(--admin-text-light);">
+                            Focal Point <span style="font-weight:400;">(click to set)</span>
+                        </label>
+                        <div class="focal-point-picker" data-input="hero_image_position" style="position:relative;cursor:crosshair;margin-top:0.5rem;border-radius:6px;overflow:hidden;height:120px;">
+                            <img src="<?php echo escape($theme['hero_image']); ?>" style="width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;">
+                            <div class="focal-dot" style="position:absolute;width:18px;height:18px;border:2px solid #fff;border-radius:50%;box-shadow:0 0 0 2px rgba(0,0,0,0.5),0 2px 8px rgba(0,0,0,0.3);transform:translate(-50%,-50%);pointer-events:none;left:<?php echo explode(' ', str_replace('%', '%', $heroPos))[0] ?? '50%'; ?>;top:<?php echo explode(' ', $heroPos)[1] ?? '50%'; ?>;"></div>
+                        </div>
+                        <input type="hidden" name="hero_image_position" value="<?php echo escape($heroPos); ?>">
+                    </div>
+                </div>
+                <?php endif; ?>
             </div>
         </div>
 
@@ -323,6 +348,31 @@
                         <button type="button" class="btn btn-danger btn-sm" id="removeNavbarBgImage">Remove</button>
                         <?php endif; ?>
                     </div>
+
+                    <?php if (!empty($theme['navbar_bg_image'])): ?>
+                    <?php $navPos = $theme['navbar_bg_image_position'] ?? '50% 50%'; ?>
+                    <div style="margin-top: 1rem; padding: 1rem; background: var(--admin-bg-alt, #f8f9fa); border-radius: 8px;">
+                        <div style="margin-bottom: 1rem;">
+                            <label for="navbar-bg-image-opacity" style="font-size: 0.85rem; font-weight: 600; color: var(--admin-text-light);">
+                                Opacity: <span id="navbar-opacity-value"><?php echo ($theme['navbar_bg_image_opacity'] ?? 1); ?></span>
+                            </label>
+                            <input type="range" name="navbar_bg_image_opacity" id="navbar-bg-image-opacity"
+                                   min="0.05" max="1" step="0.05"
+                                   value="<?php echo ($theme['navbar_bg_image_opacity'] ?? 1); ?>"
+                                   class="form-control" style="width: 100%;">
+                        </div>
+                        <div>
+                            <label style="font-size: 0.85rem; font-weight: 600; color: var(--admin-text-light);">
+                                Focal Point <span style="font-weight:400;">(click to set)</span>
+                            </label>
+                            <div class="focal-point-picker" data-input="navbar_bg_image_position" style="position:relative;cursor:crosshair;margin-top:0.5rem;border-radius:6px;overflow:hidden;height:60px;">
+                                <img src="<?php echo escape($theme['navbar_bg_image']); ?>" style="width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;">
+                                <div class="focal-dot" style="position:absolute;width:18px;height:18px;border:2px solid #fff;border-radius:50%;box-shadow:0 0 0 2px rgba(0,0,0,0.5),0 2px 8px rgba(0,0,0,0.3);transform:translate(-50%,-50%);pointer-events:none;left:<?php echo explode(' ', $navPos)[0] ?? '50%'; ?>;top:<?php echo explode(' ', $navPos)[1] ?? '50%'; ?>;"></div>
+                            </div>
+                            <input type="hidden" name="navbar_bg_image_position" value="<?php echo escape($navPos); ?>">
+                        </div>
+                    </div>
+                    <?php endif; ?>
                 </div>
             </div>
 
@@ -378,6 +428,31 @@
                         <button type="button" class="btn btn-danger btn-sm" id="removeFooterBgImage">Remove</button>
                         <?php endif; ?>
                     </div>
+
+                    <?php if (!empty($theme['footer_bg_image'])): ?>
+                    <?php $footPos = $theme['footer_bg_image_position'] ?? '50% 50%'; ?>
+                    <div style="margin-top: 1rem; padding: 1rem; background: var(--admin-bg-alt, #f8f9fa); border-radius: 8px;">
+                        <div style="margin-bottom: 1rem;">
+                            <label for="footer-bg-image-opacity" style="font-size: 0.85rem; font-weight: 600; color: var(--admin-text-light);">
+                                Opacity: <span id="footer-opacity-value"><?php echo ($theme['footer_bg_image_opacity'] ?? 1); ?></span>
+                            </label>
+                            <input type="range" name="footer_bg_image_opacity" id="footer-bg-image-opacity"
+                                   min="0.05" max="1" step="0.05"
+                                   value="<?php echo ($theme['footer_bg_image_opacity'] ?? 1); ?>"
+                                   class="form-control" style="width: 100%;">
+                        </div>
+                        <div>
+                            <label style="font-size: 0.85rem; font-weight: 600; color: var(--admin-text-light);">
+                                Focal Point <span style="font-weight:400;">(click to set)</span>
+                            </label>
+                            <div class="focal-point-picker" data-input="footer_bg_image_position" style="position:relative;cursor:crosshair;margin-top:0.5rem;border-radius:6px;overflow:hidden;height:80px;">
+                                <img src="<?php echo escape($theme['footer_bg_image']); ?>" style="width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;">
+                                <div class="focal-dot" style="position:absolute;width:18px;height:18px;border:2px solid #fff;border-radius:50%;box-shadow:0 0 0 2px rgba(0,0,0,0.5),0 2px 8px rgba(0,0,0,0.3);transform:translate(-50%,-50%);pointer-events:none;left:<?php echo explode(' ', $footPos)[0] ?? '50%'; ?>;top:<?php echo explode(' ', $footPos)[1] ?? '50%'; ?>;"></div>
+                            </div>
+                            <input type="hidden" name="footer_bg_image_position" value="<?php echo escape($footPos); ?>">
+                        </div>
+                    </div>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
@@ -1230,6 +1305,55 @@ document.addEventListener('DOMContentLoaded', function() {
     if (headerOpacitySlider && headerOpacityLabel) {
         headerOpacitySlider.addEventListener('input', function() { headerOpacityLabel.textContent = this.value; });
     }
+
+    // ── Image opacity sliders ──
+    [['hero-image-opacity', 'hero-opacity-value'], ['navbar-bg-image-opacity', 'navbar-opacity-value'], ['footer-bg-image-opacity', 'footer-opacity-value']].forEach(function(pair) {
+        var slider = document.getElementById(pair[0]);
+        var label = document.getElementById(pair[1]);
+        if (slider && label) {
+            slider.addEventListener('input', function() { label.textContent = this.value; });
+        }
+    });
+
+    // ── Focal point pickers ──
+    document.querySelectorAll('.focal-point-picker').forEach(function(picker) {
+        var inputName = picker.getAttribute('data-input');
+        var input = document.querySelector('input[name="' + inputName + '"]');
+        var dot = picker.querySelector('.focal-dot');
+        var dragging = false;
+
+        function setPosition(e) {
+            var rect = picker.getBoundingClientRect();
+            var x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+            var y = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+            var xPct = Math.round(x * 100) + '%';
+            var yPct = Math.round(y * 100) + '%';
+            dot.style.left = xPct;
+            dot.style.top = yPct;
+            input.value = xPct + ' ' + yPct;
+        }
+
+        picker.addEventListener('mousedown', function(e) {
+            e.preventDefault();
+            dragging = true;
+            setPosition(e);
+        });
+        document.addEventListener('mousemove', function(e) {
+            if (dragging) { e.preventDefault(); setPosition(e); }
+        });
+        document.addEventListener('mouseup', function() { dragging = false; });
+
+        // Touch support
+        picker.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            dragging = true;
+            setPosition(e.touches[0]);
+        }, {passive: false});
+        document.addEventListener('touchmove', function(e) {
+            if (dragging) { setPosition(e.touches[0]); }
+        }, {passive: true});
+        document.addEventListener('touchend', function() { dragging = false; });
+    });
 
     // ── Holiday preview link ──
     var previewHolidayBtn = document.getElementById('preview-holiday-btn');

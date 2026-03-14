@@ -117,7 +117,13 @@ class Theme extends Model
             'effect_settings' => $customizations['effect_settings'] ?? $preset['effect_settings'] ?? json_encode($this->getDefaultEffectSettings()),
             'theme_logo' => $customizations['theme_logo'] ?? $preset['theme_logo'] ?? null,
             'hero_image' => $customizations['hero_image'] ?? $preset['hero_image'] ?? null,
-            'logo_height' => $customizations['logo_height'] ?? $preset['logo_height'] ?? null
+            'logo_height' => $customizations['logo_height'] ?? $preset['logo_height'] ?? null,
+            'hero_image_opacity' => $customizations['hero_image_opacity'] ?? $preset['hero_image_opacity'] ?? 1,
+            'hero_image_position' => $customizations['hero_image_position'] ?? $preset['hero_image_position'] ?? '50% 50%',
+            'navbar_bg_image_opacity' => $customizations['navbar_bg_image_opacity'] ?? $preset['navbar_bg_image_opacity'] ?? 1,
+            'navbar_bg_image_position' => $customizations['navbar_bg_image_position'] ?? $preset['navbar_bg_image_position'] ?? '50% 50%',
+            'footer_bg_image_opacity' => $customizations['footer_bg_image_opacity'] ?? $preset['footer_bg_image_opacity'] ?? 1,
+            'footer_bg_image_position' => $customizations['footer_bg_image_position'] ?? $preset['footer_bg_image_position'] ?? '50% 50%'
         ];
 
         // Generate color variants
@@ -149,7 +155,10 @@ class Theme extends Model
             'heading_font', 'body_font', 'layout_style', 'header_style',
             'category_layout', 'sidebar_menu_mode', 'product_grid_columns', 'custom_css', 'effect_settings',
             'theme_logo', 'hero_image', 'logo_height',
-            'logo_text_weight', 'logo_text_stretch', 'logo_text_spacing'
+            'logo_text_weight', 'logo_text_stretch', 'logo_text_spacing',
+            'hero_image_opacity', 'hero_image_position',
+            'navbar_bg_image_opacity', 'navbar_bg_image_position',
+            'footer_bg_image_opacity', 'footer_bg_image_position'
         ];
 
         $updateData = array_intersect_key($data, array_flip($allowed));

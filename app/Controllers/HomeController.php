@@ -59,6 +59,7 @@ class HomeController extends Controller
              JOIN addresses a ON o.shipping_address_id = a.id
              JOIN order_items oi ON o.id = oi.order_id
              WHERE o.status NOT IN ('cancelled', 'refunded')
+               AND o.customer_email NOT LIKE '%@fake.local'
                AND o.created_at >= DATE_SUB(NOW(), INTERVAL 5 HOUR)
              ORDER BY RAND()
              LIMIT 1"

@@ -193,6 +193,22 @@
             <?php endif; ?>
         </div>
         <?php endforeach; ?>
+        <?php
+        // Show Docker note if Fail2Ban or ModSecurity are not detected
+        $missingTools = [];
+        foreach ($securityStatus as $t) {
+            if (!$t['installed'] && in_array($t['name'], ['fail2ban', 'modsecurity'])) {
+                $missingTools[] = $t['label'];
+            }
+        }
+        if ($missingTools): ?>
+        <div style="display: flex; align-items: flex-start; gap: 10px; padding: 12px 16px; border-radius: 8px; background: #eff6ff; border: 1px solid #bfdbfe; margin-top: 4px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" style="flex-shrink: 0; margin-top: 2px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            <div style="font-size: 0.8rem; color: #1e40af; line-height: 1.5;">
+                <strong>Docker installs:</strong> <?php echo implode(' and ', $missingTools); ?> are not practical to run inside a container. Install these on your host server or reverse proxy for full protection.
+            </div>
+        </div>
+        <?php endif; ?>
     </div>
 </div>
 <?php endif; ?>

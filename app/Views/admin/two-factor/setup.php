@@ -41,6 +41,8 @@
                     <span style="display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: var(--admin-primary); color: #fff; font-size: 14px; margin-right: 8px;">2</span>
                     Save Backup Codes
                 </h2>
+
+                <?php if (!empty($backupCodes)): ?>
                 <p style="color: #6c757d; font-size: 14px; margin: 10px 0 15px 36px;">
                     Save these backup codes in a secure location. Each code can only be used once as an alternative to your authenticator app.
                 </p>
@@ -63,6 +65,14 @@
                 <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; padding: 12px 14px; margin-left: 36px; font-size: 13px; color: #856404;">
                     <strong>Important:</strong> These codes will not be shown again. If you lose access to your authenticator app and don't have backup codes, you'll be locked out of your account.
                 </div>
+                <?php else: ?>
+                <p style="color: #6c757d; font-size: 14px; margin: 10px 0 15px 36px;">
+                    Your backup codes were generated when you first started setup. If you need new backup codes, you can regenerate them after enabling 2FA.
+                </p>
+                <div style="background: #e8f4fd; border: 1px solid #bee5eb; border-radius: 6px; padding: 12px 14px; margin-left: 36px; font-size: 13px; color: #0c5460;">
+                    <strong>Note:</strong> If you no longer have your backup codes, complete the setup and then use the "Regenerate Backup Codes" option from the 2FA settings page.
+                </div>
+                <?php endif; ?>
             </div>
 
             <hr style="border: none; border-top: 1px solid #e9ecef; margin: 25px 0;">

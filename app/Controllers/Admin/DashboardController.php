@@ -60,22 +60,22 @@ class DashboardController extends Controller
         // Get sales statistics
         $todaySales = $db->selectOne(
             "SELECT COALESCE(SUM(total), 0) as total, COUNT(*) as count
-             FROM orders WHERE DATE(created_at) = CURDATE() AND payment_status = 'paid'"
+             FROM orders WHERE DATE(created_at) = CURDATE() AND payment_status = 'paid' AND customer_email NOT LIKE '%@fake.local'"
         );
 
         $weekSales = $db->selectOne(
             "SELECT COALESCE(SUM(total), 0) as total, COUNT(*) as count
-             FROM orders WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) AND payment_status = 'paid'"
+             FROM orders WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) AND payment_status = 'paid' AND customer_email NOT LIKE '%@fake.local'"
         );
 
         $monthSales = $db->selectOne(
             "SELECT COALESCE(SUM(total), 0) as total, COUNT(*) as count
-             FROM orders WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) AND payment_status = 'paid'"
+             FROM orders WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) AND payment_status = 'paid' AND customer_email NOT LIKE '%@fake.local'"
         );
 
         $allTimeSales = $db->selectOne(
             "SELECT COALESCE(SUM(total), 0) as total, COUNT(*) as count
-             FROM orders WHERE payment_status = 'paid'"
+             FROM orders WHERE payment_status = 'paid' AND customer_email NOT LIKE '%@fake.local'"
         );
 
         // Get product counts
@@ -88,12 +88,12 @@ class DashboardController extends Controller
 
         // Get recent orders
         $recentOrders = $db->select(
-            "SELECT * FROM orders ORDER BY created_at DESC LIMIT 10"
+            "SELECT * FROM orders WHERE customer_email NOT LIKE '%@fake.local' ORDER BY created_at DESC LIMIT 10"
         );
 
         // Get order status breakdown
         $ordersByStatus = $db->select(
-            "SELECT status, COUNT(*) as count FROM orders GROUP BY status"
+            "SELECT status, COUNT(*) as count FROM orders WHERE customer_email NOT LIKE '%@fake.local' GROUP BY status"
         );
 
         // Get recent activity
@@ -103,7 +103,7 @@ class DashboardController extends Controller
         $dailySales = $db->select(
             "SELECT DATE(created_at) as date, COALESCE(SUM(total), 0) as total, COUNT(*) as count
              FROM orders
-             WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) AND payment_status = 'paid'
+             WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) AND payment_status = 'paid' AND customer_email NOT LIKE '%@fake.local'
              GROUP BY DATE(created_at)
              ORDER BY date ASC"
         );
@@ -121,10 +121,12 @@ class DashboardController extends Controller
                  JOIN orders ord ON oi.order_id = ord.id
                  WHERE ord.payment_status = 'paid'
                    AND p.cost IS NOT NULL
-                   AND ord.actual_shipping_cost IS NOT NULL) as product_costs
+                   AND ord.actual_shipping_cost IS NOT NULL
+                   AND ord.customer_email NOT LIKE '%@fake.local') as product_costs
              FROM orders o
              WHERE o.payment_status = 'paid'
-               AND o.actual_shipping_cost IS NOT NULL"
+               AND o.actual_shipping_cost IS NOT NULL
+               AND o.customer_email NOT LIKE '%@fake.local'"
         );
 
         // Calculate all-time profit metrics for orders with COMPLETE data
@@ -137,6 +139,7 @@ class DashboardController extends Controller
              FROM orders o
              WHERE o.payment_status = 'paid'
                AND o.actual_shipping_cost IS NOT NULL
+               AND o.customer_email NOT LIKE '%@fake.local'
                AND NOT EXISTS (
                    SELECT 1 FROM order_items oi
                    JOIN products p ON oi.product_id = p.id
@@ -152,6 +155,7 @@ class DashboardController extends Controller
              JOIN orders o ON oi.order_id = o.id
              WHERE o.payment_status = 'paid'
                AND o.actual_shipping_cost IS NOT NULL
+               AND o.customer_email NOT LIKE '%@fake.local'
                AND NOT EXISTS (
                    SELECT 1 FROM order_items oi2
                    JOIN products p2 ON oi2.product_id = p2.id
@@ -221,6 +225,7 @@ class DashboardController extends Controller
              WHERE o.payment_status = 'paid'
                AND o.actual_shipping_cost IS NULL
                AND o.status NOT IN ('cancelled', 'refunded')
+               AND o.customer_email NOT LIKE '%@fake.local'
              ORDER BY o.created_at DESC
              LIMIT 10"
         );
@@ -229,7 +234,8 @@ class DashboardController extends Controller
             "SELECT COUNT(*) as count FROM orders
              WHERE payment_status = 'paid'
                AND actual_shipping_cost IS NULL
-               AND status NOT IN ('cancelled', 'refunded')"
+               AND status NOT IN ('cancelled', 'refunded')
+               AND customer_email NOT LIKE '%@fake.local'"
         );
 
         $needsAttention = [
@@ -491,51 +497,56 @@ class DashboardController extends Controller
 
     /**
      * Detect security tools (fail2ban, ModSecurity, SecuNX)
+     * Uses process list detection (ps/pgrep) so it works without root permissions.
      */
     private function getSecurityStatus(): array
     {
         $tools = [];
+        $canExec = \function_exists('shell_exec') && !in_array('shell_exec', array_map('trim', explode(',', ini_get('disable_functions'))));
 
         // --- Fail2Ban ---
-        $f2bInstalled = file_exists('/usr/bin/fail2ban-client') || file_exists('/usr/sbin/fail2ban-client');
+        $f2bInstalled = false;
         $f2bActive = false;
         $f2bDetails = '';
-        if ($f2bInstalled) {
-            // Check PID file first (works without shell_exec or root)
+
+        // Check process list first (works without root)
+        if ($canExec) {
+            $ps = @\shell_exec('pgrep -x fail2ban-server 2>/dev/null');
+            if ($ps && trim($ps) !== '') {
+                $f2bInstalled = true;
+                $f2bActive = true;
+                $f2bDetails = 'Service running';
+            }
+            // Try to get jail count for more detail
+            if ($f2bActive) {
+                $output = @\shell_exec('fail2ban-client status 2>/dev/null');
+                if ($output && preg_match('/Number of jail:\s*(\d+)/i', $output, $m)) {
+                    $f2bDetails = $m[1] . ' active jail' . ((int)$m[1] !== 1 ? 's' : '');
+                }
+            }
+        }
+
+        // Fallback: check known file paths
+        if (!$f2bInstalled) {
+            $f2bInstalled = file_exists('/usr/bin/fail2ban-client') || file_exists('/usr/sbin/fail2ban-client');
+        }
+        if ($f2bInstalled && !$f2bActive) {
+            // Check PID file
             $f2bPid = @file_get_contents('/var/run/fail2ban/fail2ban.pid');
             if ($f2bPid && is_dir('/proc/' . trim($f2bPid))) {
                 $f2bActive = true;
                 $f2bDetails = 'Service running';
             }
-
-            // Try shell_exec for more details if available (guard against disable_functions)
-            if (!$f2bActive && \function_exists('shell_exec') && !in_array('shell_exec', array_map('trim', explode(',', ini_get('disable_functions'))))) {
-                $output = @\shell_exec('fail2ban-client status 2>/dev/null');
-                if ($output && preg_match('/Number of jail:\s*(\d+)/i', $output, $m)) {
-                    $f2bActive = (int)$m[1] > 0;
-                    $f2bDetails = $m[1] . ' active jail' . ((int)$m[1] !== 1 ? 's' : '');
-                }
-
-                // Fall back to systemctl
-                if (!$f2bActive) {
-                    $svcStatus = trim(@\shell_exec('systemctl is-active fail2ban 2>/dev/null') ?? '');
-                    if ($svcStatus === 'active') {
-                        $f2bActive = true;
-                        $f2bDetails = 'Service running';
-                    }
-                }
-            }
-
-            // Last resort: check socket existence
+            // Check socket
             if (!$f2bActive && file_exists('/var/run/fail2ban/fail2ban.sock')) {
                 $f2bActive = true;
                 $f2bDetails = 'Service running';
             }
-
-            if (!$f2bActive) {
+            if (!$f2bActive && $f2bInstalled) {
                 $f2bDetails = 'Installed but not responding';
             }
         }
+
         $tools[] = [
             'name' => 'fail2ban',
             'label' => 'Fail2Ban',
@@ -547,23 +558,44 @@ class DashboardController extends Controller
         ];
 
         // --- ModSecurity ---
-        $modsecInstalled = file_exists('/etc/nginx/modsecurity_includes.conf')
-            || file_exists('/etc/modsecurity/modsecurity.conf')
-            || file_exists('/usr/lib/nginx/modules/ngx_http_modsecurity_module.so');
+        $modsecInstalled = false;
         $modsecActive = false;
         $modsecDetails = '';
-        if ($modsecInstalled) {
-            // Check if any site nginx config has modsecurity on
+
+        // Check if nginx has modsecurity module loaded (works without root)
+        if ($canExec) {
+            $nginxV = @\shell_exec('nginx -V 2>&1');
+            if ($nginxV && stripos($nginxV, 'modsecurity') !== false) {
+                $modsecInstalled = true;
+                $modsecActive = true;
+                $modsecDetails = 'WAF module loaded in nginx';
+            }
+        }
+
+        // Fallback: check known file paths
+        if (!$modsecInstalled) {
+            $modsecInstalled = file_exists('/etc/nginx/modsecurity_includes.conf')
+                || file_exists('/etc/modsecurity/modsecurity.conf')
+                || file_exists('/usr/lib/nginx/modules/ngx_http_modsecurity_module.so');
+        }
+        if ($modsecInstalled && !$modsecActive) {
+            // Check nginx configs for modsecurity on
             $siteConfigs = glob('/etc/nginx/sites-enabled/*');
-            foreach ($siteConfigs as $conf) {
+            $httpConfigs = glob('/etc/nginx/http.d/*');
+            $allConfigs = array_merge($siteConfigs ?: [], $httpConfigs ?: []);
+            foreach ($allConfigs as $conf) {
                 $content = @file_get_contents($conf);
                 if ($content && preg_match('/modsecurity\s+on\s*;/i', $content)) {
                     $modsecActive = true;
+                    $modsecDetails = 'WAF enabled in nginx';
                     break;
                 }
             }
-            $modsecDetails = $modsecActive ? 'WAF enabled in nginx' : 'Installed but not enabled';
+            if (!$modsecActive) {
+                $modsecDetails = 'Installed but not enabled';
+            }
         }
+
         $tools[] = [
             'name' => 'modsecurity',
             'label' => 'ModSecurity',
@@ -575,21 +607,42 @@ class DashboardController extends Controller
         ];
 
         // --- SecuNX ---
-        $secunxInstalled = file_exists('/etc/nginx/secuNX/blocklist.conf')
-            || file_exists('/etc/nginx/snippets/secunx.conf');
+        $secunxInstalled = false;
         $secunxActive = false;
         $secunxDetails = '';
-        if ($secunxInstalled) {
-            // Check if snippet is included in any site config
+
+        // Check nginx config for secuNX includes (works without root via nginx -T)
+        if ($canExec) {
+            $nginxT = @\shell_exec('nginx -T 2>/dev/null');
+            if ($nginxT && (stripos($nginxT, 'secunx') !== false || stripos($nginxT, 'secuNX') !== false)) {
+                $secunxInstalled = true;
+                $secunxActive = true;
+                // Count deny rules from the dumped config
+                $denyCount = substr_count($nginxT, 'deny ');
+                if ($denyCount > 0) {
+                    $secunxDetails = number_format($denyCount) . ' IPs blocked';
+                } else {
+                    $secunxDetails = 'Active in nginx';
+                }
+            }
+        }
+
+        // Fallback: check known file paths
+        if (!$secunxInstalled) {
+            $secunxInstalled = file_exists('/etc/nginx/secuNX/blocklist.conf')
+                || file_exists('/etc/nginx/snippets/secunx.conf');
+        }
+        if ($secunxInstalled && !$secunxActive) {
             $siteConfigs = $siteConfigs ?? glob('/etc/nginx/sites-enabled/*');
-            foreach ($siteConfigs as $conf) {
+            $httpConfigs = glob('/etc/nginx/http.d/*');
+            $allConfigs = array_merge($siteConfigs ?: [], $httpConfigs ?: []);
+            foreach ($allConfigs as $conf) {
                 $content = @file_get_contents($conf);
                 if ($content && (str_contains($content, 'secunx') || str_contains($content, 'secuNX'))) {
                     $secunxActive = true;
                     break;
                 }
             }
-            // Count deny rules
             $blocklistFile = '/etc/nginx/secuNX/blocklist.conf';
             if (file_exists($blocklistFile)) {
                 $blockContent = @file_get_contents($blocklistFile);
@@ -601,6 +654,7 @@ class DashboardController extends Controller
                 }
             }
         }
+
         $tools[] = [
             'name' => 'secunx',
             'label' => 'SecuNX',

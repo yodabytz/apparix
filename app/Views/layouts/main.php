@@ -129,7 +129,7 @@
     <link rel="preconnect" href="https://js.stripe.com">
     <link rel="preload" href="<?php echo $themeService->getGoogleFontsUrl(); ?>" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link href="<?php echo $themeService->getGoogleFontsUrl(); ?>" rel="stylesheet"></noscript>
-    <link rel="stylesheet" href="/assets/css/main.css?v=118">
+    <link rel="stylesheet" href="/assets/css/main.css?v=121">
     <?php
     // Load installed theme CSS (if any)
     $installedThemeCss = \App\Core\ThemeLoader::getThemeCss();

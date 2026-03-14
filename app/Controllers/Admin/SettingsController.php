@@ -467,12 +467,15 @@ class SettingsController extends Controller
             'custom_head_scripts' => $this->settingModel->get('custom_head_scripts', ''),
             'custom_body_scripts' => $this->settingModel->get('custom_body_scripts', ''),
             'custom_footer_html' => $this->settingModel->get('custom_footer_html', ''),
+            'tracking_api_key' => $this->settingModel->get('tracking_api_key', ''),
+            'tracking_provider' => $this->settingModel->get('tracking_provider', ''),
         ];
 
         $this->render('admin.settings.integrations', [
             'title' => 'Analytics & Integrations',
             'admin' => $this->admin,
-            'settings' => $settings
+            'settings' => $settings,
+            'trackingProviders' => \App\Core\TrackingService::getAvailableProviders()
         ], 'admin');
     }
 
@@ -497,6 +500,8 @@ class SettingsController extends Controller
             'custom_head_scripts',
             'custom_body_scripts',
             'custom_footer_html',
+            'tracking_provider',
+            'tracking_api_key',
         ];
 
         foreach ($fields as $field) {

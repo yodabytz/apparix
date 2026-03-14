@@ -504,7 +504,7 @@
 
         <!-- Product FAQ Section -->
         <?php if (!empty($faqs)): ?>
-        <div class="product-faq-section" style="margin-bottom: 2rem;">
+        <div class="product-faq-section" style="margin-top: 2.5rem; margin-bottom: 2rem;">
             <h2>Frequently Asked Questions</h2>
             <div class="faq-accordion">
                 <?php foreach ($faqs as $faq): ?>

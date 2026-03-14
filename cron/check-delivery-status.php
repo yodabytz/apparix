@@ -2,53 +2,37 @@
 /**
  * Check Delivery Status Cron Job
  *
- * Polls AfterShip for tracking updates and auto-updates order status to "delivered"
+ * Polls 17track for tracking updates and auto-updates order status to "delivered"
+ * 17track auto-detects carrier — no carrier specification needed
  * Cron: Run every 2 hours
  */
 
-// Bootstrap the application
-define('BASE_PATH', dirname(__DIR__));
-require_once BASE_PATH . '/vendor/autoload.php';
-
-// Load environment variables
-$envFile = BASE_PATH . '/.env';
-if (file_exists($envFile)) {
-    $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-    foreach ($lines as $line) {
-        if (strpos($line, '#') === 0) continue;
-        if (strpos($line, '=') !== false) {
-            list($key, $value) = explode('=', $line, 2);
-            $_ENV[trim($key)] = trim($value);
-        }
-    }
-}
+require_once __DIR__ . '/bootstrap.php';
 
 use App\Core\Database;
-use App\Core\AfterShipService;
+use App\Core\TrackingService;
 use App\Core\OrderStatusEmailService;
 
 echo "[" . date('Y-m-d H:i:s') . "] Starting delivery status check...\n";
 
-$afterShip = new AfterShipService();
+$tracker = new TrackingService();
 
-if (!$afterShip->isConfigured()) {
-    echo "AfterShip not configured. Set AFTERSHIP_API_KEY in .env\n";
+if (!$tracker->isConfigured()) {
+    echo "Tracking not configured. Set API key in Admin > Settings > Integrations.\n";
     exit(0);
 }
 
 $db = Database::getInstance();
 
-// Get all shipped orders with tracking that aren't delivered yet
-$orders = $db->fetchAll(
-    "SELECT id, order_number, customer_email, shipping_first_name, billing_first_name,
-            tracking_carrier, tracking_number, status, total
+// Get all shipped orders with tracking numbers (carrier not required — 17track auto-detects)
+$orders = $db->select(
+    "SELECT id, order_number, customer_email, tracking_number, status, total
      FROM orders
      WHERE status = 'shipped'
        AND tracking_number IS NOT NULL
        AND tracking_number != ''
-       AND tracking_carrier IS NOT NULL
      ORDER BY updated_at ASC
-     LIMIT 50"
+     LIMIT 40"
 );
 
 if (empty($orders)) {
@@ -58,35 +42,71 @@ if (empty($orders)) {
 
 echo "Found " . count($orders) . " orders to check.\n";
 
+// Build tracking number list and map back to orders
+$trackingMap = [];
+$trackingNumbers = [];
+foreach ($orders as $order) {
+    $num = trim($order['tracking_number']);
+    $trackingNumbers[] = $num;
+    $trackingMap[$num] = $order;
+}
+
+// Step 1: Register all tracking numbers (17track requires registration before lookup)
+echo "Registering tracking numbers...\n";
+$regResult = $tracker->registerTracking($trackingNumbers);
+if (!$regResult['success']) {
+    echo "Registration failed: " . ($regResult['error'] ?? 'Unknown') . "\n";
+    // Continue anyway — numbers may already be registered from a previous run
+}
+
+// Brief pause to let 17track process registrations
+sleep(2);
+
+// Step 2: Get tracking status for all numbers in one batch call
+echo "Fetching tracking status...\n";
+$statusResult = $tracker->getTrackingStatus($trackingNumbers);
+
+if (!$statusResult['success']) {
+    echo "Failed to get tracking status: " . ($statusResult['error'] ?? 'Unknown') . "\n";
+    exit(1);
+}
+
 $updated = 0;
 $errors = 0;
 
-foreach ($orders as $order) {
-    echo "Checking order #{$order['order_number']} ({$order['tracking_number']})... ";
+foreach ($statusResult['results'] as $trackingNumber => $info) {
+    $order = $trackingMap[$trackingNumber] ?? null;
+    if (!$order) continue;
 
-    // Rate limit - AfterShip has limits
-    usleep(500000); // 0.5 second delay between requests
+    $status = $info['status'];
+    $carrier = $info['carrier'] ?? 'Unknown';
+    echo "  #{$order['order_number']} ({$carrier}): {$status}";
 
-    $result = $afterShip->getTracking($order['tracking_number'], $order['tracking_carrier']);
-
-    if (!$result['success']) {
-        echo "Error: " . ($result['error'] ?? 'Unknown') . "\n";
-        $errors++;
-        continue;
-    }
-
-    $tag = $result['tag'];
-    echo "Status: {$tag}";
-
-    // Check if delivered
-    if ($tag === 'Delivered') {
+    if ($status === 'Delivered') {
         echo " -> Updating to delivered... ";
 
-        // Update order status
         $db->update(
             "UPDATE orders SET status = 'delivered', updated_at = NOW() WHERE id = ?",
             [$order['id']]
         );
+
+        // Log the tracking event
+        try {
+            $db->insert(
+                "INSERT INTO tracking_events (order_id, carrier, tracking_number, status, location, description, event_time)
+                 VALUES (?, ?, ?, 'delivered', ?, ?, ?)",
+                [
+                    $order['id'],
+                    $carrier,
+                    $trackingNumber,
+                    $info['location'] ?? null,
+                    $info['description'] ?? 'Package delivered',
+                    $info['event_time'] ?? date('Y-m-d H:i:s')
+                ]
+            );
+        } catch (\Throwable $e) {
+            // tracking_events table may not exist on all installs
+        }
 
         // Send delivery notification email
         try {
@@ -97,10 +117,15 @@ foreach ($orders as $order) {
             echo "Email failed: " . $e->getMessage();
         }
 
+        // Stop tracking this number to free up quota
+        $tracker->stopTracking([$trackingNumber]);
+
         $updated++;
+    } elseif ($status === 'NotFound') {
+        echo " (not yet in carrier system)";
     }
 
     echo "\n";
 }
 
-echo "\n[" . date('Y-m-d H:i:s') . "] Complete. Updated: {$updated}, Errors: {$errors}\n";
+echo "\n[" . date('Y-m-d H:i:s') . "] Complete. Checked: " . count($statusResult['results']) . ", Updated: {$updated}\n";
