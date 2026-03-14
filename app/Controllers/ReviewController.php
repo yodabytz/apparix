@@ -127,8 +127,8 @@ class ReviewController extends Controller
             return;
         }
 
-        // Get product
-        $product = $this->productModel->findBySlug($request['product_slug']);
+        // Get product with image
+        $product = $this->productModel->getWithImages($request['product_id']);
 
         if (!$product) {
             setFlash('error', 'Product not found.');
@@ -143,9 +143,8 @@ class ReviewController extends Controller
             return;
         }
 
-        // Get product image
-        $images = $this->productModel->getImages($product['id']);
-        $product['primary_image'] = $images[0]['image_path'] ?? null;
+        // Get primary image
+        $product['primary_image'] = $this->productModel->getPrimaryImage($product['id']);
 
         $this->render('reviews/email-review', [
             'title' => 'Review ' . $product['name'],

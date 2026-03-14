@@ -270,7 +270,7 @@ class Review extends Model
             if (!$existing) {
                 $token = bin2hex(random_bytes(32));
                 $db->insert(
-                    "INSERT INTO review_requests (order_id, order_item_id, product_id, user_id, email, token, status)
+                    "INSERT INTO review_requests (order_id, order_item_id, product_id, user_id, customer_email, token, status)
                      VALUES (?, ?, ?, ?, ?, ?, 'pending')",
                     [$orderId, $item['id'], $item['product_id'], $order['user_id'], $email, $token]
                 );

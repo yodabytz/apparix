@@ -16,8 +16,8 @@ class ReviewEmailService
     {
         $fromEmail = $_ENV['MAIL_FROM'] ?? '' . storeEmail() . '';
         $fromName = $_ENV['MAIL_FROM_NAME'] ?? "Apparix";
-        $siteName = $_ENV['SITE_NAME'] ?? "Apparix";
-        $siteUrl = $_ENV['SITE_URL'] ?? '' . appUrl() . '';
+        $siteName = $_ENV['SITE_NAME'] ?? $_ENV['APP_NAME'] ?? appName();
+        $siteUrl = $_ENV['SITE_URL'] ?? $_ENV['APP_URL'] ?? appUrl();
         $b = ThemeService::getEmailBranding();
 
         // Get product image
@@ -45,12 +45,13 @@ class ReviewEmailService
             'socialLinksHtml' => ThemeService::getEmailSocialLinks()
         ]);
 
-        $sent = sendEmail($request['email'], $subject, $html, ['html' => true]);
+        $recipientEmail = $request['customer_email'] ?? $request['email'] ?? null;
+        $sent = sendEmail($recipientEmail, $subject, $html, ['html' => true]);
 
         if ($sent) {
-            error_log("Review request email sent to {$request['email']} for product {$request['product_id']}");
+            error_log("Review request email sent to {$recipientEmail} for product {$request['product_id']}");
         } else {
-            error_log("Failed to send review request email to {$request['email']}");
+            error_log("Failed to send review request email to {$recipientEmail}");
         }
 
         return $sent;
