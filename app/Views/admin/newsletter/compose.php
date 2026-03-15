@@ -1,5 +1,6 @@
+<?php $editing = !empty($newsletter); ?>
 <div class="page-header">
-    <h1>Compose Newsletter</h1>
+    <h1><?php echo $editing ? 'Edit Newsletter' : 'Compose Newsletter'; ?></h1>
     <a href="/admin/newsletter" class="btn btn-outline">Back to Newsletter</a>
 </div>
 
@@ -11,6 +12,7 @@
             <label for="subject">Subject Line *</label>
             <input type="text" id="subject" name="subject" required
                    placeholder="e.g., New Products Just Arrived!"
+                   value="<?php echo escape($newsletter['subject'] ?? ''); ?>"
                    class="subject-input">
         </div>
     </div>
@@ -69,6 +71,10 @@ document.addEventListener('DOMContentLoaded', function() {
         height: '400px',
         enablePreview: false
     });
+<?php if ($editing && !empty($newsletter['content'])): ?>
+    // Pre-fill editor with existing newsletter content (admin-only, content from DB)
+    document.getElementById('mintaro-editor').innerHTML = <?php echo json_encode($newsletter['content']); ?>;
+<?php endif; ?>
 });
 
 // Form submission

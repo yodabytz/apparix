@@ -82,6 +82,27 @@ class NewsletterController extends Controller
     }
 
     /**
+     * Edit a previously sent newsletter (loads into compose form)
+     */
+    public function edit(): void
+    {
+        $id = (int) $this->get('id');
+        $newsletter = $this->newsletterModel->getNewsletterById($id);
+
+        if (!$newsletter) {
+            setFlash('error', 'Newsletter not found');
+            $this->redirect('/admin/newsletter');
+            return;
+        }
+
+        $this->render('admin.newsletter.compose', [
+            'title' => 'Edit Newsletter',
+            'admin' => $this->admin,
+            'newsletter' => $newsletter
+        ], 'admin');
+    }
+
+    /**
      * Preview newsletter (AJAX)
      */
     public function preview(): void

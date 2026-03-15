@@ -559,6 +559,7 @@ $router->get('/admin/newsletter/compose', 'Admin\\NewsletterController', 'compos
 $router->post('/admin/newsletter/preview', 'Admin\\NewsletterController', 'preview');
 $router->post('/admin/newsletter/send', 'Admin\\NewsletterController', 'send');
 $router->get('/admin/newsletter/view/:id', 'Admin\\NewsletterController', 'view');
+$router->get('/admin/newsletter/edit/:id', 'Admin\\NewsletterController', 'edit');
 $router->post('/admin/newsletter/delete', 'Admin\\NewsletterController', 'delete');
 $router->post('/admin/newsletter/resend', 'Admin\\NewsletterController', 'resend');
 $router->get('/admin/newsletter/subscribers', 'Admin\\NewsletterController', 'subscribers');

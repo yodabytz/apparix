@@ -45,6 +45,7 @@
                         <td><?php echo date('M j, Y g:i A', strtotime($newsletter['sent_at'])); ?></td>
                         <td class="actions-cell">
                             <a href="/admin/newsletter/view/<?php echo $newsletter['id']; ?>" class="btn btn-sm btn-outline">View</a>
+                            <a href="/admin/newsletter/edit/<?php echo $newsletter['id']; ?>" class="btn btn-sm btn-outline">Edit</a>
                             <form method="POST" action="/admin/newsletter/resend" class="inline-form" onsubmit="return confirm('Resend this newsletter to all subscribers?');">
                                 <?php echo csrfField(); ?>
                                 <input type="hidden" name="id" value="<?php echo $newsletter['id']; ?>">

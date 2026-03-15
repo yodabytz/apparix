@@ -767,19 +767,27 @@ let currentThumbnailOffset = 0;
 // Track which options have linked images (can be multiple)
 let imageFilterOptionIds = [];
 
-<?php if (!empty($product['options'])): ?>
-<?php foreach ($product['options'] as $option): ?>
 <?php
-$optionNameLower = strtolower($option['option_name']);
-if (strpos($optionNameLower, 'color') !== false ||
-    strpos($optionNameLower, 'style') !== false ||
-    strpos($optionNameLower, 'tartan') !== false ||
-    strpos($optionNameLower, 'pattern') !== false):
+// Build list of option IDs that have images linked to their values
+$linkedOptionIds = [];
+if (!empty($product['images'])) {
+    foreach ($product['images'] as $img) {
+        foreach ($img['linked_option_value_ids'] ?? [] as $ovId) {
+            // Find which option this value belongs to
+            foreach ($product['options'] ?? [] as $opt) {
+                foreach ($opt['values'] ?? [] as $val) {
+                    if ((int)$val['id'] === (int)$ovId && !in_array($opt['id'], $linkedOptionIds)) {
+                        $linkedOptionIds[] = $opt['id'];
+                    }
+                }
+            }
+        }
+    }
+}
+foreach ($linkedOptionIds as $optId):
 ?>
-imageFilterOptionIds.push(<?php echo $option['id']; ?>);
-<?php endif; ?>
+imageFilterOptionIds.push(<?php echo $optId; ?>);
 <?php endforeach; ?>
-<?php endif; ?>
 
 // Legacy single ID for backward compatibility
 let imageFilterOptionId = imageFilterOptionIds.length > 0 ? imageFilterOptionIds[0] : null;

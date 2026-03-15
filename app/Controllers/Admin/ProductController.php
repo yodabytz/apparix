@@ -347,17 +347,12 @@ class ProductController extends Controller
         );
         $productCategoryIds = array_column($productCategories, 'category_id');
 
-        // Get Color/Style/Pattern/Tartan option values for image linking (not Size)
+        // Get all option values for image linking (any option type)
         $allOptions = $db->select(
             "SELECT pov.id, pov.value_name, po.option_name, po.id as option_id, po.sort_order as option_sort
              FROM product_option_values pov
              JOIN product_options po ON pov.option_id = po.id
-             WHERE po.product_id = ? AND (
-                LOWER(po.option_name) LIKE '%color%' OR
-                LOWER(po.option_name) LIKE '%style%' OR
-                LOWER(po.option_name) LIKE '%tartan%' OR
-                LOWER(po.option_name) LIKE '%pattern%'
-             )
+             WHERE po.product_id = ?
              ORDER BY po.sort_order, pov.sort_order",
             [$id]
         );
@@ -876,18 +871,31 @@ class ProductController extends Controller
         $cost = $this->post('cost') !== '' && $this->post('cost') !== null ? floatval($this->post('cost')) : null;
         $inventory = intval($this->post('inventory_count', 0));
         $isActive = $this->post('is_active') ? 1 : 0;
-        $licenseEdition = $this->post('license_edition') ?: null;
-
         $db = Database::getInstance();
 
         // Get product_id and old inventory for back-in-stock notification check
         $variant = $db->selectOne("SELECT product_id, inventory_count FROM product_variants WHERE id = ?", [$variantId]);
         $oldInventory = $variant ? (int)$variant['inventory_count'] : 0;
 
-        $db->update(
-            "UPDATE product_variants SET sku = ?, price_adjustment = ?, cost = ?, inventory_count = ?, is_active = ?, license_edition = ? WHERE id = ?",
-            [$sku, $priceAdjustment, $cost, $inventory, $isActive, $licenseEdition, $variantId]
-        );
+        // Check if license_edition column exists (only on Apparix platform installs)
+        $hasLicenseEdition = false;
+        try {
+            $cols = $db->select("SHOW COLUMNS FROM product_variants LIKE 'license_edition'");
+            $hasLicenseEdition = !empty($cols);
+        } catch (\Throwable $e) {}
+
+        if ($hasLicenseEdition) {
+            $licenseEdition = $this->post('license_edition') ?: null;
+            $db->update(
+                "UPDATE product_variants SET sku = ?, price_adjustment = ?, cost = ?, inventory_count = ?, is_active = ?, license_edition = ? WHERE id = ?",
+                [$sku, $priceAdjustment, $cost, $inventory, $isActive, $licenseEdition, $variantId]
+            );
+        } else {
+            $db->update(
+                "UPDATE product_variants SET sku = ?, price_adjustment = ?, cost = ?, inventory_count = ?, is_active = ? WHERE id = ?",
+                [$sku, $priceAdjustment, $cost, $inventory, $isActive, $variantId]
+            );
+        }
 
         if ($variant) {
             $this->updatePriceRange($variant['product_id']);
