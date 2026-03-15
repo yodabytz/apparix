@@ -210,6 +210,13 @@ class BotBlocker
             return false;
         }
 
+        // Check for cloud provider bot farms (distributed scrapers using fake browser UAs)
+        if ($this->isCloudBotFarm($ip, $ua)) {
+            $this->blockIp($ip, 'cloud_bot', $ua);
+            $this->denyRequest();
+            return false;
+        }
+
         // Check for empty user agent (most real browsers send one)
         if (empty($ua) && $_SERVER['REQUEST_METHOD'] !== 'POST') {
             // Don't block webhooks/APIs that legitimately have no UA
@@ -291,6 +298,99 @@ class BotBlocker
             if (str_starts_with($uriLower, strtolower($path))) {
                 return true;
             }
+        }
+
+        return false;
+    }
+
+    /**
+     * Known cloud provider IP prefixes used by bot farms.
+     * These ranges are datacenter IPs — real customers don't browse from them.
+     */
+    private array $cloudPrefixes = [
+        // Tencent Cloud
+        '101.32.', '101.33.', '101.34.', '101.42.', '101.43.', '101.46.',
+        '111.119.', '111.230.', '111.231.',
+        '118.24.', '118.25.', '118.89.', '118.126.', '118.212.',
+        '119.28.', '119.29.', '119.45.',
+        '121.4.', '121.5.', '121.51.', '121.91.',
+        '124.156.', '124.220.', '124.222.', '124.223.', '124.243.',
+        '129.226.', '129.204.',
+        '140.143.', '148.70.',
+        '150.40.', '150.109.', '150.158.',
+        '152.136.',
+        '154.8.', '154.40.',
+        '159.75.',
+        '175.24.', '175.27.',
+        '182.254.',
+        '189.1.',
+        '190.92.',
+        '211.159.',
+        '212.64.',
+        '49.232.', '49.233.', '49.234.', '49.235.',
+        '62.234.',
+        '81.68.', '81.69.', '81.70.', '81.71.',
+        '82.156.', '82.157.',
+        '94.74.',
+        // Huawei Cloud
+        '110.238.', '114.116.', '116.63.', '116.204.', '116.205.',
+        '119.3.', '119.8.', '119.12.', '119.13.',
+        '121.36.', '121.37.',
+        '122.112.',
+        '139.9.', '139.159.',
+        '159.138.',
+        // Alibaba Cloud
+        '47.74.', '47.88.', '47.89.', '47.90.', '47.91.', '47.92.',
+        '47.93.', '47.94.', '47.95.', '47.96.', '47.97.', '47.98.',
+        '47.99.', '47.100.', '47.101.', '47.102.', '47.103.', '47.104.',
+        '47.240.', '47.241.', '47.242.', '47.243.', '47.244.', '47.245.',
+        '47.246.', '47.250.', '47.251.', '47.252.', '47.253.', '47.254.',
+        '8.208.', '8.209.', '8.210.', '8.211.', '8.212.', '8.213.',
+        '8.214.', '8.215.', '8.216.', '8.217.', '8.218.', '8.219.',
+        '149.129.',
+        '161.117.',
+        // Generic datacenter indicators (Singapore/HK cloud)
+        '166.108.',
+        '188.239.',
+    ];
+
+    /**
+     * Detect cloud provider bot farms.
+     * These use real-looking browser UAs from datacenter IPs.
+     */
+    private function isCloudBotFarm(string $ip, string $ua): bool
+    {
+        if (empty($ua)) {
+            return false;
+        }
+
+        // Only check if IP is from a known cloud provider range
+        $isCloud = false;
+        foreach ($this->cloudPrefixes as $prefix) {
+            if (str_starts_with($ip, $prefix)) {
+                $isCloud = true;
+                break;
+            }
+        }
+
+        if (!$isCloud) {
+            return false;
+        }
+
+        // Cloud IP + browser-like UA = bot farm
+        // Real users don't browse e-commerce sites from Tencent/Huawei/Alibaba Cloud VMs
+        $hasBrowserUa = stripos($ua, 'Mozilla/5.0') !== false &&
+                        (stripos($ua, 'Chrome') !== false ||
+                         stripos($ua, 'Safari') !== false ||
+                         stripos($ua, 'Firefox') !== false);
+
+        if ($hasBrowserUa) {
+            return true;
+        }
+
+        // Also catch malformed UAs (e.g., "Mozilla/5.0184010163 Mozilla/5.0...")
+        if (preg_match('/Mozilla\/5\.0\d{3,}/', $ua)) {
+            return true;
         }
 
         return false;
