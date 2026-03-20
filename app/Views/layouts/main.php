@@ -129,7 +129,7 @@
     <link rel="preconnect" href="https://js.stripe.com">
     <link rel="preload" href="<?php echo $themeService->getGoogleFontsUrl(); ?>" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link href="<?php echo $themeService->getGoogleFontsUrl(); ?>" rel="stylesheet"></noscript>
-    <link rel="stylesheet" href="/assets/css/main.css?v=121">
+    <link rel="stylesheet" href="/assets/css/main.css?v=122">
     <?php
     // Load installed theme CSS (if any)
     $installedThemeCss = \App\Core\ThemeLoader::getThemeCss();
@@ -1152,7 +1152,7 @@ $bodyClasses = trim($bodyClasses);
     <script>
     requestAnimationFrame(function(){setTimeout(function(){
         <?php if ($themeService->isHeaderEffectEnabled() || $holidayCanvasOverride): ?>
-        var a=document.createElement('script');a.src='/assets/js/ambient-bg.js?v=11';document.body.appendChild(a);
+        var a=document.createElement('script');a.src='/assets/js/ambient-bg.js?v=12';document.body.appendChild(a);
         <?php endif; ?>
         <?php if ($holidayEffectsEnabled): ?>
         var h=document.createElement('script');h.src='/assets/js/holidays.js?v=15';document.body.appendChild(h);

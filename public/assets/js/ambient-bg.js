@@ -125,7 +125,7 @@ function createCanvas() {
         a: document.createElement('canvas'),
         b: document.createElement('canvas')
     };
-    canvas.b.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;opacity:' + opacity + ';z-index:0;';
+    canvas.b.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;opacity:' + opacity + ';z-index:2;';
     canvas.b.setAttribute('aria-hidden', 'true');
 
     container.insertBefore(canvas.b, container.firstChild);
