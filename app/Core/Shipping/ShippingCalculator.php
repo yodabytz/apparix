@@ -74,8 +74,16 @@ class ShippingCalculator
                 $allShipFree = false;
 
                 // Check for product fixed shipping price (highest priority override)
-                if (!empty($item['shipping_price'])) {
-                    $fixedShippingTotal += (float)$item['shipping_price'] * $quantity;
+                // Use overseas price for non-US destinations if set
+                $productShipPrice = null;
+                if (!$isUS && !empty($item['shipping_price_overseas'])) {
+                    $productShipPrice = (float)$item['shipping_price_overseas'];
+                } elseif (!empty($item['shipping_price'])) {
+                    $productShipPrice = (float)$item['shipping_price'];
+                }
+
+                if ($productShipPrice !== null) {
+                    $fixedShippingTotal += $productShipPrice * $quantity;
                     $hasFixedShipping = true;
                 }
                 // Check for warehouse/origin-based shipping cost (fallback before zone rates)
@@ -206,8 +214,16 @@ class ShippingCalculator
                 $allShipFree = false;
 
                 // Check for product fixed shipping price (highest priority override)
-                if (!empty($item['shipping_price'])) {
-                    $fixedShippingTotal += (float)$item['shipping_price'] * $quantity;
+                // Use overseas price for non-US destinations if set
+                $productShipPrice = null;
+                if (!$isUS && !empty($item['shipping_price_overseas'])) {
+                    $productShipPrice = (float)$item['shipping_price_overseas'];
+                } elseif (!empty($item['shipping_price'])) {
+                    $productShipPrice = (float)$item['shipping_price'];
+                }
+
+                if ($productShipPrice !== null) {
+                    $fixedShippingTotal += $productShipPrice * $quantity;
                     $hasFixedShipping = true;
                 }
                 // Check for warehouse/origin-based shipping cost (fallback before zone rates)
