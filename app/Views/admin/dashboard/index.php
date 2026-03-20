@@ -110,6 +110,55 @@
     </div>
 </div>
 
+<!-- Abandoned Cart Stats -->
+<div class="stats-grid" style="margin-bottom: 1.5rem;">
+    <div class="stat-card">
+        <span class="stat-label">Abandoned Carts</span>
+        <span class="stat-value"><?php echo $abandonedCartStats['active']['count'] ?? 0; ?></span>
+        <span class="stat-change">$<?php echo number_format($abandonedCartStats['active']['total_value'] ?? 0, 2); ?> potential</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-label">Recovery Emails Sent</span>
+        <span class="stat-value"><?php echo $abandonedCartStats['emails_sent']['count'] ?? 0; ?></span>
+        <span class="stat-change">last 30 days</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-label">Carts Recovered</span>
+        <span class="stat-value"><?php echo $abandonedCartStats['recovered']['count'] ?? 0; ?></span>
+        <span class="stat-change">last 30 days</span>
+    </div>
+</div>
+
+<?php if (!empty($abandonedCartStats['recent'])): ?>
+<div class="admin-card" style="margin-bottom: 1.5rem;">
+    <div class="card-header">
+        <h2>Recent Abandoned Carts</h2>
+    </div>
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>Email</th>
+                <th>Items</th>
+                <th>Value</th>
+                <th>Email Sent</th>
+                <th>Last Activity</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php foreach ($abandonedCartStats['recent'] as $cart): ?>
+            <tr>
+                <td><?php echo escape($cart['email'] ?: 'Guest'); ?></td>
+                <td><?php echo $cart['item_count']; ?></td>
+                <td>$<?php echo number_format($cart['cart_value'], 2); ?></td>
+                <td><?php echo $cart['abandoned_email_sent'] ? '<span style="color: #22c55e;">Sent ' . date('M j', strtotime($cart['abandoned_email_sent_at'])) . '</span>' : '<span style="color: #94a3b8;">Not sent</span>'; ?></td>
+                <td><?php echo date('M j, g:i A', strtotime($cart['updated_at'])); ?></td>
+            </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
+</div>
+<?php endif; ?>
+
 <!-- License Status Card -->
 <?php if (isset($licenseInfo)): ?>
 <div class="card license-card" style="margin-bottom: 1.5rem; border-left: 4px solid <?php echo $licenseInfo['code'] === 'F' ? 'var(--admin-warning)' : 'var(--admin-success)'; ?>;">

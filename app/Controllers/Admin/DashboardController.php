@@ -265,6 +265,51 @@ class DashboardController extends Controller
             )
         ];
 
+        // === ABANDONED CART TRACKING ===
+        $abandonedCartStats = [];
+        try {
+            // Active abandoned carts (have items, no order placed, not recovered)
+            $abandonedCartStats['active'] = $db->selectOne(
+                "SELECT COUNT(DISTINCT c.id) as count,
+                        COALESCE(SUM(ci.quantity * ci.price), 0) as total_value
+                 FROM carts c
+                 JOIN cart_items ci ON ci.cart_id = c.id
+                 WHERE c.recovered = 0
+                   AND c.updated_at < DATE_SUB(NOW(), INTERVAL 1 HOUR)"
+            );
+            // Emails sent this month
+            $abandonedCartStats['emails_sent'] = $db->selectOne(
+                "SELECT COUNT(*) as count FROM carts
+                 WHERE abandoned_email_sent = 1
+                   AND abandoned_email_sent_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)"
+            );
+            // Recovered this month
+            $abandonedCartStats['recovered'] = $db->selectOne(
+                "SELECT COUNT(*) as count FROM carts
+                 WHERE recovered = 1
+                   AND updated_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)"
+            );
+            // Recent abandoned carts with items
+            $abandonedCartStats['recent'] = $db->select(
+                "SELECT c.id, c.email, c.abandoned_email_sent, c.abandoned_email_sent_at, c.updated_at,
+                        COUNT(ci.id) as item_count,
+                        SUM(ci.quantity * ci.price) as cart_value
+                 FROM carts c
+                 JOIN cart_items ci ON ci.cart_id = c.id
+                 WHERE c.recovered = 0
+                 GROUP BY c.id
+                 ORDER BY c.updated_at DESC
+                 LIMIT 5"
+            );
+        } catch (\Throwable $e) {
+            $abandonedCartStats = [
+                'active' => ['count' => 0, 'total_value' => 0],
+                'emails_sent' => ['count' => 0],
+                'recovered' => ['count' => 0],
+                'recent' => []
+            ];
+        }
+
         // === VISITOR TRACKING ===
         try {
             $visitorModel = new Visitor();
@@ -487,6 +532,7 @@ class DashboardController extends Controller
             'topReferrers' => $topReferrers,
             'topPages' => $topPages,
             'favoritesStats' => $favoritesStats,
+            'abandonedCartStats' => $abandonedCartStats,
             'licenseInfo' => $licenseInfo,
             'systemHealth' => $systemHealth,
             'setupTasks' => $setupTasks,
