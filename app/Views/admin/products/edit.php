@@ -684,13 +684,29 @@
                 </div>
 
                 <div class="form-group" id="shippingPriceGroup" style="margin-top: 1rem;<?php echo !empty($product['ships_free']) ? ' display: none;' : ''; ?>">
-                    <label class="form-label" for="shipping_price">Fixed Shipping Price ($)</label>
-                    <input type="number" id="shipping_price" name="shipping_price" class="form-input" step="0.01" min="0"
-                           value="<?php echo $product['shipping_price'] ?? ''; ?>"
-                           placeholder="Leave blank to use zone rates"
-                           style="max-width: 200px;">
-                    <small style="color: var(--admin-text-light);">
-                        Set a fixed shipping price for this product. Overrides zone rates but adds handling fees from shipping class.
+                    <label class="form-label">Fixed Shipping Prices ($)</label>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; max-width: 500px;">
+                        <div>
+                            <label style="font-size: 0.75rem; color: var(--admin-text-light); display: block; margin-bottom: 4px;">US Domestic</label>
+                            <input type="number" name="shipping_price" class="form-input" step="0.01" min="0"
+                                   value="<?php echo $product['shipping_price'] ?? ''; ?>"
+                                   placeholder="Zone rate">
+                        </div>
+                        <div>
+                            <label style="font-size: 0.75rem; color: var(--admin-text-light); display: block; margin-bottom: 4px;">Canada</label>
+                            <input type="number" name="shipping_price_additional" class="form-input" step="0.01" min="0"
+                                   value="<?php echo $product['shipping_price_additional'] ?? ''; ?>"
+                                   placeholder="Zone rate">
+                        </div>
+                        <div>
+                            <label style="font-size: 0.75rem; color: var(--admin-text-light); display: block; margin-bottom: 4px;">International</label>
+                            <input type="number" name="shipping_price_overseas" class="form-input" step="0.01" min="0"
+                                   value="<?php echo $product['shipping_price_overseas'] ?? ''; ?>"
+                                   placeholder="Zone rate">
+                        </div>
+                    </div>
+                    <small style="color: var(--admin-text-light); margin-top: 0.5rem; display: block;">
+                        Set fixed shipping prices per destination. Leave blank to use zone rates.
                     </small>
                 </div>
 

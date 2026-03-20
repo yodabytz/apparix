@@ -76,7 +76,10 @@ class ShippingCalculator
                 // Check for product fixed shipping price (highest priority override)
                 // Use overseas price for non-US destinations if set
                 $productShipPrice = null;
-                if (!$isUS && !empty($item['shipping_price_overseas'])) {
+                $isCanada = ($countryCode === 'CA');
+                if ($isCanada && !empty($item['shipping_price_additional'])) {
+                    $productShipPrice = (float)$item['shipping_price_additional'];
+                } elseif (!$isUS && !$isCanada && !empty($item['shipping_price_overseas'])) {
                     $productShipPrice = (float)$item['shipping_price_overseas'];
                 } elseif (!empty($item['shipping_price'])) {
                     $productShipPrice = (float)$item['shipping_price'];
@@ -216,7 +219,10 @@ class ShippingCalculator
                 // Check for product fixed shipping price (highest priority override)
                 // Use overseas price for non-US destinations if set
                 $productShipPrice = null;
-                if (!$isUS && !empty($item['shipping_price_overseas'])) {
+                $isCanada = ($countryCode === 'CA');
+                if ($isCanada && !empty($item['shipping_price_additional'])) {
+                    $productShipPrice = (float)$item['shipping_price_additional'];
+                } elseif (!$isUS && !$isCanada && !empty($item['shipping_price_overseas'])) {
                     $productShipPrice = (float)$item['shipping_price_overseas'];
                 } elseif (!empty($item['shipping_price'])) {
                     $productShipPrice = (float)$item['shipping_price'];
