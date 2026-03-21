@@ -86,7 +86,7 @@ class Cart extends Model
                 p.us_only,
                 COALESCE(pv.shipping_cost, p.shipping_price) as shipping_price,
                 p.shipping_price_additional,
-                COALESCE(pv.shipping_price_overseas, p.shipping_price_overseas) as shipping_price_overseas,
+                p.shipping_price_overseas,
                 p.is_digital,
                 p.origin_id,
                 COALESCE(pv.cost, p.cost) as unit_cost,

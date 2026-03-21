@@ -1,0 +1,2 @@
+ALTER TABLE products ADD COLUMN IF NOT EXISTS shipping_price_additional DECIMAL(8,2) DEFAULT NULL;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS shipping_price_overseas DECIMAL(8,2) DEFAULT NULL;
