@@ -16,6 +16,14 @@
                                 <span class="item-name">
                                     <?php echo escape($item['product_name']); ?>
                                     <span class="item-qty">× <?php echo $item['quantity']; ?></span>
+                                    <?php $itemCustomizations = json_decode((string)($item['customizations'] ?? ''), true) ?: []; ?>
+                                    <?php if (!empty($itemCustomizations)): ?>
+                                        <span class="customization-summary" style="display:block; margin-top:0.35rem; font-size:0.82rem; color:#64748b;">
+                                            <?php foreach ($itemCustomizations as $customization): ?>
+                                                <span style="display:block;"><strong><?php echo escape($customization['label'] ?? $customization['key'] ?? 'Customization'); ?>:</strong> <?php echo escape($customization['value'] ?? ''); ?></span>
+                                            <?php endforeach; ?>
+                                        </span>
+                                    <?php endif; ?>
                                 </span>
                                 <span class="item-price"><?php echo formatPrice($item['total']); ?></span>
                             </div>

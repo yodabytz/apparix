@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Core\Controller;
+use App\Core\GoogleMerchantItemId;
 use App\Models\AbandonedCart;
 use App\Models\Bundle;
 use App\Models\Cart;
@@ -26,6 +27,12 @@ class CartController extends Controller
      */
     public function index()
     {
+        $merchantItemId = $this->get('productId');
+        if ($merchantItemId !== null) {
+            $this->addGoogleMerchantItem((string)$merchantItemId);
+            return;
+        }
+
         $sessionId = session_id();
         $userId = auth() ? auth()['id'] : null;
 
@@ -82,6 +89,73 @@ class CartController extends Controller
     }
 
     /**
+     * Add one exact catalog item from Google's account-level cart URL template.
+     */
+    private function addGoogleMerchantItem(string $itemId): void
+    {
+        $parsed = GoogleMerchantItemId::parse($itemId);
+        if ($parsed === null) {
+            setFlash('error', 'The requested product link is invalid.');
+            $this->redirect('/cart');
+            return;
+        }
+
+        $product = $this->productModel->find($parsed['product_id']);
+        if (!$product || empty($product['is_active']) || !empty($product['disabled'])) {
+            setFlash('error', 'That product is no longer available.');
+            $this->redirect('/cart');
+            return;
+        }
+
+        $productUrl = '/products/' . rawurlencode((string)$product['slug']);
+        if (!empty($this->productModel->getCustomizationFields($parsed['product_id']))) {
+            setFlash('info', 'Choose your personalization before adding this product.');
+            $this->redirect($productUrl);
+            return;
+        }
+
+        $variantId = $parsed['variant_id'];
+        if ($variantId !== null) {
+            $variant = $this->productModel->queryOne(
+                'SELECT id, inventory_count FROM product_variants WHERE id = ? AND product_id = ? AND is_active = 1',
+                [$variantId, $parsed['product_id']]
+            );
+            if (!$variant || (int)$variant['inventory_count'] < 1) {
+                setFlash('error', 'That product option is currently unavailable.');
+                $this->redirect($productUrl);
+                return;
+            }
+        } else {
+            $variant = $this->productModel->queryOne(
+                'SELECT id FROM product_variants WHERE product_id = ? AND is_active = 1 LIMIT 1',
+                [$parsed['product_id']]
+            );
+            if ($variant) {
+                setFlash('info', 'Choose your product options before adding this item.');
+                $this->redirect($productUrl);
+                return;
+            }
+            if ((int)($product['inventory_count'] ?? 0) < 1) {
+                setFlash('error', 'That product is currently out of stock.');
+                $this->redirect($productUrl);
+                return;
+            }
+        }
+
+        try {
+            $sessionId = session_id();
+            $userId = auth() ? auth()['id'] : null;
+            $this->cartModel->addItem($parsed['product_id'], 1, $sessionId, $userId, $variantId);
+            setFlash('success', 'Item added to cart!');
+        } catch (\Throwable $e) {
+            error_log('Google Merchant cart add failed: ' . $e->getMessage());
+            setFlash('error', 'That item could not be added to your cart.');
+        }
+
+        $this->redirect('/cart');
+    }
+
+    /**
      * Add item to cart (POST)
      */
     public function add()
@@ -105,6 +179,13 @@ class CartController extends Controller
             http_response_code(400);
             return $this->json(['error' => 'Invalid quantity']);
         }
+
+        $customizationsResult = $this->collectCustomizations((int)$productId);
+        if (!$customizationsResult['success']) {
+            http_response_code(400);
+            return $this->json(['error' => $customizationsResult['error']]);
+        }
+        $customizations = $customizationsResult['customizations'];
 
         // Check inventory (use variant inventory if variant is specified)
         $inventoryCount = $product['inventory_count'];
@@ -145,7 +226,7 @@ class CartController extends Controller
         $userId = auth() ? auth()['id'] : null;
 
         try {
-            $this->cartModel->addItem($productId, $quantity, $sessionId, $userId, $variantId, $isBackorder);
+            $this->cartModel->addItem($productId, $quantity, $sessionId, $userId, $variantId, $isBackorder, $customizations);
 
             $cartCount = $this->cartModel->getCount($sessionId, $userId);
             $cartTotal = $this->cartModel->getTotal($sessionId, $userId);
@@ -342,6 +423,42 @@ class CartController extends Controller
         }
 
         return $this->json(['success' => true]);
+    }
+
+    private function collectCustomizations(int $productId): array
+    {
+        $fields = $this->productModel->getCustomizationFields($productId);
+        $posted = $this->post('customizations', []);
+        $posted = is_array($posted) ? $posted : [];
+        $customizations = [];
+
+        foreach ($fields as $field) {
+            $key = (string)$field['field_key'];
+            $label = (string)$field['label'];
+            $maxLength = max(1, min(500, (int)($field['max_length'] ?? 100)));
+            $value = trim((string)($posted[$key] ?? ''));
+            $value = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $value) ?? '';
+            $value = trim($value);
+
+            if ($value === '') {
+                if (!empty($field['is_required'])) {
+                    return ['success' => false, 'error' => $label . ' is required'];
+                }
+                continue;
+            }
+            if (mb_strlen($value) > $maxLength) {
+                return ['success' => false, 'error' => $label . ' must be ' . $maxLength . ' characters or fewer'];
+            }
+
+            $customizations[] = [
+                'key' => $key,
+                'label' => $label,
+                'value' => $value,
+                'printify_position' => (string)($field['printify_position'] ?? ''),
+            ];
+        }
+
+        return ['success' => true, 'customizations' => $customizations];
     }
 
     /**

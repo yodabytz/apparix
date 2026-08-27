@@ -83,6 +83,9 @@
         <?php if (!empty($settingsHtml) || !empty($settingsSchema)): ?>
         <div class="form-actions">
             <button type="submit" class="btn btn-primary">Save Settings</button>
+            <?php if (($plugin['slug'] ?? '') === 'printify-sync'): ?>
+                <button type="submit" name="action" value="import_printify_products" class="btn btn-primary">Import Selected To Apparix</button>
+            <?php endif; ?>
         </div>
         <?php endif; ?>
     </form>

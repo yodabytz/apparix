@@ -238,6 +238,79 @@
                     <button type="button" class="btn btn-sm btn-outline" onclick="addQuantityTier()" style="margin-top: 0.5rem;">+ Add Tier</button>
                 </div>
 
+                <div class="card">
+                    <div class="card-header" style="align-items: flex-start; gap: 1rem;">
+                        <div>
+                            <h3 class="card-title" style="margin-bottom: 0.25rem;">Customization Fields</h3>
+                            <p style="font-size: 0.8rem; color: var(--admin-text-light); margin: 0;">Collect names, notes, or other customer-entered values on this product.</p>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline" onclick="addCustomizationField()">+ Add Field</button>
+                    </div>
+
+                    <div id="customizationFields" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                        <?php $customizationFields = $customizationFields ?? []; ?>
+                        <?php foreach ($customizationFields as $idx => $field): ?>
+                            <div class="customization-admin-row" style="border: 1px solid var(--admin-border); border-radius: 6px; padding: 0.75rem; background: #fff;">
+                                <input type="hidden" name="customization[id][]" value="<?php echo (int)$field['id']; ?>">
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                                    <div class="form-group" style="margin-bottom: 0.5rem;">
+                                        <label class="form-label" style="font-size: 0.75rem;">Label</label>
+                                        <input type="text" name="customization[label][]" class="form-input" value="<?php echo escape($field['label'] ?? ''); ?>" maxlength="120" placeholder="Name">
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 0.5rem;">
+                                        <label class="form-label" style="font-size: 0.75rem;">Key</label>
+                                        <input type="text" name="customization[field_key][]" class="form-input" value="<?php echo escape($field['field_key'] ?? ''); ?>" maxlength="64" placeholder="name">
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 0.5rem;">
+                                        <label class="form-label" style="font-size: 0.75rem;">Type</label>
+                                        <select name="customization[field_type][]" class="form-input">
+                                            <option value="text" <?php echo (($field['field_type'] ?? 'text') === 'text') ? 'selected' : ''; ?>>Short text</option>
+                                            <option value="textarea" <?php echo (($field['field_type'] ?? 'text') === 'textarea') ? 'selected' : ''; ?>>Long text</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 0.5rem;">
+                                        <label class="form-label" style="font-size: 0.75rem;">Max Length</label>
+                                        <input type="number" name="customization[max_length][]" class="form-input" value="<?php echo (int)($field['max_length'] ?? 100); ?>" min="1" max="500">
+                                    </div>
+                                </div>
+                                <div class="form-group" style="margin-bottom: 0.5rem;">
+                                    <label class="form-label" style="font-size: 0.75rem;">Placeholder</label>
+                                    <input type="text" name="customization[placeholder][]" class="form-input" value="<?php echo escape($field['placeholder'] ?? ''); ?>" maxlength="255" placeholder="Enter the name to print">
+                                </div>
+                                <div class="form-group" style="margin-bottom: 0.5rem;">
+                                    <label class="form-label" style="font-size: 0.75rem;">Help Text</label>
+                                    <input type="text" name="customization[help_text][]" class="form-input" value="<?php echo escape($field['help_text'] ?? ''); ?>" maxlength="255" placeholder="Example: Max 12 characters">
+                                </div>
+                                <div style="display: grid; grid-template-columns: 1fr 90px; gap: 0.5rem;">
+                                    <div class="form-group" style="margin-bottom: 0.5rem;">
+                                        <label class="form-label" style="font-size: 0.75rem;">Printify Position</label>
+                                        <input type="text" name="customization[printify_position][]" class="form-input" value="<?php echo escape($field['printify_position'] ?? ''); ?>" maxlength="64" placeholder="front">
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 0.5rem;">
+                                        <label class="form-label" style="font-size: 0.75rem;">Order</label>
+                                        <input type="number" name="customization[sort_order][]" class="form-input" value="<?php echo (int)($field['sort_order'] ?? $idx); ?>">
+                                    </div>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; gap: 0.75rem; align-items: center;">
+                                    <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                                        <label class="form-checkbox" style="font-size: 0.85rem;">
+                                            <input type="checkbox" name="customization[is_required][]" value="<?php echo $idx; ?>" <?php echo !empty($field['is_required']) ? 'checked' : ''; ?>>
+                                            <span>Required</span>
+                                        </label>
+                                        <label class="form-checkbox" style="font-size: 0.85rem;">
+                                            <input type="checkbox" name="customization[is_active][]" value="<?php echo $idx; ?>" <?php echo !empty($field['is_active']) ? 'checked' : ''; ?>>
+                                            <span>Active</span>
+                                        </label>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-danger" onclick="this.closest('.customization-admin-row').remove(); reindexCustomizationFields();">Remove</button>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+
+                    <p id="customizationEmpty" style="<?php echo !empty($customizationFields) ? 'display:none;' : ''; ?> color: var(--admin-text-light); font-size: 0.85rem; margin: 0.75rem 0 0;">No customization fields yet.</p>
+                </div>
+
                 <button type="submit" class="btn btn-primary" style="width: 100%;">
                     Save Changes
                 </button>
@@ -838,6 +911,49 @@ function addQuantityTier() {
         '<button type="button" class="btn btn-sm btn-danger" onclick="this.closest(\'.qty-tier-row\').remove()" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">X</button>' +
         '</div>';
     container.appendChild(row);
+}
+
+function addCustomizationField() {
+    const container = document.getElementById('customizationFields');
+    const row = document.createElement('div');
+    row.className = 'customization-admin-row';
+    row.style.cssText = 'border: 1px solid var(--admin-border); border-radius: 6px; padding: 0.75rem; background: #fff;';
+    row.innerHTML = '<input type="hidden" name="customization[id][]" value="0">' +
+        '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">' +
+            '<div class="form-group" style="margin-bottom: 0.5rem;"><label class="form-label" style="font-size: 0.75rem;">Label</label><input type="text" name="customization[label][]" class="form-input" maxlength="120" placeholder="Name"></div>' +
+            '<div class="form-group" style="margin-bottom: 0.5rem;"><label class="form-label" style="font-size: 0.75rem;">Key</label><input type="text" name="customization[field_key][]" class="form-input" maxlength="64" placeholder="name"></div>' +
+            '<div class="form-group" style="margin-bottom: 0.5rem;"><label class="form-label" style="font-size: 0.75rem;">Type</label><select name="customization[field_type][]" class="form-input"><option value="text">Short text</option><option value="textarea">Long text</option></select></div>' +
+            '<div class="form-group" style="margin-bottom: 0.5rem;"><label class="form-label" style="font-size: 0.75rem;">Max Length</label><input type="number" name="customization[max_length][]" class="form-input" value="100" min="1" max="500"></div>' +
+        '</div>' +
+        '<div class="form-group" style="margin-bottom: 0.5rem;"><label class="form-label" style="font-size: 0.75rem;">Placeholder</label><input type="text" name="customization[placeholder][]" class="form-input" maxlength="255" placeholder="Enter the name to print"></div>' +
+        '<div class="form-group" style="margin-bottom: 0.5rem;"><label class="form-label" style="font-size: 0.75rem;">Help Text</label><input type="text" name="customization[help_text][]" class="form-input" maxlength="255" placeholder="Example: Max 12 characters"></div>' +
+        '<div style="display: grid; grid-template-columns: 1fr 90px; gap: 0.5rem;">' +
+            '<div class="form-group" style="margin-bottom: 0.5rem;"><label class="form-label" style="font-size: 0.75rem;">Printify Position</label><input type="text" name="customization[printify_position][]" class="form-input" maxlength="64" placeholder="front"></div>' +
+            '<div class="form-group" style="margin-bottom: 0.5rem;"><label class="form-label" style="font-size: 0.75rem;">Order</label><input type="number" name="customization[sort_order][]" class="form-input" value="0"></div>' +
+        '</div>' +
+        '<div style="display: flex; justify-content: space-between; gap: 0.75rem; align-items: center;">' +
+            '<div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">' +
+                '<label class="form-checkbox" style="font-size: 0.85rem;"><input type="checkbox" name="customization[is_required][]" value="0"><span>Required</span></label>' +
+                '<label class="form-checkbox" style="font-size: 0.85rem;"><input type="checkbox" name="customization[is_active][]" value="0" checked><span>Active</span></label>' +
+            '</div>' +
+            '<button type="button" class="btn btn-sm btn-danger" onclick="this.closest(\'.customization-admin-row\').remove(); reindexCustomizationFields();">Remove</button>' +
+        '</div>';
+    container.appendChild(row);
+    reindexCustomizationFields();
+}
+
+function reindexCustomizationFields() {
+    const rows = document.querySelectorAll('.customization-admin-row');
+    rows.forEach((row, index) => {
+        const required = row.querySelector('input[name="customization[is_required][]"]');
+        const active = row.querySelector('input[name="customization[is_active][]"]');
+        const sortOrder = row.querySelector('input[name="customization[sort_order][]"]');
+        if (required) required.value = index;
+        if (active) active.value = index;
+        if (sortOrder && sortOrder.value === '') sortOrder.value = index;
+    });
+    const empty = document.getElementById('customizationEmpty');
+    if (empty) empty.style.display = rows.length ? 'none' : 'block';
 }
 
 function showTab(tabName, element) {

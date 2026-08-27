@@ -293,6 +293,28 @@ class User extends Model
     }
 
     /**
+     * Update user avatar path
+     */
+    public function updateAvatar(int $id, string $path): bool
+    {
+        return $this->db->update(
+            "UPDATE {$this->table} SET avatar_path = ? WHERE id = ?",
+            [$path, $id]
+        ) > 0;
+    }
+
+    /**
+     * Remove user avatar
+     */
+    public function removeAvatar(int $id): bool
+    {
+        return $this->db->update(
+            "UPDATE {$this->table} SET avatar_path = NULL WHERE id = ?",
+            [$id]
+        ) > 0;
+    }
+
+    /**
      * Delete user and related data
      */
     public function deleteUser(int $id): bool

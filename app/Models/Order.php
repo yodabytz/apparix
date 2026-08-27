@@ -54,6 +54,10 @@ class Order extends Model
             'name' => 'Royal Mail (UK)',
             'tracking_url' => 'https://www.royalmail.com/track-your-item#/tracking-results/{tracking}'
         ],
+        'evri' => [
+            'name' => 'EVRi (Hermes UK)',
+            'tracking_url' => 'https://www.evri.com/track-a-parcel'
+        ],
         'canada_post' => [
             'name' => 'Canada Post',
             'tracking_url' => 'https://www.canadapost-postescanada.ca/track-reperage/en#/search?searchFor={tracking}'

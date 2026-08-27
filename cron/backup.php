@@ -8,18 +8,13 @@
 // This script checks if a scheduled backup should run based on plugin settings.
 // It uses low-priority execution to minimize server impact.
 
-// Only run via CLI
-if (php_sapi_name() !== 'cli') {
-    exit('This script must be run from the command line.');
-}
-
 // Set low priority (nice level) if possible
 if (function_exists('proc_nice')) {
     proc_nice(10);
 }
 
 // Load the application
-require_once dirname(__DIR__) . '/public/index.php';
+require_once __DIR__ . '/bootstrap.php';
 
 use App\Core\Database;
 

@@ -30,11 +30,8 @@
             margin-bottom: 8px;
         }
         .installer-logo img {
-            max-width: 200px;
+            max-width: 220px;
             height: auto;
-            background: #1a1a2e;
-            padding: 16px 24px;
-            border-radius: 12px;
         }
         .installer-subtitle {
             color: #6b7280;
@@ -162,7 +159,7 @@
         .req-failed { color: #ef4444; }
         .theme-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(3, 1fr);
             gap: 16px;
         }
         .theme-card {
@@ -204,7 +201,7 @@
         </div>
 
         <div class="steps-indicator">
-            <?php for ($i = 1; $i <= 7; $i++): ?>
+            <?php for ($i = 1; $i <= 8; $i++): ?>
                 <div class="step-dot <?php echo $i < $step ? 'completed' : ($i === $step ? 'active' : ''); ?>"></div>
             <?php endfor; ?>
         </div>

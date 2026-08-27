@@ -37,7 +37,7 @@ class ShippingMethod
              JOIN shipping_zones sz ON sm.zone_id = sz.id
              WHERE sm.id = ?",
             [$id]
-        );
+        ) ?: null;
     }
 
     /**

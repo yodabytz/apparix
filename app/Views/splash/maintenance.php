@@ -119,6 +119,11 @@
             filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1));
         }
 
+        .logo-text-display {
+            display: inline-block;
+            line-height: 1.1;
+        }
+
         .maintenance-icon {
             display: inline-flex;
             align-items: center;
@@ -289,18 +294,60 @@
     <div class="maintenance-container">
         <div class="logo-container">
             <?php
-            $mLogo = storeLogo();
-            $mLogoWhite = '/assets/images/apparix-logo-white.png';
-            if ($mLogo) {
-                $whitePath = preg_replace('/(\.[^.]+)$/', '-white$1', $mLogo);
-                if (file_exists((defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__, 2)) . '/public' . $whitePath)) {
-                    $mLogoWhite = $whitePath;
-                } else {
-                    $mLogoWhite = $mLogo;
-                }
+            // Text logo: settings override, then theme.json fallback
+            $__logoTextVal = setting('logo_text');
+            if (!$__logoTextVal) {
+                $__themeLogoText = \App\Core\ThemeLoader::getConfig('logo_text');
+                $__logoTextVal = $__themeLogoText['text'] ?? '';
+                $__logoTextColor = $__themeLogoText['color'] ?? '';
+                $__logoTextHl = $__themeLogoText['highlight'] ?? '';
+                $__logoTextHc = $__themeLogoText['highlight_color'] ?? '';
+            } else {
+                $__logoTextColor = setting('logo_text_color') ?: '';
+                $__logoTextHl = setting('logo_text_highlight') ?: '';
+                $__logoTextHc = setting('logo_text_highlight_color') ?: '';
             }
+
+            $__storeLogo = setting('store_logo');
+            $__themeLogo = $theme['theme_logo'] ?? null;
+            $__displayLogo = $__themeLogo ?: $__storeLogo;
             ?>
-            <img src="<?php echo escape($mLogoWhite); ?>?v=2" alt="<?php echo escape(appName()); ?>">
+            <?php if ($__logoTextVal): ?>
+                <?php
+                $__activeTheme = $theme;
+                $__logoFont = setting('logo_text_font') ?: ($__activeTheme['logo_text_font'] ?? '');
+                $__logoSize = setting('logo_text_size') ?: ($__activeTheme['logo_text_size'] ?? '');
+                $__logoWeight = setting('logo_text_weight') ?: ($__activeTheme['logo_text_weight'] ?? '');
+                $__logoStretch = setting('logo_text_stretch') ?: ($__activeTheme['logo_text_stretch'] ?? '');
+                $__logoSpacing = setting('logo_text_spacing') ?: ($__activeTheme['logo_text_spacing'] ?? '');
+                $__styleParts = [];
+                if ($__logoTextColor) $__styleParts[] = 'color:' . htmlspecialchars($__logoTextColor);
+                if ($__logoFont) $__styleParts[] = 'font-family:\'' . htmlspecialchars($__logoFont) . '\',var(--font-heading,sans-serif)';
+                $__splashSize = $__logoSize ? (int)$__logoSize * 1.5 : 42;
+                $__styleParts[] = 'font-size:' . $__splashSize . 'px';
+                if ($__logoWeight) $__styleParts[] = 'font-weight:' . htmlspecialchars($__logoWeight);
+                if ($__logoStretch) $__styleParts[] = 'font-stretch:' . htmlspecialchars($__logoStretch);
+                if ($__logoSpacing) $__styleParts[] = 'letter-spacing:' . htmlspecialchars($__logoSpacing);
+                $__styleParts[] = 'text-decoration:none';
+                $__logoStyle = ' style="' . implode(';', $__styleParts) . '"';
+                ?>
+                <span class="logo-text-display"<?php echo $__logoStyle; ?>><?php
+                    $__lt = htmlspecialchars($__logoTextVal);
+                    $__hl = $__logoTextHl;
+                    $__hc = $__logoTextHc ?: 'inherit';
+                    if ($__hl && ($__pos = strpos($__lt, htmlspecialchars($__hl))) !== false) {
+                        echo substr($__lt, 0, $__pos);
+                        echo '<span style="color:' . htmlspecialchars($__hc) . '">' . htmlspecialchars($__hl) . '</span>';
+                        echo substr($__lt, $__pos + strlen(htmlspecialchars($__hl)));
+                    } else {
+                        echo $__lt;
+                    }
+                ?></span>
+            <?php elseif ($__displayLogo): ?>
+                <img src="<?php echo escape($__displayLogo); ?>?v=2" alt="<?php echo escape(appName()); ?>">
+            <?php else: ?>
+                <span class="logo-text-display" style="font-family:var(--font-heading,'Montserrat'),sans-serif;font-size:42px;font-weight:700;color:<?php echo escape($primaryColor); ?>;text-decoration:none"><?php echo escape(appName()); ?></span>
+            <?php endif; ?>
         </div>
 
         <div class="maintenance-icon">

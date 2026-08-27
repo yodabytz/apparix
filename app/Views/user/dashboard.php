@@ -15,6 +15,25 @@
             <!-- Profile Section -->
             <div class="account-card">
                 <h2>Profile Information</h2>
+
+                <!-- Avatar Upload -->
+                <div class="avatar-upload-area">
+                    <div class="avatar-preview" id="avatarPreview">
+                        <?php if (!empty($user['avatar_path'])): ?>
+                            <img src="<?php echo escape($user['avatar_path']); ?>" alt="Avatar" class="avatar-img" id="avatarImg">
+                        <?php else: ?>
+                            <span class="avatar-initial" id="avatarInitial"><?php echo strtoupper(substr($user['first_name'] ?? $user['email'], 0, 1)); ?></span>
+                        <?php endif; ?>
+                        <div class="avatar-overlay" id="avatarOverlay">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                        </div>
+                    </div>
+                    <input type="file" id="avatarInput" accept="image/jpeg,image/png,image/webp,image/gif" style="display:none;">
+                    <?php if (!empty($user['avatar_path'])): ?>
+                        <button type="button" class="avatar-remove-btn" id="avatarRemoveBtn">Remove</button>
+                    <?php endif; ?>
+                </div>
+
                 <form action="/account/update-profile" method="POST" class="account-form">
                     <?php echo csrfField(); ?>
 
@@ -423,6 +442,73 @@
     border: 1px solid #cfc;
 }
 
+/* Avatar Upload */
+.avatar-upload-area {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.avatar-preview {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.avatar-preview .avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.avatar-preview .avatar-initial {
+    color: white;
+    font-size: 2rem;
+    font-weight: 600;
+    user-select: none;
+}
+
+.avatar-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s;
+    border-radius: 50%;
+}
+
+.avatar-preview:hover .avatar-overlay {
+    opacity: 1;
+}
+
+.avatar-remove-btn {
+    background: none;
+    border: none;
+    color: #dc2626;
+    font-size: 0.85rem;
+    cursor: pointer;
+    padding: 4px 8px;
+}
+
+.avatar-remove-btn:hover {
+    text-decoration: underline;
+}
+
 @media (max-width: 768px) {
     .account-grid {
         grid-template-columns: 1fr;
@@ -433,3 +519,78 @@
     }
 }
 </style>
+
+<script>
+(function() {
+    var preview = document.getElementById('avatarPreview');
+    var input = document.getElementById('avatarInput');
+    var removeBtn = document.getElementById('avatarRemoveBtn');
+    var csrfToken = document.querySelector('input[name="_csrf_token"]');
+
+    if (preview && input) {
+        preview.addEventListener('click', function() { input.click(); });
+
+        input.addEventListener('change', function() {
+            if (!this.files || !this.files[0]) return;
+            var file = this.files[0];
+            if (file.size > 5 * 1024 * 1024) {
+                alert('File too large. Maximum 5MB.');
+                return;
+            }
+
+            var formData = new FormData();
+            formData.append('avatar', file);
+            formData.append('_csrf_token', csrfToken ? csrfToken.value : '');
+
+            fetch('/account/upload-avatar', {
+                method: 'POST',
+                body: formData
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    preview.innerHTML = '<img src="' + data.avatar_url + '?t=' + Date.now() + '" alt="Avatar" class="avatar-img" id="avatarImg">' +
+                        '<div class="avatar-overlay" id="avatarOverlay"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg></div>';
+                    if (!removeBtn) {
+                        removeBtn = document.createElement('button');
+                        removeBtn.type = 'button';
+                        removeBtn.className = 'avatar-remove-btn';
+                        removeBtn.id = 'avatarRemoveBtn';
+                        removeBtn.textContent = 'Remove';
+                        preview.parentNode.appendChild(removeBtn);
+                        attachRemove(removeBtn);
+                    }
+                } else {
+                    alert(data.error || 'Upload failed');
+                }
+            })
+            .catch(function() { alert('Upload failed'); });
+        });
+    }
+
+    function attachRemove(btn) {
+        btn.addEventListener('click', function() {
+            if (!confirm('Remove your profile photo?')) return;
+            var formData = new FormData();
+            formData.append('_csrf_token', csrfToken ? csrfToken.value : '');
+
+            fetch('/account/remove-avatar', {
+                method: 'POST',
+                body: formData
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    var initial = document.querySelector('#first_name') ? document.querySelector('#first_name').value.charAt(0).toUpperCase() : '?';
+                    preview.innerHTML = '<span class="avatar-initial" id="avatarInitial">' + (initial || '?') + '</span>' +
+                        '<div class="avatar-overlay" id="avatarOverlay"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg></div>';
+                    btn.remove();
+                    removeBtn = null;
+                }
+            });
+        });
+    }
+
+    if (removeBtn) attachRemove(removeBtn);
+})();
+</script>

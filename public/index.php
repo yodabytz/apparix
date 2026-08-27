@@ -417,6 +417,10 @@ $router->post('/contact', 'PageController', 'sendContact');
 // Custom pages
 $router->get('/pages/:slug', 'PageController', 'showPage');
 
+// SEO-friendly custom page URLs (e.g. /gift-guide instead of /pages/gift-guide).
+// Keep this after all first-level built-in routes so exact matches win.
+$router->get('/:slug', 'PageController', 'showPage');
+
 // Support chat API
 $router->post('/api/support-chat', 'PageController', 'supportChat');
 

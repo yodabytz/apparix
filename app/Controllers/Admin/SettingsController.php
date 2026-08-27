@@ -60,6 +60,7 @@ class SettingsController extends Controller
             'store_favicon' => $this->settingModel->get('store_favicon', ''),
             'store_currency' => $this->settingModel->get('store_currency', 'USD'),
             'store_currency_symbol' => $this->settingModel->get('store_currency_symbol', '$'),
+            'free_shipping_threshold' => $this->settingModel->get('free_shipping_threshold', '0'),
             'show_powered_by' => $this->settingModel->get('show_powered_by', '1'),
             'maintenance_mode' => $this->settingModel->get('maintenance_mode', '0'),
             'maintenance_enabled' => $this->settingModel->get('maintenance_enabled', '0'),
@@ -142,6 +143,12 @@ class SettingsController extends Controller
 
             $enableDownloads = $this->post('enable_downloads_section') ? '1' : '0';
             $this->settingModel->set('enable_downloads_section', $enableDownloads, 'boolean', 'store', false);
+
+            // Free shipping threshold
+            $freeShippingThreshold = $this->post('free_shipping_threshold');
+            if ($freeShippingThreshold !== null) {
+                $this->settingModel->set('free_shipping_threshold', $freeShippingThreshold, 'string', 'store', true);
+            }
 
             // Tax settings
             $taxEnabled = $this->post('tax_enabled') ? '1' : '0';

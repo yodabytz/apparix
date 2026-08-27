@@ -484,6 +484,134 @@ class UserController extends Controller
     }
 
     /**
+     * Upload avatar (AJAX)
+     */
+    public function uploadAvatar(): void
+    {
+        $this->requireAuth();
+        $this->requireValidCSRF();
+
+        $userId = auth()['id'];
+
+        if (empty($_FILES['avatar']) || $_FILES['avatar']['error'] !== UPLOAD_ERR_OK) {
+            $this->json(['success' => false, 'error' => 'No file uploaded']);
+            return;
+        }
+
+        $file = $_FILES['avatar'];
+
+        // Validate size (5MB max)
+        if ($file['size'] > 5 * 1024 * 1024) {
+            $this->json(['success' => false, 'error' => 'File too large. Maximum 5MB.']);
+            return;
+        }
+
+        // Validate MIME type
+        $finfo = new \finfo(FILEINFO_MIME_TYPE);
+        $mimeType = $finfo->file($file['tmp_name']);
+        $allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+
+        if (!in_array($mimeType, $allowedTypes)) {
+            $this->json(['success' => false, 'error' => 'Invalid file type. Use JPG, PNG, WebP, or GIF.']);
+            return;
+        }
+
+        $ext = match ($mimeType) {
+            'image/jpeg' => 'jpg',
+            'image/png' => 'png',
+            'image/webp' => 'webp',
+            'image/gif' => 'gif',
+            default => 'jpg',
+        };
+
+        $uploadDir = dirname(__DIR__, 2) . '/public/uploads/avatars/' . $userId;
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+
+        // Delete old avatar if exists
+        $user = $this->userModel->findById($userId);
+        if (!empty($user['avatar_path'])) {
+            $oldFile = dirname(__DIR__, 2) . '/public' . $user['avatar_path'];
+            if (file_exists($oldFile)) {
+                unlink($oldFile);
+            }
+        }
+
+        $filename = 'avatar-' . time() . '.jpg';
+        $filePath = $uploadDir . '/' . $filename;
+        $webPath = '/uploads/avatars/' . $userId . '/' . $filename;
+
+        if (!move_uploaded_file($file['tmp_name'], $filePath)) {
+            $this->json(['success' => false, 'error' => 'Failed to save file']);
+            return;
+        }
+
+        // Resize and crop to 100x100 square (displays as circle via CSS)
+        $this->resizeAvatar($filePath, 100);
+
+        $this->userModel->updateAvatar($userId, $webPath);
+
+        $this->json(['success' => true, 'avatar_url' => $webPath]);
+    }
+
+    /**
+     * Remove avatar (AJAX)
+     */
+    public function removeAvatar(): void
+    {
+        $this->requireAuth();
+        $this->requireValidCSRF();
+
+        $userId = auth()['id'];
+        $user = $this->userModel->findById($userId);
+
+        if (!empty($user['avatar_path'])) {
+            $filePath = dirname(__DIR__, 2) . '/public' . $user['avatar_path'];
+            if (file_exists($filePath)) {
+                unlink($filePath);
+            }
+        }
+
+        $this->userModel->removeAvatar($userId);
+
+        $this->json(['success' => true]);
+    }
+
+    /**
+     * Resize and center-crop image to a square, save as JPEG
+     */
+    private function resizeAvatar(string $filePath, int $size): void
+    {
+        $info = @getimagesize($filePath);
+        if (!$info) return;
+
+        $src = match ($info['mime']) {
+            'image/jpeg' => @imagecreatefromjpeg($filePath),
+            'image/png' => @imagecreatefrompng($filePath),
+            'image/webp' => @imagecreatefromwebp($filePath),
+            'image/gif' => @imagecreatefromgif($filePath),
+            default => null,
+        };
+        if (!$src) return;
+
+        $w = imagesx($src);
+        $h = imagesy($src);
+
+        // Center-crop to square
+        $cropSize = min($w, $h);
+        $x = (int)(($w - $cropSize) / 2);
+        $y = (int)(($h - $cropSize) / 2);
+
+        $dst = imagecreatetruecolor($size, $size);
+        imagecopyresampled($dst, $src, 0, 0, $x, $y, $size, $size, $cropSize, $cropSize);
+
+        imagejpeg($dst, $filePath, 90);
+        imagedestroy($src);
+        imagedestroy($dst);
+    }
+
+    /**
      * Require authentication
      */
     protected function requireAuth(): void

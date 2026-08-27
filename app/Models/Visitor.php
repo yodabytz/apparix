@@ -19,7 +19,8 @@ class Visitor extends Model
         'curl', 'wget', 'python', 'scrapy', 'axios', 'node-fetch', 'go-http-client',
         'java/', 'libwww', 'uptimerobot', 'pingdom', 'monitoring', 'gtmetrix', 'pagespeed',
         'screaming frog', 'ahrefsbot', 'blexbot', 'dataforseo', 'megaindex', 'rogerbot',
-        'apparix-update'
+        'apparix-update', 'domainchecker', 'httpx', 'nuclei', 'zgrab', 'masscan',
+        'censys', 'netcraft', 'archive.org', 'ia_archiver'
     ];
 
     /**
@@ -36,8 +37,6 @@ class Visitor extends Model
         '209.85.128.0/17',   // Google
         '216.239.32.0/19',   // Google
         '192.178.0.0/15',    // Google cloud crawlers
-        '34.64.0.0/10',      // Google Cloud (some bots)
-        '35.192.0.0/11',     // Google Cloud
         // Microsoft/Bing
         '40.77.167.0/24',    // Bing
         '157.55.39.0/24',    // Bing
@@ -54,6 +53,26 @@ class Visitor extends Model
         // Cloud providers (scrapers/bots)
         '167.99.0.0/16',     // DigitalOcean
         '134.209.0.0/16',    // DigitalOcean
+        '137.184.0.0/16',    // DigitalOcean
+        '139.59.0.0/16',     // DigitalOcean
+        '142.93.0.0/16',     // DigitalOcean
+        '143.198.0.0/16',    // DigitalOcean
+        '157.230.0.0/16',    // DigitalOcean
+        '159.65.0.0/16',     // DigitalOcean
+        '159.89.0.0/16',     // DigitalOcean
+        '161.35.0.0/16',     // DigitalOcean
+        '164.90.0.0/16',     // DigitalOcean
+        '165.22.0.0/16',     // DigitalOcean
+        '165.227.0.0/16',    // DigitalOcean
+        '167.71.0.0/16',     // DigitalOcean
+        '167.172.0.0/16',    // DigitalOcean
+        '170.64.0.0/16',     // DigitalOcean
+        '174.138.0.0/16',    // DigitalOcean
+        '178.128.0.0/16',    // DigitalOcean
+        '188.166.0.0/16',    // DigitalOcean
+        '198.199.64.0/18',   // DigitalOcean
+        '209.38.0.0/16',     // DigitalOcean
+        '46.101.0.0/16',     // DigitalOcean
         '54.39.0.0/16',      // OVH Hosting
         '51.79.0.0/16',      // OVH
         '152.69.0.0/16',     // Oracle Cloud
@@ -62,10 +81,96 @@ class Visitor extends Model
         // Tencent Cloud (Chinese scrapers)
         '43.128.0.0/10',     // Tencent Cloud (43.128-43.191)
         '49.51.0.0/16',      // Tencent Cloud
+        '49.232.0.0/16',     // Tencent Cloud
+        '82.156.0.0/16',     // Tencent Cloud
+        '82.157.0.0/16',     // Tencent Cloud
+        '101.42.0.0/16',     // Tencent Cloud
+        '101.43.0.0/16',     // Tencent Cloud
+        '120.53.0.0/16',     // Tencent Cloud
+        '140.143.0.0/16',    // Tencent Cloud
+        '152.136.0.0/16',    // Tencent Cloud
         '170.106.0.0/16',    // Tencent Cloud
+        // Huawei Cloud
+        '119.8.0.0/16',      // Huawei Cloud
+        '119.13.0.0/16',     // Huawei Cloud
+        '124.156.0.0/16',    // Huawei Cloud
+        '124.243.0.0/16',    // Huawei Cloud
+        '159.138.0.0/16',    // Huawei Cloud
+        '166.108.0.0/16',    // Huawei Cloud
+        '111.119.0.0/16',    // Huawei Cloud
+        '101.46.0.0/16',     // Huawei Cloud
+        // Alibaba Cloud
+        '47.74.0.0/15',      // Alibaba Cloud
+        '47.88.0.0/14',      // Alibaba Cloud
+        '47.254.0.0/16',     // Alibaba Cloud
+        '8.208.0.0/12',      // Alibaba Cloud
+        '149.129.0.0/16',    // Alibaba Cloud
+        // Hetzner
+        '49.12.0.0/14',      // Hetzner (49.12-49.15)
+        '65.108.0.0/16',     // Hetzner
+        '65.109.0.0/16',     // Hetzner
+        '95.216.0.0/16',     // Hetzner
+        '135.181.0.0/16',    // Hetzner
+        '136.243.0.0/16',    // Hetzner
+        '138.201.0.0/16',    // Hetzner
+        '142.132.0.0/16',    // Hetzner
+        '144.76.0.0/16',     // Hetzner
+        '148.251.0.0/16',    // Hetzner
+        '157.90.0.0/16',     // Hetzner
+        '159.69.0.0/16',     // Hetzner
+        '162.55.0.0/16',     // Hetzner
+        '168.119.0.0/16',    // Hetzner
+        '176.9.0.0/16',      // Hetzner
+        '178.63.0.0/16',     // Hetzner
+        '188.40.0.0/16',     // Hetzner
+        '195.201.0.0/16',    // Hetzner
+        '213.133.0.0/16',    // Hetzner
+        '213.239.0.0/16',    // Hetzner
+        // Linode/Akamai
+        '172.104.0.0/15',    // Linode
+        '172.232.0.0/15',    // Linode
+        '139.162.0.0/16',    // Linode
+        '194.195.0.0/16',    // Linode
+        '45.33.0.0/16',      // Linode
+        '45.56.0.0/16',      // Linode
+        '45.79.0.0/16',      // Linode
+        '50.116.0.0/16',     // Linode
+        '66.175.208.0/20',   // Linode
+        '69.164.192.0/18',   // Linode
+        '96.126.96.0/19',    // Linode
+        '173.255.192.0/18',  // Linode
+        // Vultr
+        '45.32.0.0/16',      // Vultr
+        '45.63.0.0/16',      // Vultr
+        '45.76.0.0/16',      // Vultr
+        '45.77.0.0/16',      // Vultr
+        '64.176.0.0/16',     // Vultr
+        '66.42.0.0/16',      // Vultr
+        '78.141.192.0/18',   // Vultr
+        '95.179.0.0/16',     // Vultr
+        '104.156.224.0/19',  // Vultr
+        '108.61.0.0/16',     // Vultr
+        '136.244.0.0/16',    // Vultr
+        '140.82.0.0/16',     // Vultr
+        '149.28.0.0/16',     // Vultr
+        '155.138.0.0/16',    // Vultr
+        '207.148.0.0/16',    // Vultr
+        '209.222.0.0/16',    // Vultr
+        '217.69.0.0/16',     // Vultr
         // Hosting/VPS providers
         '45.149.0.0/16',     // Clouvider
         '23.230.0.0/16',     // EGI Hosting
+        '5.133.192.0/19',    // Swedish hosting
+        '80.66.64.0/18',     // Hosting (Moldova scrapers)
+        '94.100.128.0/17',   // Hosting (DE scrapers)
+        '188.239.0.0/16',    // Ukrainian hosting
+        '193.187.108.0/24',  // Scraper hosting
+        '199.244.88.0/24',   // Scraper hosting
+        // Scaleway
+        '51.15.0.0/16',      // Scaleway
+        '51.158.0.0/16',     // Scaleway
+        '163.172.0.0/16',    // Scaleway
+        '212.47.224.0/19',   // Scaleway
         // Amazon AWS (data centers, not real users)
         '3.0.0.0/8',         // AWS (3.x.x.x)
         '13.0.0.0/8',        // AWS (13.x.x.x)
@@ -89,6 +194,9 @@ class Visitor extends Model
         '51.0.0.0/8',        // Azure (51.x.x.x)
         '52.0.0.0/8',        // Azure (52.x.x.x)
         '104.40.0.0/13',     // Azure
+        // Google Cloud
+        '34.64.0.0/10',      // Google Cloud (some bots)
+        '35.192.0.0/11',     // Google Cloud
         // Apparix update server
         '50.21.187.13/32',   // Quantumbytz (apparix.app)
     ];
@@ -175,18 +283,27 @@ class Visitor extends Model
             return true;
         }
 
-        // Chrome version check — auto-updates make very old/future versions impossible
+        // Chrome version check — auto-updates make old/future versions impossible
+        // Chrome 125 released May 2024; anyone on older is a bot or abandoned device
         if (preg_match('/Chrome\/(\d+)\./', $ua, $m)) {
             $ver = (int)$m[1];
-            if ($ver > 0 && ($ver < 90 || $ver > 135)) {
+            if ($ver > 0 && ($ver < 125 || $ver > 140)) {
                 return true;
             }
         }
 
         // Edge version check (same auto-update logic as Chrome)
-        if (preg_match('/Edg\/(\d+)\./', $ua, $m)) {
+        if (preg_match('/Edg(?:e|iOS)?\/(\d+)\./', $ua, $m)) {
             $ver = (int)$m[1];
-            if ($ver > 0 && ($ver < 90 || $ver > 135)) {
+            if ($ver > 0 && ($ver < 125 || $ver > 140)) {
+                return true;
+            }
+        }
+
+        // Firefox version check — auto-updates, anything below 125 is suspicious
+        if (preg_match('/Firefox\/(\d+)\./', $ua, $m)) {
+            $ver = (int)$m[1];
+            if ($ver > 0 && ($ver < 125 || $ver > 140)) {
                 return true;
             }
         }
@@ -660,13 +777,15 @@ class Visitor extends Model
             WHERE is_bot = 0
               AND (
                   user_agent LIKE 'User-Agent:%'
-                  OR user_agent REGEXP 'Chrome/([1-8][0-9]|[1-9])\\\\.'
-                  OR user_agent REGEXP 'Chrome/(1[3-9][6-9]|[2-9][0-9]{2})\\\\.'
-                  OR user_agent REGEXP 'Edg/([1-8][0-9]|[1-9])\\\\.'
+                  OR user_agent REGEXP 'Chrome/(1([0-1][0-9]|2[0-4])|[1-9][0-9]|[1-9])\\\\.'
+                  OR user_agent REGEXP 'Chrome/(14[1-9]|1[5-9][0-9]|[2-9][0-9]{2})\\\\.'
+                  OR user_agent REGEXP 'Edg/(1([0-1][0-9]|2[0-4])|[1-9][0-9]|[1-9])\\\\.'
+                  OR user_agent REGEXP 'Firefox/(1([0-1][0-9]|2[0-4])|[1-9][0-9]|[1-9])\\\\.'
                   OR (user_agent REGEXP 'OS (([1-9]|1[0-3])_)' AND (user_agent LIKE '%iPhone%' OR user_agent LIKE '%iPad%'))
                   OR (user_agent REGEXP 'Windows NT [3-5]\\\\.' AND user_agent LIKE '%Chrome%')
                   OR (user_agent LIKE '%Windows NT 6.0%' AND user_agent LIKE '%Chrome%')
                   OR (user_agent LIKE '%Windows NT 6.1%' AND user_agent LIKE '%Chrome%')
+                  OR user_agent LIKE '%DomainChecker%'
               )
         ";
 

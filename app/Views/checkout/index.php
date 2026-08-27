@@ -335,6 +335,13 @@ foreach ($items as $item) {
                                     <?php if (!empty($item['variant_name'])): ?>
                                         <div class="item-variant"><?php echo escape($item['variant_name']); ?></div>
                                     <?php endif; ?>
+                                    <?php if (!empty($item['customizations'])): ?>
+                                        <div class="customization-summary">
+                                            <?php foreach ($item['customizations'] as $customization): ?>
+                                                <small><strong><?php echo escape($customization['label']); ?>:</strong> <?php echo escape($customization['value']); ?></small>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    <?php endif; ?>
                                 </div>
                                 <div class="order-item-price"><?php echo formatPrice($itemTotal); ?></div>
                             </div>
@@ -493,6 +500,13 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     stripe = Stripe(stripePublicKey);
+
+    if (!isDigitalOnly) {
+        ['shipping_address1', 'shipping_city', 'shipping_state', 'shipping_postal', 'shipping_phone'].forEach(id => {
+            const field = document.getElementById(id);
+            if (field) field.addEventListener('blur', updateShippingRates);
+        });
+    }
 });
 
 // Initialize payment - called when Continue to Payment is clicked
@@ -544,16 +558,15 @@ async function initializePayment() {
         const shippingCountryEl = document.getElementById('shipping_country');
         const shippingCountry = shippingCountryEl ? shippingCountryEl.value : 'US';
 
+        const paymentParams = shippingRequestParams(true);
+        paymentParams.set('shipping_method_id', selectedShippingMethodId);
         const response = await fetch('/checkout/create-payment-intent', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
                 'X-Requested-With': 'XMLHttpRequest'
             },
-            body: '_csrf_token=' + encodeURIComponent(csrfToken) +
-                  '&shipping_method_id=' + encodeURIComponent(selectedShippingMethodId) +
-                  '&shipping_country=' + encodeURIComponent(shippingCountry) +
-                  '&shipping_state=' + encodeURIComponent(document.getElementById('shipping_state') ? document.getElementById('shipping_state').value : '')
+            body: paymentParams.toString()
         });
 
         const data = await response.json();
@@ -647,6 +660,23 @@ function showContinueError(message) {
     continueError.style.display = 'block';
 }
 
+function shippingRequestParams(includeCsrf = false) {
+    const params = new URLSearchParams();
+    const fields = [
+        'shipping_first_name', 'shipping_last_name', 'shipping_address1', 'shipping_address2',
+        'shipping_city', 'shipping_state', 'shipping_postal', 'shipping_country',
+        'shipping_phone', 'email'
+    ];
+    fields.forEach(id => {
+        const field = document.getElementById(id);
+        if (field) params.set(id, field.value);
+    });
+    params.set('country', params.get('shipping_country') || 'US');
+    params.set('state', params.get('shipping_state') || '');
+    if (includeCsrf) params.set('_csrf_token', csrfToken);
+    return params;
+}
+
 // Update shipping rates when country changes
 async function updateShippingRates() {
     // Block changes after payment is initialized (Stripe protection)
@@ -656,7 +686,6 @@ async function updateShippingRates() {
     }
 
     const country = document.getElementById('shipping_country').value;
-    const state = document.getElementById('shipping_state').value;
     const container = document.getElementById('shippingMethodsContainer');
     const errorEl = document.getElementById('shippingError');
     const progressEl = document.getElementById('freeShippingProgress');
@@ -689,7 +718,7 @@ async function updateShippingRates() {
                 'Content-Type': 'application/x-www-form-urlencoded',
                 'X-Requested-With': 'XMLHttpRequest'
             },
-            body: 'country=' + encodeURIComponent(country) + '&state=' + encodeURIComponent(state)
+            body: shippingRequestParams().toString()
         });
 
         const data = await response.json();

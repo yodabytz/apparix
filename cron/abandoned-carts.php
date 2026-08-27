@@ -4,14 +4,9 @@
  * Run every hour: 0 * * * * php /var/www/www.apparix.app/cron/abandoned-carts.php
  */
 
-require_once dirname(__DIR__) . '/public/index.php';
+require_once __DIR__ . '/bootstrap.php';
 
 use App\Models\AbandonedCart;
-
-// Only run via CLI
-if (php_sapi_name() !== 'cli') {
-    exit('This script must be run from the command line.');
-}
 
 $abandonedCart = new AbandonedCart();
 

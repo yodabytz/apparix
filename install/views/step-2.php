@@ -1,85 +1,29 @@
 <div class="card">
-    <h1 class="card-title">Database Configuration</h1>
-    <p class="card-description">Enter your MySQL database credentials.</p>
+    <h1 class="card-title">System Requirements</h1>
+    <p class="card-description">Let's check if your server meets the requirements.</p>
 
-    <form method="POST" action="/install?step=2" id="db-form">
-        <div class="form-row">
-            <div class="form-group">
-                <label for="db_host">Database Host</label>
-                <input type="text" name="db_host" id="db_host" class="form-control"
-                       value="<?php echo htmlspecialchars($_SESSION['install']['db_host'] ?? 'localhost'); ?>"
-                       placeholder="localhost">
-            </div>
+    <ul class="requirements-list">
+        <?php foreach ($requirements['requirements'] as $req): ?>
+            <li>
+                <div class="req-name"><?php echo htmlspecialchars($req['name']); ?></div>
+                <div class="req-status <?php echo $req['passed'] ? 'req-passed' : 'req-failed'; ?>">
+                    <?php echo htmlspecialchars($req['current']); ?>
+                    <?php if (!$req['passed']): ?>
+                        <span>(Required: <?php echo htmlspecialchars($req['required']); ?>)</span>
+                    <?php endif; ?>
+                </div>
+            </li>
+        <?php endforeach; ?>
+    </ul>
 
-            <div class="form-group">
-                <label for="db_name">Database Name</label>
-                <input type="text" name="db_name" id="db_name" class="form-control"
-                       value="<?php echo htmlspecialchars($_SESSION['install']['db_name'] ?? ''); ?>"
-                       placeholder="apparix_store" required>
-            </div>
-        </div>
-
-        <div class="form-row">
-            <div class="form-group">
-                <label for="db_user">Database User</label>
-                <input type="text" name="db_user" id="db_user" class="form-control"
-                       value="<?php echo htmlspecialchars($_SESSION['install']['db_user'] ?? ''); ?>"
-                       placeholder="root" required>
-            </div>
-
-            <div class="form-group">
-                <label for="db_pass">Database Password</label>
-                <input type="password" name="db_pass" id="db_pass" class="form-control"
-                       value="<?php echo htmlspecialchars($_SESSION['install']['db_pass'] ?? ''); ?>"
-                       placeholder="Enter password">
-            </div>
-        </div>
-
-        <div class="form-group">
-            <button type="button" class="btn btn-secondary" id="test-connection">Test Connection</button>
-            <span id="connection-status" style="margin-left: 12px;"></span>
-        </div>
-
+    <form method="POST" action="/install?step=2">
         <div class="form-actions">
             <a href="/install?step=1" class="btn btn-secondary">Back</a>
-            <button type="submit" class="btn btn-primary btn-lg">Continue</button>
+            <?php if ($requirements['passed']): ?>
+                <button type="submit" class="btn btn-primary btn-lg">Continue</button>
+            <?php else: ?>
+                <button type="button" class="btn btn-secondary btn-lg" disabled>Fix Issues to Continue</button>
+            <?php endif; ?>
         </div>
     </form>
 </div>
-
-<script>
-document.getElementById('test-connection').addEventListener('click', function() {
-    const form = document.getElementById('db-form');
-    const status = document.getElementById('connection-status');
-    const btn = this;
-
-    btn.disabled = true;
-    btn.textContent = 'Testing...';
-    status.textContent = '';
-
-    const formData = new FormData(form);
-
-    fetch('/install?action=test-database', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            status.style.color = '#10b981';
-            status.textContent = data.message;
-        } else {
-            status.style.color = '#ef4444';
-            status.textContent = data.error;
-        }
-        btn.disabled = false;
-        btn.textContent = 'Test Connection';
-    })
-    .catch(err => {
-        status.style.color = '#ef4444';
-        status.textContent = 'Connection test failed';
-        btn.disabled = false;
-        btn.textContent = 'Test Connection';
-    });
-});
-</script>

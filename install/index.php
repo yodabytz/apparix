@@ -2,14 +2,15 @@
 /**
  * Apparix E-Commerce Platform Installer
  *
- * This installer guides users through setting up their store:
- * 1. Requirements check
- * 2. Database configuration
- * 3. Store information
- * 4. Admin account creation
- * 5. Optional integrations (Stripe, Email, reCAPTCHA)
- * 6. Theme selection
- * 7. Completion
+ * Steps:
+ * 1. License key validation (REQUIRED — gates the entire installer)
+ * 2. Requirements check
+ * 3. Database configuration
+ * 4. Store information
+ * 5. Admin account creation
+ * 6. Optional integrations (Stripe, Email, reCAPTCHA)
+ * 7. Theme selection
+ * 8. Completion
  */
 
 // Prevent access if already installed
@@ -17,9 +18,8 @@ $basePath = dirname(__DIR__);
 $lockFile = $basePath . '/storage/.installed';
 
 if (file_exists($lockFile)) {
-    // Allow the completion page to render even after install
     if (isset($_GET['step']) && $_GET['step'] === 'complete') {
-        // Fall through to render the complete view
+        // Allow the completion page to render
     } else {
         header('Location: /');
         exit;
@@ -38,9 +38,62 @@ define('PUBLIC_PATH', $basePath . '/public');
 require_once INSTALL_PATH . '/classes/RequirementsChecker.php';
 require_once INSTALL_PATH . '/classes/Installer.php';
 
+// Load License class for validation
+require_once BASE_PATH . '/app/Core/License.php';
+
+// Load .env file for pre-filling fields
+$envFile = $basePath . '/.env';
+$envVars = [];
+if (file_exists($envFile)) {
+    $envLines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($envLines as $line) {
+        $line = trim($line);
+        if ($line === '' || $line[0] === '#') continue;
+        if (strpos($line, '=') !== false) {
+            list($key, $val) = explode('=', $line, 2);
+            $envVars[trim($key)] = trim($val);
+        }
+    }
+}
+
+// Pre-fill DB credentials from .env if not already in session
+if (!isset($_SESSION['install']['db_host']) && !empty($envVars)) {
+    $envHost = $envVars['DB_HOST'] ?? ($_ENV['DB_HOST'] ?? getenv('DB_HOST'));
+    $envName = $envVars['DB_NAME'] ?? ($_ENV['DB_NAME'] ?? getenv('DB_NAME'));
+    $envUser = $envVars['DB_USER'] ?? ($_ENV['DB_USER'] ?? getenv('DB_USER'));
+    $envPass = $envVars['DB_PASS'] ?? ($_ENV['DB_PASS'] ?? getenv('DB_PASS'));
+
+    if ($envHost && $envName && $envUser) {
+        $_SESSION['install']['db_host'] = $envHost;
+        $_SESSION['install']['db_name'] = $envName;
+        $_SESSION['install']['db_user'] = $envUser;
+        $_SESSION['install']['db_pass'] = $envPass ?: '';
+    }
+}
+
+// Pre-fill store URL and app name from .env
+if (!isset($_SESSION['install']['store_url']) && !empty($envVars)) {
+    if (!empty($envVars['APP_URL'])) {
+        $_SESSION['install']['store_url'] = $envVars['APP_URL'];
+    }
+    if (!empty($envVars['APP_NAME'])) {
+        $_SESSION['install']['store_name'] = $envVars['APP_NAME'];
+    }
+}
+
+// Pre-fill license key from .env
+if (!isset($_SESSION['install']['license_key']) && !empty($envVars['LICENSE_KEY'])) {
+    $_SESSION['install']['license_key'] = $envVars['LICENSE_KEY'];
+}
+
 // Determine current step
 $step = isset($_GET['step']) ? (int)$_GET['step'] : 1;
-$step = max(1, min(7, $step));
+$step = max(1, min(8, $step));
+
+// SECURITY: Block access to any step beyond 1 if license not validated
+if ($step > 1 && empty($_SESSION['install']['license_validated'])) {
+    $step = 1;
+}
 
 // Handle AJAX requests
 if (isset($_GET['action'])) {
@@ -74,6 +127,12 @@ function handleAjaxAction(string $action): void
 {
     header('Content-Type: application/json');
 
+    // Block AJAX if license not validated
+    if (empty($_SESSION['install']['license_validated'])) {
+        echo json_encode(['success' => false, 'error' => 'License not validated']);
+        return;
+    }
+
     switch ($action) {
         case 'test-database':
             $host = $_POST['db_host'] ?? 'localhost';
@@ -87,7 +146,6 @@ function handleAjaxAction(string $action): void
                     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
                 ]);
 
-                // Check if database exists
                 $stmt = $pdo->query("SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = " . $pdo->quote($name));
                 $exists = $stmt->fetch();
 
@@ -115,25 +173,60 @@ function handleAjaxAction(string $action): void
 function handleStepSubmission(int $step): array
 {
     switch ($step) {
-        case 1: // Requirements - just proceed
+        case 1: // License key validation
+            $licenseKey = trim($_POST['license_key'] ?? '');
+
+            if (empty($licenseKey)) {
+                return ['success' => false, 'error' => 'License key is required'];
+            }
+
+            // Validate using the License class
+            $result = \App\Core\License::validateKey($licenseKey);
+
+            if (!$result['valid']) {
+                $errorMsg = 'Invalid license key';
+                if (!empty($result['error'])) {
+                    switch ($result['error']) {
+                        case 'INVALID_FORMAT':
+                            $errorMsg = 'Invalid license key format. Keys start with APX- followed by 4 groups of 5 characters.';
+                            break;
+                        case 'INVALID_CHECKSUM':
+                            $errorMsg = 'This license key is not valid. Please check your key and try again.';
+                            break;
+                        case 'DOMAIN_MISMATCH':
+                            $errorMsg = 'This license key is locked to a different domain.';
+                            break;
+                        default:
+                            $errorMsg = 'License validation failed: ' . $result['error'];
+                    }
+                }
+                return ['success' => false, 'error' => $errorMsg];
+            }
+
+            $_SESSION['install']['license_key'] = $licenseKey;
+            $_SESSION['install']['license_edition'] = $result['edition'] ?? 'standard';
+            $_SESSION['install']['license_validated'] = true;
+
             return ['success' => true, 'redirect' => '/install?step=2'];
 
-        case 2: // Database
+        case 2: // Requirements - just proceed
+            return ['success' => true, 'redirect' => '/install?step=3'];
+
+        case 3: // Database
             $_SESSION['install']['db_host'] = $_POST['db_host'] ?? 'localhost';
             $_SESSION['install']['db_name'] = $_POST['db_name'] ?? '';
             $_SESSION['install']['db_user'] = $_POST['db_user'] ?? '';
             $_SESSION['install']['db_pass'] = $_POST['db_pass'] ?? '';
 
-            // Validate connection
             try {
                 $installer = new Installer($_SESSION['install']);
                 $installer->testDatabaseConnection();
-                return ['success' => true, 'redirect' => '/install?step=3'];
+                return ['success' => true, 'redirect' => '/install?step=4'];
             } catch (Exception $e) {
                 return ['success' => false, 'error' => $e->getMessage()];
             }
 
-        case 3: // Store info
+        case 4: // Store info
             $_SESSION['install']['store_name'] = trim($_POST['store_name'] ?? '');
             $_SESSION['install']['store_url'] = trim($_POST['store_url'] ?? '');
             $_SESSION['install']['store_email'] = trim($_POST['store_email'] ?? '');
@@ -142,9 +235,9 @@ function handleStepSubmission(int $step): array
                 return ['success' => false, 'error' => 'Store name is required'];
             }
 
-            return ['success' => true, 'redirect' => '/install?step=4'];
+            return ['success' => true, 'redirect' => '/install?step=5'];
 
-        case 4: // Admin account
+        case 5: // Admin account
             $_SESSION['install']['admin_name'] = trim($_POST['admin_name'] ?? '');
             $_SESSION['install']['admin_email'] = trim($_POST['admin_email'] ?? '');
             $_SESSION['install']['admin_password'] = $_POST['admin_password'] ?? '';
@@ -159,9 +252,9 @@ function handleStepSubmission(int $step): array
                 return ['success' => false, 'error' => 'Password must be at least 8 characters'];
             }
 
-            return ['success' => true, 'redirect' => '/install?step=5'];
+            return ['success' => true, 'redirect' => '/install?step=6'];
 
-        case 5: // Optional integrations
+        case 6: // Optional integrations
             $_SESSION['install']['stripe_public'] = trim($_POST['stripe_public'] ?? '');
             $_SESSION['install']['stripe_secret'] = trim($_POST['stripe_secret'] ?? '');
             $_SESSION['install']['mail_host'] = trim($_POST['mail_host'] ?? '');
@@ -170,18 +263,17 @@ function handleStepSubmission(int $step): array
             $_SESSION['install']['recaptcha_site'] = trim($_POST['recaptcha_site'] ?? '');
             $_SESSION['install']['recaptcha_secret'] = trim($_POST['recaptcha_secret'] ?? '');
 
-            return ['success' => true, 'redirect' => '/install?step=6'];
-
-        case 6: // Theme selection
-            $_SESSION['install']['theme'] = $_POST['theme'] ?? 'boutique';
             return ['success' => true, 'redirect' => '/install?step=7'];
 
-        case 7: // Run installation
+        case 7: // Theme selection
+            $_SESSION['install']['theme'] = $_POST['theme'] ?? 'apparix';
+            return ['success' => true, 'redirect' => '/install?step=8'];
+
+        case 8: // Run installation
             try {
                 $installer = new Installer($_SESSION['install']);
                 $installer->run();
 
-                // Clear session data
                 unset($_SESSION['install']);
 
                 return ['success' => true, 'redirect' => '/install?step=complete'];
@@ -202,26 +294,36 @@ function renderStep(int $step, ?string $error, ?string $success): void
     // Check if installation is complete
     if (isset($_GET['step']) && $_GET['step'] === 'complete') {
         $viewFile = INSTALL_PATH . '/views/complete.php';
-        $step = 8; // Use step 8 for complete (after step 7)
+        $step = 9;
         include INSTALL_PATH . '/views/layout.php';
         return;
     }
 
-    // Get requirements for step 1
+    // Get requirements for step 2
     $requirements = null;
-    if ($step === 1) {
+    if ($step === 2) {
         $checker = new RequirementsChecker();
         $requirements = $checker->check();
     }
 
-    // Get themes for step 6
+    // Get themes for step 7
     $themes = null;
-    if ($step === 6) {
+    if ($step === 7) {
         $themes = [
+            'apparix' => [
+                'name' => 'Apparix',
+                'description' => 'Clean and modern, the default Apparix look',
+                'color' => '#2186c4'
+            ],
             'boutique' => [
                 'name' => 'Boutique',
-                'description' => 'Elegant and feminine, perfect for handmade goods',
+                'description' => 'Elegant and refined, perfect for handmade goods',
                 'color' => '#FF68C5'
+            ],
+            'celtic' => [
+                'name' => 'Celtic',
+                'description' => 'Rich heritage tones, ideal for artisan and craft stores',
+                'color' => '#1b5e3a'
             ],
             'tech' => [
                 'name' => 'Tech',

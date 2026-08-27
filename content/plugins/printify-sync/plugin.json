@@ -1,0 +1,39 @@
+{
+    "slug": "printify-sync",
+    "name": "Printify Sync",
+    "description": "Sync selected products, automatic inventory, live shipping, fulfillment, tracking, and order statuses with Printify.",
+    "version": "1.0.8",
+    "author": "Apparix",
+    "author_url": "https://apparix.app",
+    "type": "marketplace",
+    "icon": "printify-logo.svg",
+    "default_settings": {
+        "api_token": "",
+        "shop_id": "",
+        "sync_products": [],
+        "variant_map": {},
+        "default_blueprint_id": "",
+        "default_print_provider_id": "",
+        "default_variant_id": "",
+        "publish_after_create": false,
+        "send_orders": true,
+        "sync_order_statuses": false,
+        "sync_inventory": true,
+        "inventory_sync_interval_hours": 1,
+        "sync_price": true
+    },
+    "settings": [
+        {
+            "key": "api_token",
+            "label": "Personal Access Token",
+            "type": "password",
+            "required": true
+        },
+        {
+            "key": "shop_id",
+            "label": "Printify Shop ID",
+            "type": "text",
+            "required": true
+        }
+    ]
+}

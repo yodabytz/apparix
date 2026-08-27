@@ -6,6 +6,7 @@ use App\Core\Controller;
 use App\Core\Database;
 use App\Core\Shipping\ShippingCalculator;
 use App\Core\OrderNotificationService;
+use App\Core\Plugins\HookRegistry;
 use App\Models\Bundle;
 use App\Models\Cart;
 use App\Models\Product;
@@ -131,13 +132,29 @@ class CheckoutController extends Controller
         // Get shipping info from POST (sent when Continue to Payment is clicked)
         $shippingMethodId = $this->post('shipping_method_id', '');
         $shippingCountry = $this->post('shipping_country', 'US');
+        $shippingAddress = $this->checkoutShippingAddress();
 
         // Calculate shipping cost using getRate() - skip for digital-only orders
         $shippingCost = 0;
         if (!$isDigitalOnly && $shippingMethodId && $shippingMethodId !== 'digital') {
-            $rateInfo = $this->shippingCalculator->getRate((int)$shippingMethodId, $subtotal, $items, $shippingCountry);
+            $shippingMethodIdInt = (int)$shippingMethodId;
+            $rateInfo = $shippingMethodIdInt > 0
+                ? $this->shippingCalculator->getRate($shippingMethodIdInt, $subtotal, $items, $shippingCountry)
+                : null;
+            $rateInfo = HookRegistry::applyFilters(
+                'checkout_shipping_rate',
+                $rateInfo,
+                $items,
+                $shippingAddress,
+                $shippingMethodIdInt
+            );
             if ($rateInfo) {
                 $shippingCost = $rateInfo['rate'] ?? 0;
+            }
+
+            if (!$rateInfo) {
+                $this->json(['error' => 'Unable to verify shipping for this destination. Please try again.'], 400);
+                return;
             }
         }
 
@@ -454,7 +471,16 @@ class CheckoutController extends Controller
         $estimatedDelivery = null;
 
         if (!$isDigitalOnly && $shippingMethodId) {
-            $rateInfo = $this->shippingCalculator->getRate($shippingMethodId, $subtotal, $items, $shippingCountry);
+            $rateInfo = $shippingMethodId > 0
+                ? $this->shippingCalculator->getRate($shippingMethodId, $subtotal, $items, $shippingCountry)
+                : null;
+            $rateInfo = HookRegistry::applyFilters(
+                'checkout_shipping_rate',
+                $rateInfo,
+                $items,
+                $this->checkoutShippingAddress(),
+                $shippingMethodId
+            );
             if ($rateInfo) {
                 $shippingCost = $rateInfo['rate'] ?? 0;
                 $shippingMethodName = $rateInfo['name'] ?? 'Standard Shipping';
@@ -760,9 +786,9 @@ class CheckoutController extends Controller
 
                 $isBackorder = !empty($item['is_backorder']) ? 1 : 0;
                 $db->insert(
-                    "INSERT INTO order_items (order_id, product_id, variant_id, product_name, variant_name, product_sku, quantity, price, cost, total, is_backorder)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                    [$orderId, $item['product_id'], $item['variant_id'] ?? null, $productName, $variantName, $item['sku'], $item['quantity'], $itemPrice, $item['unit_cost'] ?? null, $itemTotal, $isBackorder]
+                    "INSERT INTO order_items (order_id, product_id, variant_id, product_name, variant_name, product_sku, quantity, price, cost, total, is_backorder, customizations)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    [$orderId, $item['product_id'], $item['variant_id'] ?? null, $productName, $variantName, $item['sku'], $item['quantity'], $itemPrice, $item['unit_cost'] ?? null, $itemTotal, $isBackorder, !empty($item['customizations']) ? json_encode($item['customizations'], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) : null]
                 );
 
                 // Decrement inventory (skip for digital products and backorder items, rows are already locked by FOR UPDATE above)
@@ -864,6 +890,12 @@ class CheckoutController extends Controller
             }
 
             $db->commit();
+
+            try {
+                \App\Core\Plugins\HookRegistry::doAction('after_order_create', (int)$orderId);
+            } catch (\Throwable $hookError) {
+                error_log("after_order_create hook failed for order {$orderId}: " . $hookError->getMessage());
+            }
 
             // Send notifications (push + email) - non-blocking
             try {
@@ -1144,6 +1176,25 @@ class CheckoutController extends Controller
     }
 
     /**
+     * Normalize the checkout destination for shipping providers.
+     */
+    private function checkoutShippingAddress(): array
+    {
+        return [
+            'first_name' => trim((string)$this->post('shipping_first_name', '')),
+            'last_name' => trim((string)$this->post('shipping_last_name', '')),
+            'address1' => trim((string)$this->post('shipping_address1', '')),
+            'address2' => trim((string)$this->post('shipping_address2', '')),
+            'city' => trim((string)$this->post('shipping_city', '')),
+            'state' => trim((string)$this->post('shipping_state', '')),
+            'postal' => trim((string)$this->post('shipping_postal', '')),
+            'country' => trim((string)$this->post('shipping_country', 'US')),
+            'phone' => trim((string)$this->post('shipping_phone', '')),
+            'email' => trim((string)$this->post('email', '')),
+        ];
+    }
+
+    /**
      * Build a fingerprint of the cart contents for tamper detection
      */
     private function buildCartFingerprint(array $items): string
@@ -1154,7 +1205,7 @@ class CheckoutController extends Controller
             if (!empty($item['price_adjustment'])) {
                 $price += $item['price_adjustment'];
             }
-            $parts[] = $item['product_id'] . ':' . ($item['variant_id'] ?? 0) . ':' . $item['quantity'] . ':' . $price;
+            $parts[] = $item['product_id'] . ':' . ($item['variant_id'] ?? 0) . ':' . ($item['customization_hash'] ?? '') . ':' . $item['quantity'] . ':' . $price;
         }
         sort($parts);
         return md5(implode('|', $parts));

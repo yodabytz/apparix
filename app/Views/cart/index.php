@@ -65,7 +65,13 @@
                                         <?php if (!empty($item['variant_name'])): ?>
                                             <small class="variant-info"><?php echo escape($item['variant_name']); ?></small>
                                         <?php endif; ?>
-                                        <?php if (!empty($item['is_backorder'])): ?>
+                                        <?php if (!empty($item['customizations'])): ?>
+                                            <div class="customization-summary">
+                                                <?php foreach ($item['customizations'] as $customization): ?>
+                                                    <small><strong><?php echo escape($customization['label']); ?>:</strong> <?php echo escape($customization['value']); ?></small>
+                                                <?php endforeach; ?>
+                                            </div>
+                                        <?php endif; ?>                                        <?php if (!empty($item['is_backorder'])): ?>
                                             <span class="backorder-badge">Backorder</span>
                                         <?php endif; ?>
                                     </div>
@@ -105,10 +111,11 @@
 
                         <?php if ($hasPhysicalItems): ?>
                         <?php
-                        // Free shipping threshold
-                        $freeShippingThreshold = 200.00;
+                        // Free shipping threshold — from admin settings
+                        $settingModel = new \App\Models\Setting();
+                        $freeShippingThreshold = (float)$settingModel->get('free_shipping_threshold', '0');
                         $amountToFreeShipping = $freeShippingThreshold - $cartTotal;
-                        $progressPercent = min(100, ($cartTotal / $freeShippingThreshold) * 100);
+                        $progressPercent = $freeShippingThreshold > 0 ? min(100, ($cartTotal / $freeShippingThreshold) * 100) : 0;
 
                         // Check if all items already ship free
                         $allItemsShipFree = true;
@@ -119,6 +126,7 @@
                             }
                         }
                         ?>
+                        <?php if ($freeShippingThreshold > 0 || $allItemsShipFree): ?>
                         <div class="free-shipping-progress">
                             <?php if ($allItemsShipFree): ?>
                                 <div class="shipping-message success">
@@ -156,6 +164,7 @@
                                 </div>
                             <?php endif; ?>
                         </div>
+                        <?php endif; ?>
                         <?php else: ?>
                         <div class="digital-delivery-notice">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

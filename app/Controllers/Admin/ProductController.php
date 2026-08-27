@@ -371,6 +371,8 @@ class ProductController extends Controller
         $bundleModel = new Bundle();
         $quantityTiers = $bundleModel->getQuantityTiers($id);
 
+        $customizationFields = $this->productModel->getCustomizationFields((int)$id, false);
+
         // Get product FAQs
         $faqs = $db->select(
             "SELECT * FROM product_faqs WHERE product_id = ? ORDER BY sort_order ASC",
@@ -392,6 +394,7 @@ class ProductController extends Controller
             'shippingClasses' => $shippingClasses,
             'shippingOrigins' => $shippingOrigins,
             'quantityTiers' => $quantityTiers,
+            'customizationFields' => $customizationFields,
             'faqs' => $faqs
         ], 'admin');
     }
@@ -534,10 +537,80 @@ class ProductController extends Controller
         $bundleModel = new Bundle();
         $bundleModel->saveQuantityTiers($id, $tiers);
 
+        $customizationInput = $this->post('customization', []);
+        $this->saveCustomizationFields((int)$id, is_array($customizationInput) ? $customizationInput : []);
+
         $this->adminModel->logActivity($this->admin['admin_id'], 'update_product', 'product', $id, "Updated product: $name");
 
         setFlash('success', 'Product updated successfully!');
         $this->redirect('/admin/products/' . $id . '/edit');
+    }
+
+    private function saveCustomizationFields(int $productId, array $input): void
+    {
+        $db = Database::getInstance();
+        $existingIds = array_map('intval', $input['id'] ?? []);
+        $keys = $input['field_key'] ?? [];
+        $labels = $input['label'] ?? [];
+        $types = $input['field_type'] ?? [];
+        $placeholders = $input['placeholder'] ?? [];
+        $helpTexts = $input['help_text'] ?? [];
+        $maxLengths = $input['max_length'] ?? [];
+        $positions = $input['printify_position'] ?? [];
+        $sortOrders = $input['sort_order'] ?? [];
+        $required = array_map('intval', $input['is_required'] ?? []);
+        $active = array_map('intval', $input['is_active'] ?? []);
+        $savedIds = [];
+
+        foreach ($labels as $i => $rawLabel) {
+            $label = mb_substr(trim((string)$rawLabel), 0, 120);
+            $key = preg_replace('/[^a-z0-9_-]/', '', strtolower(trim((string)($keys[$i] ?? ''))));
+            if ($key === '' && $label !== '') {
+                $key = preg_replace('/[^a-z0-9_-]/', '', strtolower(str_replace(' ', '_', $label)));
+            }
+            if ($label === '' || $key === '') {
+                continue;
+            }
+
+            $type = in_array(($types[$i] ?? 'text'), ['text', 'textarea'], true) ? $types[$i] : 'text';
+            $maxLength = max(1, min(500, (int)($maxLengths[$i] ?? 100)));
+            $row = [
+                $productId,
+                mb_substr($key, 0, 64),
+                $label,
+                $type,
+                mb_substr(trim((string)($placeholders[$i] ?? '')), 0, 255) ?: null,
+                mb_substr(trim((string)($helpTexts[$i] ?? '')), 0, 255) ?: null,
+                in_array($i, $required, true) ? 1 : 0,
+                $maxLength,
+                mb_substr(trim((string)($positions[$i] ?? '')), 0, 64) ?: null,
+                (int)($sortOrders[$i] ?? $i),
+                in_array($i, $active, true) ? 1 : 0,
+            ];
+            $id = (int)($existingIds[$i] ?? 0);
+            if ($id > 0) {
+                $db->update(
+                    "UPDATE product_customization_fields SET field_key = ?, label = ?, field_type = ?, placeholder = ?, help_text = ?, is_required = ?, max_length = ?, printify_position = ?, sort_order = ?, is_active = ? WHERE id = ? AND product_id = ?",
+                    array_merge(array_slice($row, 1), [$id, $productId])
+                );
+                $savedIds[] = $id;
+            } else {
+                $savedIds[] = (int)$db->insert(
+                    "INSERT INTO product_customization_fields (product_id, field_key, label, field_type, placeholder, help_text, is_required, max_length, printify_position, sort_order, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    $row
+                );
+            }
+        }
+
+        if (!empty($savedIds)) {
+            $placeholdersSql = implode(',', array_fill(0, count($savedIds), '?'));
+            $db->update(
+                "DELETE FROM product_customization_fields WHERE product_id = ? AND id NOT IN ({$placeholdersSql})",
+                array_merge([$productId], $savedIds)
+            );
+        } else {
+            $db->update("DELETE FROM product_customization_fields WHERE product_id = ?", [$productId]);
+        }
     }
 
     /**

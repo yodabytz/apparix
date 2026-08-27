@@ -36,6 +36,7 @@ class AfterShipService
             'dhl' => 'dhl',
             'dhl_express' => 'dhl',
             'royal_mail' => 'royal-mail',
+            'evri' => 'myhermes-uk',
             'canada_post' => 'canada-post',
             'an_post' => 'an-post',
             'australia_post' => 'australia-post',

@@ -1,30 +1,48 @@
 <div class="card">
-    <h1 class="card-title">Store Information</h1>
-    <p class="card-description">Tell us about your store.</p>
+    <h1 class="card-title">Database Configuration</h1>
+    <p class="card-description">Enter your MySQL database credentials.</p>
 
-    <form method="POST" action="/install?step=3">
-        <div class="form-group">
-            <label for="store_name">Store Name *</label>
-            <input type="text" name="store_name" id="store_name" class="form-control"
-                   value="<?php echo htmlspecialchars($_SESSION['install']['store_name'] ?? ''); ?>"
-                   placeholder="My Awesome Store" required>
-            <span class="form-help">This will appear in the header and page titles</span>
+    <?php if (!empty($_SESSION['install']['db_host']) && $_SESSION['install']['db_host'] !== '127.0.0.1'): ?>
+        <div class="alert alert-success">Database credentials detected from your .env file.</div>
+    <?php endif; ?>
+
+    <form method="POST" action="/install?step=3" id="db-form">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="db_host">Database Host</label>
+                <input type="text" name="db_host" id="db_host" class="form-control"
+                       value="<?php echo htmlspecialchars($_SESSION['install']['db_host'] ?? '127.0.0.1'); ?>"
+                       placeholder="127.0.0.1">
+                <span class="form-help">Use "db" for Docker, or 127.0.0.1 for local installs</span>
+            </div>
+
+            <div class="form-group">
+                <label for="db_name">Database Name</label>
+                <input type="text" name="db_name" id="db_name" class="form-control"
+                       value="<?php echo htmlspecialchars($_SESSION['install']['db_name'] ?? ''); ?>"
+                       placeholder="apparix_store" required>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="db_user">Database User</label>
+                <input type="text" name="db_user" id="db_user" class="form-control"
+                       value="<?php echo htmlspecialchars($_SESSION['install']['db_user'] ?? ''); ?>"
+                       placeholder="root" required>
+            </div>
+
+            <div class="form-group">
+                <label for="db_pass">Database Password</label>
+                <input type="text" name="db_pass" id="db_pass" class="form-control"
+                       value="<?php echo htmlspecialchars($_SESSION['install']['db_pass'] ?? ''); ?>"
+                       placeholder="Enter password">
+            </div>
         </div>
 
         <div class="form-group">
-            <label for="store_url">Store URL</label>
-            <input type="url" name="store_url" id="store_url" class="form-control"
-                   value="<?php echo htmlspecialchars($_SESSION['install']['store_url'] ?? ''); ?>"
-                   placeholder="https://mystore.com">
-            <span class="form-help">The full URL where your store will be accessible</span>
-        </div>
-
-        <div class="form-group">
-            <label for="store_email">Contact Email</label>
-            <input type="email" name="store_email" id="store_email" class="form-control"
-                   value="<?php echo htmlspecialchars($_SESSION['install']['store_email'] ?? ''); ?>"
-                   placeholder="contact@mystore.com">
-            <span class="form-help">For customer inquiries and order notifications</span>
+            <button type="button" class="btn btn-secondary" id="test-connection">Test Connection</button>
+            <span id="connection-status" style="margin-left: 12px;"></span>
         </div>
 
         <div class="form-actions">
@@ -33,3 +51,40 @@
         </div>
     </form>
 </div>
+
+<script>
+document.getElementById('test-connection').addEventListener('click', function() {
+    const form = document.getElementById('db-form');
+    const status = document.getElementById('connection-status');
+    const btn = this;
+
+    btn.disabled = true;
+    btn.textContent = 'Testing...';
+    status.textContent = '';
+
+    const formData = new FormData(form);
+
+    fetch('/install?action=test-database', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            status.style.color = '#10b981';
+            status.textContent = data.message;
+        } else {
+            status.style.color = '#ef4444';
+            status.textContent = data.error;
+        }
+        btn.disabled = false;
+        btn.textContent = 'Test Connection';
+    })
+    .catch(err => {
+        status.style.color = '#ef4444';
+        status.textContent = 'Connection test failed';
+        btn.disabled = false;
+        btn.textContent = 'Test Connection';
+    });
+});
+</script>

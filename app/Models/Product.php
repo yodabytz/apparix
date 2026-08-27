@@ -158,6 +158,20 @@ class Product extends Model
     }
 
     /**
+     * Get product customization fields.
+     */
+    public function getCustomizationFields(int $productId, bool $activeOnly = true): array
+    {
+        $where = $activeOnly ? ' AND is_active = 1' : '';
+        return $this->query(
+            "SELECT * FROM product_customization_fields
+             WHERE product_id = ?{$where}
+             ORDER BY sort_order ASC, id ASC",
+            [$productId]
+        );
+    }
+
+    /**
      * Get all variants for a product
      */
     public function getVariants(int $productId): array
@@ -250,6 +264,7 @@ class Product extends Model
             $product['images'] = $primaryImages;
             $product['options'] = $this->getOptions($id);
             $product['variants'] = $this->getVariants($id);
+            $product['customization_fields'] = $this->getCustomizationFields($id);
         }
         return $product;
     }

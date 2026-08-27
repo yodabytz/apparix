@@ -119,11 +119,23 @@ class Installer
         foreach ($files as $file) {
             $sql = file_get_contents($file);
             if (!empty(trim($sql))) {
-                // Execute each statement separately (handle multiple statements)
                 $statements = $this->splitSqlStatements($sql);
                 foreach ($statements as $statement) {
-                    if (!empty(trim($statement))) {
-                        $this->pdo->query($statement);
+                    $trimmed = trim($statement);
+                    if (!empty($trimmed)) {
+                        try {
+                            $this->pdo->query($trimmed);
+                        } catch (PDOException $e) {
+                            // Skip "already exists" errors from ALTER TABLE / CREATE TABLE
+                            $code = $e->getCode();
+                            if (in_array($code, ['42S21', '42S01', '42000']) ||
+                                stripos($e->getMessage(), 'Duplicate column') !== false ||
+                                stripos($e->getMessage(), 'already exists') !== false ||
+                                stripos($e->getMessage(), 'Duplicate key name') !== false) {
+                                continue;
+                            }
+                            throw $e;
+                        }
                     }
                 }
             }
@@ -182,8 +194,14 @@ class Installer
      */
     private function createEnvFile(): void
     {
-        $envContent = $this->generateEnvContent();
         $envPath = BASE_PATH . '/.env';
+
+        // In Docker, the entrypoint already generates .env — don't overwrite it
+        if (getenv('DB_HOST') !== false && file_exists($envPath)) {
+            return;
+        }
+
+        $envContent = $this->generateEnvContent();
 
         // Backup existing .env if it exists
         if (file_exists($envPath)) {

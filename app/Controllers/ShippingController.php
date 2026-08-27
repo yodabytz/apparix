@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Core\Controller;
+use App\Core\Plugins\HookRegistry;
 use App\Core\Shipping\ShippingCalculator;
 use App\Models\Cart;
 
@@ -104,6 +105,27 @@ class ShippingController extends Controller
                 $stateCode ?: null,
                 $subtotal,
                 $items
+            );
+
+            $shippingAddress = [
+                'first_name' => trim((string)$this->post('shipping_first_name', '')),
+                'last_name' => trim((string)$this->post('shipping_last_name', '')),
+                'address1' => trim((string)$this->post('shipping_address1', '')),
+                'address2' => trim((string)$this->post('shipping_address2', '')),
+                'city' => trim((string)$this->post('shipping_city', '')),
+                'state' => trim((string)$stateCode),
+                'postal' => trim((string)$this->post('shipping_postal', '')),
+                'country' => trim((string)$countryCode),
+                'phone' => trim((string)$this->post('shipping_phone', '')),
+                'email' => trim((string)$this->post('email', '')),
+            ];
+
+            $result = HookRegistry::applyFilters(
+                'shipping_options',
+                $result,
+                $cartItems,
+                $shippingAddress,
+                $subtotal
             );
 
             echo json_encode($result);

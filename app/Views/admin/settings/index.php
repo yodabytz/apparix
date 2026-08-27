@@ -76,6 +76,16 @@
                 </div>
             </div>
 
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="free_shipping_threshold">Free Shipping Threshold ($)</label>
+                    <input type="number" name="free_shipping_threshold" id="free_shipping_threshold"
+                           value="<?php echo escape($settings['free_shipping_threshold'] ?? '0'); ?>"
+                           class="form-control" min="0" step="0.01" style="width: 140px;">
+                    <span class="form-help">Orders above this amount get free shipping. Set to 0 to disable the progress bar.</span>
+                </div>
+            </div>
+
             <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--admin-border);">
                 <h3 style="font-size: 0.95rem; margin: 0 0 16px 0;">Site Options</h3>
 

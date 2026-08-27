@@ -15,7 +15,8 @@ class AfterShipProvider implements TrackingProviderInterface
     private array $carrierMapping = [
         'usps' => 'usps', 'ups' => 'ups', 'fedex' => 'fedex',
         'dhl' => 'dhl', 'dhl_express' => 'dhl',
-        'royal_mail' => 'royal-mail', 'canada_post' => 'canada-post',
+        'royal_mail' => 'royal-mail', 'evri' => 'myhermes-uk',
+        'canada_post' => 'canada-post',
         'an_post' => 'an-post', 'australia_post' => 'australia-post',
     ];
 

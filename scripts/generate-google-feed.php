@@ -15,6 +15,7 @@ if (php_sapi_name() !== 'cli') {
 }
 
 define('BASE_PATH', dirname(__DIR__));
+require_once BASE_PATH . '/app/Core/GoogleMerchantItemId.php';
 
 // Load environment variables (same parser as index.php)
 $envFile = BASE_PATH . '/.env';
@@ -323,19 +324,17 @@ try {
     $hasImageOptionValues = true;
 } catch (PDOException $e) {}
 
-// Get all active products with inventory
+// Keep out-of-stock offers in the feed with the correct availability.
 $products = $db->query("
     SELECT p.*,
-           (SELECT image_path FROM product_images WHERE product_id = p.id ORDER BY is_primary DESC, sort_order ASC LIMIT 1) as primary_image,
-           (SELECT SUM(COALESCE(pv.inventory_count, 0)) FROM product_variants pv WHERE pv.product_id = p.id AND pv.is_active = 1) as variant_inventory
+           (SELECT image_path FROM product_images WHERE product_id = p.id ORDER BY is_primary DESC, sort_order ASC LIMIT 1) as primary_image
     FROM products p
     WHERE p.is_active = 1
     {$disabledClause}
-    AND (p.inventory_count > 0 OR EXISTS (SELECT 1 FROM product_variants pv WHERE pv.product_id = p.id AND pv.inventory_count > 0 AND pv.is_active = 1))
     ORDER BY p.id
 ")->fetchAll();
 
-echo "Found " . count($products) . " active products with inventory\n";
+echo "Found " . count($products) . " active products\n";
 
 // Start XML
 $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
@@ -348,195 +347,163 @@ $xml .= "<description>" . xmlEscape($storeName) . " Product Feed</description>\n
 $itemCount = 0;
 $skipped = 0;
 
-foreach ($products as $product) {
-    $productId = $product['id'];
-    $productName = $product['name'];
-    $productSlug = $product['slug'];
-    $description = cleanDescription($product['description'] ?: $productName);
-    $price = number_format((float)($product['sale_price'] ?: $product['price']), 2, '.', '');
-    $originalPrice = number_format((float)$product['price'], 2, '.', '');
-    $productUrl = "{$storeUrl}/products/{$productSlug}";
-    $imageUrl = $product['primary_image'] ? "{$storeUrl}{$product['primary_image']}" : '';
+$categoryStmt = $db->prepare("
+    SELECT c.name FROM categories c
+    JOIN product_categories pc ON c.id = pc.category_id
+    WHERE pc.product_id = ?
+");
+$variantStmt = $db->prepare("
+    SELECT * FROM product_variants
+    WHERE product_id = ? AND is_active = 1
+    ORDER BY id
+");
+$variantOptionsStmt = $db->prepare("
+    SELECT po.option_name, pov.value_name, pov.id AS option_value_id
+    FROM variant_option_values vov
+    JOIN product_option_values pov ON pov.id = vov.option_value_id
+    JOIN product_options po ON po.id = pov.option_id
+    WHERE vov.variant_id = ?
+    ORDER BY po.sort_order, pov.sort_order, pov.id
+");
 
-    // Skip products without images
-    if (empty($imageUrl)) {
+foreach ($products as $product) {
+    $productId = (int)$product['id'];
+    $productName = (string)$product['name'];
+    $description = cleanDescription($product['description'] ?: $productName);
+    $productUrl = "{$storeUrl}/products/{$product['slug']}";
+    $defaultImageUrl = !empty($product['primary_image']) ? "{$storeUrl}{$product['primary_image']}" : '';
+
+    if ($defaultImageUrl === '') {
         echo "  Skipping #{$productId} ({$productName}) - no image\n";
         $skipped++;
         continue;
     }
 
-    // Get product categories
-    $catStmt = $db->prepare("SELECT c.name FROM categories c JOIN product_categories pc ON c.id = pc.category_id WHERE pc.product_id = ?");
-    $catStmt->execute([$productId]);
-    $categoryNames = $catStmt->fetchAll(PDO::FETCH_COLUMN);
-
+    $categoryStmt->execute([$productId]);
+    $categoryNames = $categoryStmt->fetchAll(PDO::FETCH_COLUMN);
     $googleCategory = getGoogleCategory($productName, $categoryNames);
     $needsApparelAttrs = requiresApparelAttributes($googleCategory);
     $gender = detectGender($productName, $product['description'] ?? '');
-
-    // Brand: use manufacturer if available, otherwise store name
     $brand = !empty($product['manufacturer']) ? $product['manufacturer'] : $storeName;
-
-    // Detect color from google_color column or product name/description
     $googleColor = $hasGoogleColor ? ($product['google_color'] ?? null) : null;
     $detectedColor = detectColor($productName, $product['description'] ?? '', $googleColor);
+    $freeShipping = ($hasShipsFree && !empty($product['ships_free']))
+        || ($hasShipsFreeUs && !empty($product['ships_free_us']));
+    $hasSale = !empty($product['sale_price'])
+        && (float)$product['sale_price'] < (float)$product['price'];
 
-    // Get product options (colors, sizes)
-    $optStmt = $db->prepare("
-        SELECT po.option_name, pov.value_name
-        FROM product_options po
-        JOIN product_option_values pov ON po.id = pov.option_id
-        WHERE po.product_id = ?
-        ORDER BY po.sort_order, pov.sort_order
-    ");
-    $optStmt->execute([$productId]);
-    $optionValues = $optStmt->fetchAll();
+    $variantStmt->execute([$productId]);
+    $variants = $variantStmt->fetchAll();
+    $offers = !empty($variants) ? $variants : [null];
 
-    $colors = [];
-    $sizes = [];
-
-    foreach ($optionValues as $opt) {
-        $optName = strtolower($opt['option_name']);
-        if (in_array($optName, ['color', 'colour']) || strpos($optName, 'tartan') !== false || strpos($optName, 'pattern') !== false || strpos($optName, 'style') !== false) {
-            $colors[] = $opt['value_name'];
-        } elseif ($optName === 'size') {
-            $sizes[] = $opt['value_name'];
+    foreach ($offers as $variant) {
+        $variantId = $variant !== null ? (int)$variant['id'] : null;
+        $optionValues = [];
+        if ($variantId !== null) {
+            $variantOptionsStmt->execute([$variantId]);
+            $optionValues = $variantOptionsStmt->fetchAll();
         }
-    }
 
-    // Availability
-    $totalInventory = $product['inventory_count'];
-    if ($product['variant_inventory'] !== null) {
-        $totalInventory = (int)$product['variant_inventory'];
-    }
-    $availability = $totalInventory > 0 ? 'in_stock' : 'out_of_stock';
+        $color = null;
+        $size = null;
+        $variantParts = [];
+        $optionValueIds = [];
+        foreach ($optionValues as $optionValue) {
+            $optionName = strtolower(trim((string)$optionValue['option_name']));
+            $valueName = trim((string)$optionValue['value_name']);
+            $variantParts[] = $valueName;
+            $optionValueIds[] = (int)$optionValue['option_value_id'];
 
-    // Shipping weight
-    $weightLbs = !empty($product['weight_oz']) ? round($product['weight_oz'] / 16, 2) : null;
-
-    // Free shipping check
-    $freeShipping = false;
-    if ($hasShipsFree && !empty($product['ships_free'])) $freeShipping = true;
-    if ($hasShipsFreeUs && !empty($product['ships_free_us'])) $freeShipping = true;
-
-    // Sale price handling
-    $hasSale = ($product['sale_price'] && (float)$product['sale_price'] < (float)$product['price']);
-
-    // Build common item data
-    $baseData = [];
-    if ($hasSale) {
-        $baseData['g:price'] = $originalPrice . ' ' . $currency;
-        $baseData['g:sale_price'] = $price . ' ' . $currency;
-    } else {
-        $baseData['g:price'] = $price . ' ' . $currency;
-    }
-
-    // If product has color variants, create separate items for each
-    if (!empty($colors)) {
-        foreach ($colors as $colorIndex => $color) {
-            $itemId = $productId . '-' . ($colorIndex + 1);
-            $itemImageUrl = $imageUrl;
-
-            // Try to find color-specific image
-            if ($hasImageOptionValues) {
-                $colorImgStmt = $db->prepare("
-                    SELECT pi.image_path
-                    FROM product_images pi
-                    JOIN product_image_option_values piov ON pi.id = piov.image_id
-                    JOIN product_option_values pov ON piov.option_value_id = pov.id
-                    WHERE pi.product_id = ? AND LOWER(pov.value_name) = LOWER(?)
-                    ORDER BY pi.is_primary DESC, pi.sort_order ASC
-                    LIMIT 1
-                ");
-                $colorImgStmt->execute([$productId, $color]);
-                $colorImagePath = $colorImgStmt->fetchColumn();
-                if ($colorImagePath) {
-                    $itemImageUrl = "{$storeUrl}{$colorImagePath}";
-                }
+            if (
+                in_array($optionName, ['color', 'colour'], true)
+                || str_contains($optionName, 'tartan')
+                || str_contains($optionName, 'pattern')
+            ) {
+                $color = $valueName;
+            } elseif ($optionName === 'size' || str_contains($optionName, 'size')) {
+                $size = $valueName;
             }
-
-            $item = [
-                'g:id' => $itemId,
-                'g:item_group_id' => $productId,
-                'title' => $productName . ' - ' . $color,
-                'description' => $description,
-                'link' => $productUrl,
-                'g:image_link' => $itemImageUrl,
-                'g:availability' => $availability,
-            ];
-            $item = array_merge($item, $baseData);
-            $item['g:brand'] = $brand;
-            $item['g:condition'] = 'new';
-            $item['g:google_product_category'] = $googleCategory;
-            $item['g:color'] = $color;
-
-            if (!empty($sizes)) {
-                $item['g:size'] = implode('/', $sizes);
-            }
-            if ($needsApparelAttrs) {
-                $item['g:gender'] = $gender;
-                $item['g:age_group'] = 'adult';
-            }
-            if ($weightLbs) {
-                $item['g:shipping_weight'] = $weightLbs . ' lb';
-            }
-            if ($product['sku']) {
-                $item['g:mpn'] = $product['sku'] . '-' . ($colorIndex + 1);
-            }
-
-            $xml .= buildItem($item);
-
-            // Add free shipping as raw XML (nested)
-            if ($freeShipping) {
-                // Insert before </item>
-                $shippingXml = "  <g:shipping>\n    <g:country>US</g:country>\n    <g:price>0 {$currency}</g:price>\n  </g:shipping>\n";
-                $xml = substr($xml, 0, -8) . $shippingXml . "</item>\n";
-            }
-
-            $itemCount++;
         }
-    } else {
-        // No color variants - single item
+
+        $imageUrl = $defaultImageUrl;
+        if ($hasImageOptionValues && !empty($optionValueIds)) {
+            $placeholders = implode(',', array_fill(0, count($optionValueIds), '?'));
+            $imageStmt = $db->prepare("
+                SELECT pi.image_path, COUNT(DISTINCT piov.option_value_id) AS match_count
+                FROM product_images pi
+                JOIN product_image_option_values piov ON piov.image_id = pi.id
+                WHERE pi.product_id = ?
+                  AND piov.option_value_id IN ({$placeholders})
+                GROUP BY pi.id, pi.image_path, pi.is_primary, pi.sort_order
+                ORDER BY match_count DESC, pi.is_primary DESC, pi.sort_order ASC, pi.id ASC
+                LIMIT 1
+            ");
+            $imageStmt->execute(array_merge([$productId], $optionValueIds));
+            $variantImagePath = $imageStmt->fetchColumn();
+            if ($variantImagePath) {
+                $imageUrl = "{$storeUrl}{$variantImagePath}";
+            }
+        }
+
+        $adjustment = $variant !== null ? (float)($variant['price_adjustment'] ?? 0) : 0.0;
+        $regularPrice = max(0.01, (float)$product['price'] + $adjustment);
+        $currentPrice = $hasSale
+            ? max(0.01, (float)$product['sale_price'] + $adjustment)
+            : $regularPrice;
+        $inventory = $variant !== null
+            ? (int)($variant['inventory_count'] ?? 0)
+            : (int)($product['inventory_count'] ?? 0);
+        $weightOz = $variant !== null && !empty($variant['weight_oz'])
+            ? (float)$variant['weight_oz']
+            : (float)($product['weight_oz'] ?? 0);
+
         $item = [
-            'g:id' => $productId,
-            'title' => $productName,
+            'g:id' => \App\Core\GoogleMerchantItemId::encode($productId, $variantId),
+            'title' => !empty($variantParts)
+                ? $productName . ' - ' . implode(' / ', $variantParts)
+                : $productName,
             'description' => $description,
             'link' => $productUrl,
             'g:image_link' => $imageUrl,
-            'g:availability' => $availability,
+            'g:availability' => $inventory > 0 ? 'in_stock' : 'out_of_stock',
+            'g:price' => number_format($regularPrice, 2, '.', '') . ' ' . $currency,
+            'g:brand' => $brand,
+            'g:condition' => 'new',
+            'g:google_product_category' => $googleCategory,
         ];
-        $item = array_merge($item, $baseData);
-        $item['g:brand'] = $brand;
-        $item['g:condition'] = 'new';
-        $item['g:google_product_category'] = $googleCategory;
 
-        // Add detected color
-        if ($detectedColor) {
-            $item['g:color'] = $detectedColor;
+        if ($variantId !== null) {
+            $item['g:item_group_id'] = (string)$productId;
         }
-
-        if (!empty($sizes)) {
-            $item['g:size'] = implode('/', $sizes);
+        if ($hasSale) {
+            $item['g:sale_price'] = number_format($currentPrice, 2, '.', '') . ' ' . $currency;
+        }
+        if ($color !== null || ($variantId === null && $detectedColor)) {
+            $item['g:color'] = $color ?? $detectedColor;
+        }
+        if ($size !== null) {
+            $item['g:size'] = $size;
         }
         if ($needsApparelAttrs) {
             $item['g:gender'] = $gender;
             $item['g:age_group'] = 'adult';
         }
-        if ($weightLbs) {
-            $item['g:shipping_weight'] = $weightLbs . ' lb';
+        if ($weightOz > 0) {
+            $item['g:shipping_weight'] = round($weightOz / 16, 2) . ' lb';
         }
-        if ($product['sku']) {
-            $item['g:mpn'] = $product['sku'];
+
+        $sku = $variant !== null ? ($variant['sku'] ?? null) : ($product['sku'] ?? null);
+        if (!empty($sku)) {
+            $item['g:mpn'] = $sku;
+        }
+        if ($freeShipping) {
+            $item['g:shipping'] = [
+                'g:country' => 'US',
+                'g:price' => '0 ' . $currency,
+            ];
         }
 
         $xml .= buildItem($item);
-
-        // Add free shipping
-        if ($freeShipping) {
-            $shippingXml = "  <g:shipping>\n    <g:country>US</g:country>\n    <g:price>0 {$currency}</g:price>\n  </g:shipping>\n";
-            $xml = substr($xml, 0, -8) . $shippingXml . "</item>\n";
-        }
-
         $itemCount++;
     }
 }
@@ -544,9 +511,21 @@ foreach ($products as $product) {
 $xml .= "</channel>\n";
 $xml .= "</rss>\n";
 
-// Write to file
-$outputPath = BASE_PATH . '/public/google-merchant-feed.xml';
-file_put_contents($outputPath, $xml);
+$options = getopt('', ['output:']);
+$outputPath = isset($options['output']) && is_string($options['output'])
+    ? $options['output']
+    : BASE_PATH . '/public/google-merchant-feed.xml';
+$outputDirectory = dirname($outputPath);
+if (!is_dir($outputDirectory) || !is_writable($outputDirectory)) {
+    throw new RuntimeException("Feed output directory is not writable: {$outputDirectory}");
+}
+
+$tempPath = $outputPath . '.tmp.' . getmypid();
+if (file_put_contents($tempPath, $xml, LOCK_EX) === false || !rename($tempPath, $outputPath)) {
+    @unlink($tempPath);
+    throw new RuntimeException("Unable to write feed: {$outputPath}");
+}
+chmod($outputPath, 0644);
 
 $duration = round(microtime(true) - $startTime, 2);
 echo "\nFeed generation complete!\n";

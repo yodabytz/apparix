@@ -161,10 +161,18 @@ class UpdateService
                 return $extractResult;
             }
 
-            // Step 4: Snapshot customer theme settings before applying update
+            // Step 4: Validate extracted update before touching live files
+            $validationResult = $this->validateUpdateSource($extractResult['path']);
+            if (!$validationResult['success']) {
+                $this->cleanupTemp();
+                error_reporting($previousErrorReporting);
+                return $validationResult;
+            }
+
+            // Step 5: Snapshot customer theme settings before applying update
             $themeSnapshot = $this->snapshotThemeSettings();
 
-            // Step 5: Apply update
+            // Step 6: Apply update
             $applyResult = $this->applyUpdate($extractResult['path']);
             if (!$applyResult['success']) {
                 $this->restoreBackup($backupResult['backup_path']);
@@ -173,25 +181,25 @@ class UpdateService
                 return $applyResult;
             }
 
-            // Step 6: Update version file
+            // Step 7: Update version file
             $this->updateVersionFile($targetVersion);
 
-            // Step 7: Run post-update migrations
+            // Step 8: Run post-update migrations
             $this->runMigrations();
 
-            // Step 8: Restore customer theme settings (migrations may have reset them)
+            // Step 9: Restore customer theme settings (migrations may have reset them)
             $this->restoreThemeSettings($themeSnapshot);
 
-            // Step 9: Cleanup
+            // Step 10: Cleanup
             $this->cleanupTemp();
 
-            // Step 10: Clear update cache and OPcache so dashboard reflects new version
+            // Step 11: Clear update cache and OPcache so dashboard reflects new version
             $this->clearUpdateCache();
             if (function_exists('opcache_reset')) {
                 opcache_reset();
             }
 
-            // Step 11: Report success
+            // Step 12: Report success
             $this->reportUpdateStatus($targetVersion, 'installed');
 
             error_reporting($previousErrorReporting);
@@ -444,8 +452,7 @@ class UpdateService
             'public/manifest.json',
             'public/site.webmanifest',
 
-            // Customer-installed plugins and themes
-            'content/plugins',
+            // Customer-installed themes
             'content/themes',
             'public/content',
 
@@ -487,6 +494,126 @@ class UpdateService
         }
 
         return ['success' => true];
+    }
+
+    /**
+     * Validate extracted update files before any live file is touched.
+     */
+    private function validateUpdateSource(string $sourcePath): array
+    {
+        $dirs = glob($sourcePath . '/*', GLOB_ONLYDIR) ?: [];
+        $files = glob($sourcePath . '/*') ?: [];
+        if (count($dirs) === 1 && count($files) === 1) {
+            $sourcePath = $dirs[0];
+        }
+
+        $required = ['app', 'public', 'database/migrations', 'version.php'];
+        foreach ($required as $path) {
+            if (!file_exists($sourcePath . '/' . $path)) {
+                return [
+                    'success' => false,
+                    'error' => 'Update package is missing required path: ' . $path,
+                ];
+            }
+        }
+
+        $badFiles = [];
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($sourcePath, \FilesystemIterator::SKIP_DOTS)
+        );
+
+        foreach ($iterator as $fileInfo) {
+            if (!$fileInfo->isFile()) {
+                continue;
+            }
+            $path = $fileInfo->getPathname();
+            $relative = ltrim(str_replace($sourcePath, '', $path), '/');
+            if (str_ends_with($relative, '.php') && !$this->isValidPhpSourceFile($path)) {
+                $badFiles[] = $relative;
+                if (count($badFiles) >= 5) {
+                    break;
+                }
+            }
+        }
+
+        if (!empty($badFiles)) {
+            return [
+                'success' => false,
+                'error' => 'Update package contains empty or corrupt PHP files: ' . implode(', ', $badFiles),
+            ];
+        }
+
+        return ['success' => true];
+    }
+
+    /**
+     * Copy a file through a temp file in the destination directory, then rename.
+     */
+    private function atomicCopyFile(string $srcPath, string $destPath, string $relativePath, array &$failures): bool
+    {
+        if (!is_file($srcPath) || !is_readable($srcPath)) {
+            $failures[] = $relativePath . ' (source unreadable)';
+            return false;
+        }
+
+        if (str_ends_with($srcPath, '.php') && !$this->isValidPhpSourceFile($srcPath)) {
+            $failures[] = $relativePath . ' (source empty or corrupt)';
+            return false;
+        }
+
+        $destDir = dirname($destPath);
+        if (!is_dir($destDir) && !@mkdir($destDir, 0755, true)) {
+            $failures[] = $relativePath . ' (cannot create directory)';
+            return false;
+        }
+        if (!is_writable($destDir)) {
+            $failures[] = $relativePath . ' (directory not writable)';
+            return false;
+        }
+
+        $tmpPath = $destDir . '/.' . basename($destPath) . '.update.' . bin2hex(random_bytes(6)) . '.tmp';
+        if (!@copy($srcPath, $tmpPath)) {
+            @unlink($tmpPath);
+            $failures[] = $relativePath;
+            return false;
+        }
+
+        $srcSize = @filesize($srcPath);
+        $tmpSize = @filesize($tmpPath);
+        if ($srcSize === false || $tmpSize === false || $srcSize !== $tmpSize) {
+            @unlink($tmpPath);
+            $failures[] = $relativePath . ' (copy size mismatch)';
+            return false;
+        }
+
+        $mode = file_exists($destPath) ? (fileperms($destPath) & 0777) : 0644;
+        @chmod($tmpPath, $mode ?: 0644);
+
+        if (!@rename($tmpPath, $destPath)) {
+            @unlink($tmpPath);
+            $failures[] = $relativePath . ' (rename failed)';
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Reject empty PHP files and binary/control-character garbage before install.
+     */
+    private function isValidPhpSourceFile(string $path): bool
+    {
+        $size = @filesize($path);
+        if ($size === false || $size <= 0) {
+            return false;
+        }
+
+        $sample = @file_get_contents($path, false, null, 0, min(4096, $size));
+        if ($sample === false || $sample === '') {
+            return false;
+        }
+
+        return !preg_match('/[\x00-\x08\x0B\x0C\x0E-\x1F]/', $sample);
     }
 
     /**
@@ -533,25 +660,8 @@ class UpdateService
             if (is_dir($srcPath)) {
                 $this->copyDirectory($srcPath, $destPath, $exclude, $failures);
             } else {
-                // Safety: don't overwrite a valid file with an empty or corrupt source
-                $srcSize = @filesize($srcPath);
-                if ($srcSize === 0 && file_exists($destPath) && filesize($destPath) > 0) {
-                    // Source is empty but destination has content — skip to avoid data loss
-                    $failures[] = $relativePath . ' (source empty, skipped)';
+                if (!$this->atomicCopyFile($srcPath, $destPath, $relativePath, $failures)) {
                     continue;
-                }
-                // Safety: verify PHP files are valid text, not binary garbage from extraction
-                if (str_ends_with($file, '.php') && $srcSize > 0) {
-                    $header = @file_get_contents($srcPath, false, null, 0, 32);
-                    if ($header !== false && !mb_check_encoding($header, 'UTF-8') && !mb_check_encoding($header, 'ASCII')) {
-                        $failures[] = $relativePath . ' (corrupt source, skipped)';
-                        continue;
-                    }
-                }
-                if (!@copy($srcPath, $destPath)) {
-                    $failures[] = $relativePath;
-                } else {
-                    @chmod($destPath, 0644);
                 }
             }
         }
@@ -583,6 +693,7 @@ class UpdateService
                 'public/assets/js',
                 'database/migrations',
                 'config',
+                'content/plugins/printify-sync',
                 'version.php',
             ];
 

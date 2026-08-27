@@ -258,13 +258,6 @@ class PluginController extends Controller
      */
     public function saveSettings(): void
     {
-        // If plugin sends its own custom action (not the generic settings form),
-        // delegate to the settings view which handles POST internally
-        if ($this->post('action') && !$this->post('settings')) {
-            $this->settings();
-            return;
-        }
-
         $this->requireValidCSRF();
 
         $slug = $this->post('slug');
@@ -289,6 +282,18 @@ class PluginController extends Controller
         if (!$loadedPlugin) {
             $loadedPlugin = $this->loadPluginTemporarily($slug);
         }
+        $action = $this->post('action', '');
+        if ($action && $loadedPlugin && method_exists($loadedPlugin, 'handleAdminAction')) {
+            $result = $loadedPlugin->handleAdminAction($action, $_POST);
+            if (!empty($result['success'])) {
+                setFlash('success', $result['message'] ?? 'Action completed');
+            } else {
+                setFlash('error', $result['error'] ?? 'Action failed');
+            }
+            $this->redirect('/admin/plugins/settings?slug=' . urlencode($slug));
+            return;
+        }
+
         if ($loadedPlugin) {
             $errors = $loadedPlugin->validateSettings($settings);
             if (!empty($errors)) {

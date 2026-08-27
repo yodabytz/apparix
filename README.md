@@ -528,6 +528,11 @@ sudo sed -i 's/SecRuleEngine DetectionOnly/SecRuleEngine On/' /etc/modsecurity/m
 sudo apt install modsecurity-crs
 ```
 
+Load `config/modsecurity-apparix-before-crs.conf` before the OWASP Core Rule
+Set. It prevents random PHP session IDs from falsely triggering CRS rule
+`933150`, while keeping request parameters, bodies, and all other cookies
+fully inspected.
+
 Add to your Nginx server block:
 
 ```nginx

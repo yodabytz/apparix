@@ -176,6 +176,31 @@
                     </div>
                 <?php endif; ?>
 
+
+                <?php if (!empty($product['customization_fields'])): ?>
+                    <div class="product-customizations">
+                        <?php foreach ($product['customization_fields'] as $field): ?>
+                            <?php
+                            $fieldKey = (string)$field['field_key'];
+                            $fieldId = 'custom_' . preg_replace('/[^a-zA-Z0-9_-]/', '_', $fieldKey);
+                            $maxLength = max(1, min(500, (int)($field['max_length'] ?? 100)));
+                            ?>
+                            <div class="customization-field">
+                                <label for="<?php echo escape($fieldId); ?>">
+                                    <?php echo escape($field['label']); ?><?php echo !empty($field['is_required']) ? ' *' : ''; ?>
+                                </label>
+                                <?php if (($field['field_type'] ?? 'text') === 'textarea'): ?>
+                                    <textarea id="<?php echo escape($fieldId); ?>" name="customizations[<?php echo escape($fieldKey); ?>]" maxlength="<?php echo $maxLength; ?>" rows="3" <?php echo !empty($field['is_required']) ? 'required' : ''; ?> placeholder="<?php echo escape($field['placeholder'] ?? ''); ?>"></textarea>
+                                <?php else: ?>
+                                    <input type="text" id="<?php echo escape($fieldId); ?>" name="customizations[<?php echo escape($fieldKey); ?>]" maxlength="<?php echo $maxLength; ?>" <?php echo !empty($field['is_required']) ? 'required' : ''; ?> placeholder="<?php echo escape($field['placeholder'] ?? ''); ?>">
+                                <?php endif; ?>
+                                <?php if (!empty($field['help_text'])): ?>
+                                    <small><?php echo escape($field['help_text']); ?></small>
+                                <?php endif; ?>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
                 <!-- Inventory -->
                 <div class="inventory-section">
                     <?php
@@ -531,6 +556,10 @@
         .faq-accordion-body { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
         .faq-accordion-item.open .faq-accordion-body { max-height: 500px; }
         .faq-accordion-body p { padding: 0 0 1rem; margin: 0; color: #4b5563; line-height: 1.7; font-size: 0.95rem; }
+        .product-customizations { display: grid; gap: 0.9rem; margin: 1.25rem 0; padding: 1rem; border: 1px solid #e5e7eb; border-radius: 8px; background: #fff; }
+        .customization-field label { display: block; font-weight: 600; margin-bottom: 0.35rem; color: #1f2937; }
+        .customization-field input, .customization-field textarea { width: 100%; border: 1px solid #d1d5db; border-radius: 6px; padding: 0.75rem; font: inherit; }
+        .customization-field small { display: block; margin-top: 0.3rem; color: #6b7280; font-size: 0.82rem; }
         </style>
         <?php endif; ?>
 
@@ -872,28 +901,25 @@ function filterImagesByMultipleOptions(selectedOptionValues) {
         return;
     }
 
-    // Show images that match ALL selected option values
-    let filteredMainImages = allProductImages.filter(img => {
-        const linkedIds = img.linked_option_value_ids || [];
-        // Image matches if it has ALL selected option values in its linked array
-        return selectedOptionValues.every(val => linkedIds.includes(val));
-    });
+    const scoredImages = allProductImages.map(img => {
+        const linkedIds = Array.isArray(img.linked_option_value_ids) ? img.linked_option_value_ids : [];
+        const score = selectedOptionValues.filter(val => linkedIds.includes(val)).length;
+        return { img, score, specificity: linkedIds.length };
+    }).filter(item => item.score > 0);
 
-    // If no exact match, try images that match ANY of the selected values
-    if (filteredMainImages.length === 0) {
-        filteredMainImages = allProductImages.filter(img => {
-            const linkedIds = img.linked_option_value_ids || [];
-            return selectedOptionValues.some(val => linkedIds.includes(val));
-        });
-    }
-
-    // If still no matches, show all images
-    if (filteredMainImages.length === 0) {
+    if (scoredImages.length === 0) {
         currentImages = flattenImages(allProductImages);
-    } else {
-        currentImages = flattenImages(filteredMainImages);
+        rebuildThumbnailGallery();
+        return;
     }
 
+    const bestScore = Math.max(...scoredImages.map(item => item.score));
+    const bestSpecificity = Math.max(...scoredImages.filter(item => item.score === bestScore).map(item => item.specificity));
+    const filteredMainImages = scoredImages
+        .filter(item => item.score === bestScore && item.specificity === bestSpecificity)
+        .map(item => item.img);
+
+    currentImages = flattenImages(filteredMainImages);
     rebuildThumbnailGallery();
 }
 

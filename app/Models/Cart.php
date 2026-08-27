@@ -12,34 +12,37 @@ class Cart extends Model
     /**
      * Add item to cart (with optional variant)
      */
-    public function addItem($productId, $quantity = 1, $sessionId = null, $userId = null, $variantId = null, $isBackorder = 0)
+    public function addItem($productId, $quantity = 1, $sessionId = null, $userId = null, $variantId = null, $isBackorder = 0, array $customizations = [])
     {
         $db = Database::getInstance();
+        $customizations = self::normalizeCustomizations($customizations);
+        $customizationHash = self::customizationHash($customizations);
+        $customizationsJson = !empty($customizations) ? json_encode($customizations, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) : null;
 
         // Build query based on whether we're checking by user or session, and whether variant exists
         // Also match on is_backorder so normal and backorder items stay separate
         if ($userId) {
             if ($variantId) {
                 $existingItem = $db->selectOne(
-                    "SELECT id, quantity FROM {$this->table} WHERE product_id = ? AND user_id = ? AND variant_id = ? AND is_backorder = ?",
-                    [$productId, $userId, $variantId, $isBackorder]
+                    "SELECT id, quantity FROM {$this->table} WHERE product_id = ? AND user_id = ? AND variant_id = ? AND is_backorder = ? AND customization_hash = ?",
+                    [$productId, $userId, $variantId, $isBackorder, $customizationHash]
                 );
             } else {
                 $existingItem = $db->selectOne(
-                    "SELECT id, quantity FROM {$this->table} WHERE product_id = ? AND user_id = ? AND variant_id IS NULL AND is_backorder = ?",
-                    [$productId, $userId, $isBackorder]
+                    "SELECT id, quantity FROM {$this->table} WHERE product_id = ? AND user_id = ? AND variant_id IS NULL AND is_backorder = ? AND customization_hash = ?",
+                    [$productId, $userId, $isBackorder, $customizationHash]
                 );
             }
         } else {
             if ($variantId) {
                 $existingItem = $db->selectOne(
-                    "SELECT id, quantity FROM {$this->table} WHERE product_id = ? AND session_id = ? AND variant_id = ? AND is_backorder = ?",
-                    [$productId, $sessionId, $variantId, $isBackorder]
+                    "SELECT id, quantity FROM {$this->table} WHERE product_id = ? AND session_id = ? AND variant_id = ? AND is_backorder = ? AND customization_hash = ?",
+                    [$productId, $sessionId, $variantId, $isBackorder, $customizationHash]
                 );
             } else {
                 $existingItem = $db->selectOne(
-                    "SELECT id, quantity FROM {$this->table} WHERE product_id = ? AND session_id = ? AND variant_id IS NULL AND is_backorder = ?",
-                    [$productId, $sessionId, $isBackorder]
+                    "SELECT id, quantity FROM {$this->table} WHERE product_id = ? AND session_id = ? AND variant_id IS NULL AND is_backorder = ? AND customization_hash = ?",
+                    [$productId, $sessionId, $isBackorder, $customizationHash]
                 );
             }
         }
@@ -54,8 +57,8 @@ class Cart extends Model
         } else {
             // Insert new item
             return $db->insert(
-                "INSERT INTO {$this->table} (product_id, variant_id, quantity, session_id, user_id, is_backorder) VALUES (?, ?, ?, ?, ?, ?)",
-                [$productId, $variantId, $quantity, $sessionId, $userId, $isBackorder]
+                "INSERT INTO {$this->table} (product_id, variant_id, quantity, session_id, user_id, is_backorder, customizations, customization_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                [$productId, $variantId, $quantity, $sessionId, $userId, $isBackorder, $customizationsJson, $customizationHash]
             );
         }
     }
@@ -74,6 +77,8 @@ class Cart extends Model
                 c.variant_id,
                 c.quantity,
                 c.is_backorder,
+                c.customizations,
+                c.customization_hash,
                 p.name,
                 p.slug,
                 p.price,
@@ -110,8 +115,10 @@ class Cart extends Model
 
         $items = $db->select($query, [$userId ?? $sessionId]);
 
-        // Add variant name and variant-specific image for items with variants
+        // Add variant name, customization display, and variant-specific image.
         foreach ($items as &$item) {
+            $item['customizations'] = self::normalizeCustomizations(json_decode((string)($item['customizations'] ?? ''), true) ?: []);
+            $item['customization_hash'] = self::customizationHash($item['customizations']);
             if ($item['variant_id']) {
                 // Get variant option values (for display name)
                 $variantInfo = $db->selectOne(
@@ -309,16 +316,18 @@ class Cart extends Model
         $guestItems = $this->getItems($sessionId);
 
         foreach ($guestItems as $item) {
-            // Check if user already has this product/variant in cart
+            $customizationHash = self::customizationHash($item['customizations'] ?? []);
+
+            // Check if user already has this exact product/variant/customization in cart
             if ($item['variant_id']) {
                 $existingItem = $db->selectOne(
-                    "SELECT id, quantity FROM {$this->table} WHERE product_id = ? AND variant_id = ? AND user_id = ?",
-                    [$item['product_id'], $item['variant_id'], $userId]
+                    "SELECT id, quantity FROM {$this->table} WHERE product_id = ? AND variant_id = ? AND user_id = ? AND is_backorder = ? AND customization_hash = ?",
+                    [$item['product_id'], $item['variant_id'], $userId, (int)$item['is_backorder'], $customizationHash]
                 );
             } else {
                 $existingItem = $db->selectOne(
-                    "SELECT id, quantity FROM {$this->table} WHERE product_id = ? AND variant_id IS NULL AND user_id = ?",
-                    [$item['product_id'], $userId]
+                    "SELECT id, quantity FROM {$this->table} WHERE product_id = ? AND variant_id IS NULL AND user_id = ? AND is_backorder = ? AND customization_hash = ?",
+                    [$item['product_id'], $userId, (int)$item['is_backorder'], $customizationHash]
                 );
             }
 
@@ -370,5 +379,38 @@ class Cart extends Model
         }
 
         return $db->selectOne($query, $params) !== false;
+    }
+    public static function normalizeCustomizations(array $customizations): array
+    {
+        $normalized = [];
+        foreach ($customizations as $customization) {
+            if (!is_array($customization)) {
+                continue;
+            }
+            $key = preg_replace('/[^a-zA-Z0-9_-]/', '', (string)($customization['key'] ?? ''));
+            $rawValue = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', (string)($customization['value'] ?? ''));
+            $value = trim($rawValue ?? '');
+            if ($key === '' || $value === '') {
+                continue;
+            }
+            $normalized[] = [
+                'key' => substr($key, 0, 64),
+                'label' => mb_substr(trim((string)($customization['label'] ?? $key)), 0, 120),
+                'value' => mb_substr($value, 0, 500),
+                'printify_position' => mb_substr(trim((string)($customization['printify_position'] ?? '')), 0, 64),
+            ];
+        }
+        usort($normalized, fn($a, $b) => strcmp($a['key'], $b['key']));
+        return $normalized;
+    }
+
+    public static function customizationHash(array $customizations): string
+    {
+        $normalized = self::normalizeCustomizations($customizations);
+        if (empty($normalized)) {
+            return '';
+        }
+        $identity = array_map(fn($item) => ['key' => $item['key'], 'value' => $item['value']], $normalized);
+        return hash('sha256', json_encode($identity, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
     }
 }

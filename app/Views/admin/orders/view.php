@@ -28,6 +28,14 @@
                             <?php if (!empty($item['variant_name'])): ?>
                                 <div class="item-variant"><?= htmlspecialchars($item['variant_name']) ?></div>
                             <?php endif; ?>
+                            <?php $itemCustomizations = json_decode((string)($item['customizations'] ?? ''), true) ?: []; ?>
+                            <?php if (!empty($itemCustomizations)): ?>
+                                <div class="item-customizations">
+                                    <?php foreach ($itemCustomizations as $customization): ?>
+                                        <div><strong><?= htmlspecialchars($customization['label'] ?? $customization['key'] ?? 'Customization') ?>:</strong> <?= htmlspecialchars($customization['value'] ?? '') ?></div>
+                                    <?php endforeach; ?>
+                                </div>
+                            <?php endif; ?>
                             <?php if (!empty($item['is_backorder'])): ?>
                                 <span class="backorder-badge">Backorder</span>
                             <?php endif; ?>
