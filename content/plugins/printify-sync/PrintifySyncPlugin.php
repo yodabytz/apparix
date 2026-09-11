@@ -25,7 +25,7 @@ class PrintifySyncPlugin implements PluginInterface
 
     public function getSlug(): string { return 'printify-sync'; }
     public function getName(): string { return 'Printify Sync'; }
-    public function getVersion(): string { return '1.0.8'; }
+    public function getVersion(): string { return '1.0.9'; }
     public function getType(): string { return 'marketplace'; }
     public function getDescription(): string { return 'Sync selected products, automatic inventory, live shipping, fulfillment, tracking, and order statuses with Printify.'; }
     public function getAuthor(): string { return 'Apparix'; }
@@ -42,7 +42,7 @@ class PrintifySyncPlugin implements PluginInterface
             'default_variant_id' => '',
             'publish_after_create' => false,
             'send_orders' => true,
-            'sync_order_statuses' => false,
+            'sync_order_statuses' => true,
             'sync_inventory' => true,
             'inventory_sync_interval_hours' => 1,
             'sync_price' => true,
@@ -684,55 +684,70 @@ class PrintifySyncPlugin implements PluginInterface
             return ['success' => false, 'checked' => 0, 'updated' => 0, 'failed' => 0, 'error' => 'Printify Sync is not configured'];
         }
 
-        $limit = max(1, min(100, $limit));
-        $mappings = Database::getInstance()->select(
-            "SELECT pos.order_id, pos.printify_order_id
-             FROM printify_order_sync pos
-             JOIN orders o ON o.id = pos.order_id
-             WHERE pos.status = 'submitted'
-               AND pos.printify_order_id IS NOT NULL
-               AND pos.printify_order_id <> ''
-               AND o.status NOT IN ('delivered', 'cancelled', 'refunded')
-             ORDER BY pos.updated_at ASC
-             LIMIT ?",
-            [$limit]
-        );
-
-        $summary = ['success' => true, 'checked' => 0, 'updated' => 0, 'failed' => 0];
-        foreach ($mappings as $mapping) {
-            $orderId = (int)$mapping['order_id'];
-            $printifyOrderId = (string)$mapping['printify_order_id'];
-            $response = $this->apiRequest(
-                'GET',
-                '/shops/' . urlencode((string)$this->settings['shop_id']) . '/orders/' . urlencode($printifyOrderId) . '.json'
-            );
-            $summary['checked']++;
-
-            if (empty($response['success']) || !is_array($response['data'] ?? null)) {
-                $summary['failed']++;
-                $this->log('sync_order_status', 'error', $response['error'] ?? 'Unable to retrieve Printify order', [
-                    'order_id' => $orderId,
-                    'printify_order_id' => $printifyOrderId,
-                ]);
-                continue;
-            }
-
-            try {
-                $result = $this->applyPrintifyOrderUpdate($orderId, $printifyOrderId, $response['data']);
-                if (!empty($result['updated'])) {
-                    $summary['updated']++;
-                }
-            } catch (\Throwable $e) {
-                $summary['failed']++;
-                $this->log('sync_order_status', 'error', $e->getMessage(), [
-                    'order_id' => $orderId,
-                    'printify_order_id' => $printifyOrderId,
-                ]);
-            }
+        $db = Database::getInstance();
+        $lockName = 'apparix_printify_orders_' . substr(hash('sha256', (string)$this->settings['shop_id']), 0, 24);
+        $lock = $db->selectOne('SELECT GET_LOCK(?, 0) AS acquired', [$lockName]);
+        if ((int)($lock['acquired'] ?? 0) !== 1) {
+            return ['success' => true, 'enabled' => true, 'locked' => true, 'checked' => 0, 'updated' => 0, 'failed' => 0];
         }
 
-        $summary['success'] = $summary['failed'] === 0;
-        return $summary;
+        try {
+            $limit = max(1, min(100, $limit));
+            $mappings = $db->select(
+                "SELECT pos.order_id, pos.printify_order_id
+                 FROM printify_order_sync pos
+                 JOIN orders o ON o.id = pos.order_id
+                 WHERE pos.status = 'submitted'
+                   AND pos.printify_order_id IS NOT NULL
+                   AND pos.printify_order_id <> ''
+                   AND o.status NOT IN ('delivered', 'cancelled', 'refunded')
+                 ORDER BY pos.updated_at ASC
+                 LIMIT ?",
+                [$limit]
+            );
+
+            $summary = ['success' => true, 'enabled' => true, 'checked' => 0, 'updated' => 0, 'failed' => 0];
+            foreach ($mappings as $mapping) {
+                $orderId = (int)$mapping['order_id'];
+                $printifyOrderId = (string)$mapping['printify_order_id'];
+                $response = $this->apiRequest(
+                    'GET',
+                    '/shops/' . urlencode((string)$this->settings['shop_id']) . '/orders/' . urlencode($printifyOrderId) . '.json'
+                );
+                $summary['checked']++;
+
+                if (empty($response['success']) || !is_array($response['data'] ?? null)) {
+                    $summary['failed']++;
+                    $this->log('sync_order_status', 'error', $response['error'] ?? 'Unable to retrieve Printify order', [
+                        'order_id' => $orderId,
+                        'printify_order_id' => $printifyOrderId,
+                    ]);
+                    continue;
+                }
+
+                try {
+                    $result = $this->applyPrintifyOrderUpdate($orderId, $printifyOrderId, $response['data']);
+                    if (!empty($result['updated'])) {
+                        $summary['updated']++;
+                    }
+                } catch (\Throwable $e) {
+                    $summary['failed']++;
+                    $this->log('sync_order_status', 'error', $e->getMessage(), [
+                        'order_id' => $orderId,
+                        'printify_order_id' => $printifyOrderId,
+                    ]);
+                }
+            }
+
+            $summary['success'] = $summary['failed'] === 0;
+            return $summary;
+        } finally {
+            try {
+                $db->selectOne('SELECT RELEASE_LOCK(?) AS released', [$lockName]);
+            } catch (\Throwable $e) {
+                error_log('Printify order status lock release failed: ' . $e->getMessage());
+            }
+        }
     }
 
     private function applyPrintifyOrderUpdate(int $orderId, string $printifyOrderId, array $printifyOrder): array
@@ -743,8 +758,9 @@ class PrintifySyncPlugin implements PluginInterface
         }
 
         $printifyStatus = strtolower(trim((string)($printifyOrder['status'] ?? '')));
+        $printifyStatus = str_replace(['_', ' '], '-', $printifyStatus);
         $shipment = $this->extractShipmentState($printifyOrder['shipments'] ?? []);
-        $targetStatus = $this->mapPrintifyOrderStatus($printifyStatus, $shipment);
+        $targetStatus = $this->mapPrintifyOrderStatus($printifyStatus, $shipment, $printifyOrder);
         $currentStatus = strtolower((string)($order['status'] ?? 'pending'));
         $nextStatus = $this->forwardOrderStatus($currentStatus, $targetStatus);
         $statusChanged = $nextStatus !== null && $nextStatus !== $currentStatus;
@@ -881,7 +897,7 @@ class PrintifySyncPlugin implements PluginInterface
         ]);
     }
 
-    private function mapPrintifyOrderStatus(string $printifyStatus, array $shipment): ?string
+    private function mapPrintifyOrderStatus(string $printifyStatus, array $shipment, array $printifyOrder = []): ?string
     {
         if (!empty($shipment['has_shipments']) && !empty($shipment['all_delivered'])) {
             return 'delivered';
@@ -890,12 +906,23 @@ class PrintifySyncPlugin implements PluginInterface
             return 'shipped';
         }
 
-        return match ($printifyStatus) {
+        $mappedStatus = match ($printifyStatus) {
             'sending-to-production', 'in-production' => 'processing',
+            'partially-fulfilled' => 'processing',
             'fulfilled' => 'shipped',
             'canceled', 'cancelled' => 'cancelled',
             default => null,
         };
+        if ($mappedStatus !== null) {
+            return $mappedStatus;
+        }
+        if (!empty($printifyOrder['fulfilled_at'])) {
+            return 'shipped';
+        }
+        if (!empty($printifyOrder['sent_to_production_at'])) {
+            return 'processing';
+        }
+        return null;
     }
 
     private function forwardOrderStatus(string $currentStatus, ?string $targetStatus): ?string

@@ -108,6 +108,22 @@ class Plugin extends Model
     }
 
     /**
+     * Refresh package metadata without changing activation or saved settings.
+     */
+    public function updateManifest(int $id, array $manifest): bool
+    {
+        return $this->update($id, [
+            'name' => $manifest['name'],
+            'description' => $manifest['description'] ?? null,
+            'version' => $manifest['version'],
+            'author' => $manifest['author'] ?? null,
+            'author_url' => $manifest['author_url'] ?? null,
+            'type' => $manifest['type'],
+            'icon' => $manifest['icon'] ?? null,
+        ]) >= 0;
+    }
+
+    /**
      * Activate a plugin
      */
     public function activate(int $id): bool

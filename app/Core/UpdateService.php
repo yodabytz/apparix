@@ -2,6 +2,8 @@
 
 namespace App\Core;
 
+use App\Core\Plugins\PluginManager;
+
 /**
  * UpdateService - Handles checking for and installing software updates
  *
@@ -62,7 +64,8 @@ class UpdateService
             'license_key' => $this->licenseKey,
             'current_version' => $this->currentVersion,
             'domain' => $this->domain,
-            'php_version' => PHP_VERSION
+            'php_version' => PHP_VERSION,
+            'plugins' => $this->getInstalledPluginVersions(),
         ];
 
         $response = $this->makeRequest($url, $data);
@@ -119,6 +122,80 @@ class UpdateService
         $cacheFile = BASE_PATH . '/storage/cache/update_check.json';
         if (file_exists($cacheFile)) {
             unlink($cacheFile);
+        }
+    }
+
+    /**
+     * Download, validate, back up, and install one authorized plugin update.
+     */
+    public function installPluginUpdate(string $slug, string $targetVersion): array
+    {
+        if (!preg_match('/^[a-z0-9][a-z0-9-]{0,99}$/', $slug)
+            || !preg_match('/^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/', $targetVersion)) {
+            return ['success' => false, 'error' => 'Invalid plugin update request.'];
+        }
+
+        $installed = [];
+        foreach ($this->getInstalledPluginVersions() as $plugin) {
+            $installed[$plugin['slug']] = $plugin['version'];
+        }
+        if (!isset($installed[$slug])) {
+            return ['success' => false, 'error' => 'Plugin is not installed on this site.'];
+        }
+        $currentVersion = $installed[$slug];
+        if (version_compare($targetVersion, $currentVersion, '<=')) {
+            return ['success' => false, 'error' => 'Requested plugin version is not newer than the installed version.'];
+        }
+
+        $tempDir = BASE_PATH . '/storage/plugin_updates';
+        if (!is_dir($tempDir) && !@mkdir($tempDir, 0755, true)) {
+            return ['success' => false, 'error' => 'Unable to create the plugin update directory.'];
+        }
+        if (!is_writable($tempDir) || !is_writable(BASE_PATH . '/content/plugins')) {
+            return ['success' => false, 'error' => 'Plugin directories are not writable by the web server.'];
+        }
+
+        $lockPath = $tempDir . '/' . $slug . '.lock';
+        $lock = @fopen($lockPath, 'c');
+        if (!$lock || !flock($lock, LOCK_EX | LOCK_NB)) {
+            if (is_resource($lock)) {
+                fclose($lock);
+            }
+            return ['success' => false, 'error' => 'Another update for this plugin is already running.'];
+        }
+
+        $download = null;
+        try {
+            $download = $this->downloadPluginUpdate($slug, $currentVersion, $targetVersion);
+            if (!$download['success']) {
+                return $download;
+            }
+            $result = PluginManager::getInstance()->installUpdateFromZip(
+                $download['file'],
+                $slug,
+                $targetVersion
+            );
+            $this->reportPluginUpdate(
+                $slug,
+                $currentVersion,
+                $targetVersion,
+                $result['success'] ? 'installed' : 'failed',
+                $result['error'] ?? ''
+            );
+            if ($result['success']) {
+                $this->clearUpdateCache();
+            }
+            return $result;
+        } catch (\Throwable $e) {
+            $this->reportPluginUpdate($slug, $currentVersion, $targetVersion, 'failed', $e->getMessage());
+            return ['success' => false, 'error' => 'Plugin update failed: ' . $e->getMessage()];
+        } finally {
+            if (is_array($download) && !empty($download['file'])) {
+                @unlink($download['file']);
+            }
+            flock($lock, LOCK_UN);
+            fclose($lock);
+            @unlink($lockPath);
         }
     }
 
@@ -466,6 +543,17 @@ class UpdateService
             '.claudeignore',
             'node_modules',
         ];
+
+        // Preserve every independently installed plugin. Stripe is bundled with
+        // Apparix and continues to follow the core update lifecycle.
+        $installedPluginDirs = glob(BASE_PATH . '/content/plugins/*', GLOB_ONLYDIR) ?: [];
+        $packagedPluginDirs = glob($sourcePath . '/content/plugins/*', GLOB_ONLYDIR) ?: [];
+        foreach (array_merge($installedPluginDirs, $packagedPluginDirs) as $pluginPath) {
+            $pluginSlug = basename($pluginPath);
+            if ($pluginSlug !== 'stripe' && preg_match('/^[a-z0-9][a-z0-9-]{0,99}$/', $pluginSlug)) {
+                $exclude[] = 'content/plugins/' . $pluginSlug;
+            }
+        }
 
         // Pre-flight: check that BASE_PATH is writable
         if (!is_writable(BASE_PATH)) {
@@ -1076,6 +1164,115 @@ class UpdateService
 
         // Non-blocking - we don't care about the response
         $this->makeRequest($url, $data);
+    }
+
+    private function getInstalledPluginVersions(): array
+    {
+        try {
+            $rows = Database::getInstance()->select("SELECT slug, version FROM plugins ORDER BY slug");
+        } catch (\Throwable $e) {
+            error_log('Unable to read installed plugins for update check: ' . $e->getMessage());
+            return [];
+        }
+
+        $plugins = [];
+        foreach ($rows as $row) {
+            $slug = trim((string)($row['slug'] ?? ''));
+            if (!preg_match('/^[a-z0-9][a-z0-9-]{0,99}$/', $slug)) {
+                continue;
+            }
+            $version = trim((string)($row['version'] ?? ''));
+            $manifestPath = BASE_PATH . '/content/plugins/' . $slug . '/plugin.json';
+            if (is_readable($manifestPath)) {
+                $manifest = json_decode((string)file_get_contents($manifestPath), true);
+                if (is_array($manifest) && ($manifest['slug'] ?? null) === $slug) {
+                    $version = trim((string)($manifest['version'] ?? $version));
+                }
+            }
+            if (!preg_match('/^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/', $version)) {
+                continue;
+            }
+            $plugins[] = ['slug' => $slug, 'version' => $version];
+        }
+        return $plugins;
+    }
+
+    private function downloadPluginUpdate(string $slug, string $currentVersion, string $targetVersion): array
+    {
+        $url = $this->updateServer . '/api/plugin-updates/download';
+        $payload = [
+            'license_key' => $this->licenseKey,
+            'domain' => $this->domain,
+            'plugin_slug' => $slug,
+            'current_version' => $currentVersion,
+            'target_version' => $targetVersion,
+        ];
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => json_encode($payload),
+            CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'Accept: application/zip, application/json'],
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_MAXREDIRS => 3,
+            CURLOPT_TIMEOUT => 120,
+            CURLOPT_CONNECTTIMEOUT => 15,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_HEADER => true,
+            CURLOPT_USERAGENT => 'Apparix-Plugin-Update/1.0',
+        ]);
+        $response = curl_exec($ch);
+        $curlError = curl_error($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+        curl_close($ch);
+
+        if (!is_string($response)) {
+            return ['success' => false, 'error' => 'Plugin download failed: ' . ($curlError ?: 'empty response')];
+        }
+        $headers = substr($response, 0, $headerSize);
+        $body = substr($response, $headerSize);
+        if ($httpCode !== 200) {
+            $error = json_decode($body, true);
+            return ['success' => false, 'error' => $error['error'] ?? 'Plugin download failed with HTTP ' . $httpCode];
+        }
+
+        if (!preg_match('/^X-File-Hash:\s*([a-f0-9]{64})\s*$/mi', $headers, $hashMatch)
+            || !preg_match('/^X-Plugin-Slug:\s*([^\r\n]+)$/mi', $headers, $slugMatch)
+            || !preg_match('/^X-Plugin-Version:\s*([^\r\n]+)$/mi', $headers, $versionMatch)
+            || !hash_equals($slug, trim($slugMatch[1]))
+            || !hash_equals($targetVersion, trim($versionMatch[1]))) {
+            return ['success' => false, 'error' => 'Plugin download metadata validation failed.'];
+        }
+
+        $file = BASE_PATH . '/storage/plugin_updates/' . $slug . '-' . bin2hex(random_bytes(8)) . '.zip';
+        if (@file_put_contents($file, $body, LOCK_EX) === false) {
+            return ['success' => false, 'error' => 'Unable to save the plugin update package.'];
+        }
+        $actualHash = hash_file('sha256', $file);
+        if (!hash_equals(strtolower($hashMatch[1]), strtolower($actualHash))) {
+            @unlink($file);
+            return ['success' => false, 'error' => 'Plugin package integrity check failed.'];
+        }
+        return ['success' => true, 'file' => $file];
+    }
+
+    private function reportPluginUpdate(
+        string $slug,
+        string $fromVersion,
+        string $toVersion,
+        string $status,
+        string $error = ''
+    ): void {
+        $this->makeRequest($this->updateServer . '/api/plugin-updates/report', [
+            'license_key' => $this->licenseKey,
+            'domain' => $this->domain,
+            'plugin_slug' => $slug,
+            'from_version' => $fromVersion,
+            'to_version' => $toVersion,
+            'status' => $status,
+            'error_message' => $error,
+        ]);
     }
 
     /**

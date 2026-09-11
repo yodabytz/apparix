@@ -474,11 +474,11 @@ class ProductController extends Controller
         $supplierEmail = trim($this->post('supplier_email', '')) ?: null;
 
         // Sanitize and limit SEO fields
-        $metaKeywords = substr($metaKeywords, 0, 500);
-        $metaDescription = substr($metaDescription, 0, 320);
+        $metaKeywords = mb_substr($metaKeywords, 0, 500);
+        $metaDescription = mb_substr($metaDescription, 0, 320);
         // Limit processing time field
         if ($processingTime) {
-            $processingTime = substr($processingTime, 0, 100);
+            $processingTime = mb_substr($processingTime, 0, 100);
         }
 
         if (empty($name) || $price <= 0) {

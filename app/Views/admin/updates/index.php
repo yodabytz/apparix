@@ -70,8 +70,28 @@
     <div class="card" style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 1px solid #86efac; text-align: center; padding: 2rem;">
         <div style="font-size: 3rem; margin-bottom: 0.5rem;">&#9989;</div>
         <h3 style="margin: 0 0 0.5rem; color: #166534;">You're up to date!</h3>
-        <p style="color: #15803d; margin: 0;">You're running the latest version of Apparix.</p>
+        <p style="color: #15803d; margin: 0;">The Apparix core is up to date.</p>
     </div>
+</div>
+
+<div id="pluginUpdates" class="card" style="display: none; margin-bottom: 1.5rem;">
+    <div class="card-header">
+        <div>
+            <h3 class="card-title" style="margin-bottom: 0.25rem;">Plugin Updates</h3>
+            <p style="margin: 0; color: var(--admin-text-light); font-size: 0.875rem;">Updates available for plugins installed on this site.</p>
+        </div>
+    </div>
+    <div id="pluginUpdateList" class="plugin-update-list"></div>
+</div>
+
+<div id="pluginPurchaseRequired" class="card" style="display: none; margin-bottom: 1.5rem;">
+    <div class="card-header">
+        <div>
+            <h3 class="card-title" style="margin-bottom: 0.25rem;">Plugin License Required</h3>
+            <p style="margin: 0; color: var(--admin-text-light); font-size: 0.875rem;">These installed plugins have updates, but this site license is not linked to a completed purchase.</p>
+        </div>
+    </div>
+    <div id="pluginPurchaseList" class="plugin-update-list"></div>
 </div>
 
 <!-- Installation Progress -->
@@ -152,6 +172,8 @@ function checkForUpdates() {
             return;
         }
 
+        renderPluginUpdates(data.plugin_updates || [], data.plugin_purchase_required || []);
+
         if (data.update_available) {
             pendingVersion = data.update.version;
             document.getElementById('newVersion').textContent = data.update.version;
@@ -175,6 +197,93 @@ function checkForUpdates() {
     .finally(() => {
         btn.disabled = false;
         btn.textContent = 'Check for Updates';
+    });
+}
+
+function renderPluginUpdates(updates, purchaseRequired) {
+    const updateSection = document.getElementById('pluginUpdates');
+    const updateList = document.getElementById('pluginUpdateList');
+    updateList.replaceChildren();
+    updates.forEach(plugin => updateList.appendChild(pluginUpdateRow(plugin, true)));
+    updateSection.style.display = updates.length ? 'block' : 'none';
+
+    const purchaseSection = document.getElementById('pluginPurchaseRequired');
+    const purchaseList = document.getElementById('pluginPurchaseList');
+    purchaseList.replaceChildren();
+    purchaseRequired.forEach(plugin => purchaseList.appendChild(pluginUpdateRow(plugin, false)));
+    purchaseSection.style.display = purchaseRequired.length ? 'block' : 'none';
+}
+
+function pluginUpdateRow(plugin, canUpdate) {
+    const row = document.createElement('div');
+    row.className = 'plugin-update-row';
+
+    const details = document.createElement('div');
+    const name = document.createElement('strong');
+    name.textContent = plugin.name;
+    const versions = document.createElement('div');
+    versions.className = 'plugin-update-meta';
+    versions.textContent = 'v' + plugin.current_version + ' to v' + plugin.version + ' · ' + plugin.file_size_formatted;
+    details.append(name, versions);
+    if (plugin.release_notes) {
+        const notes = document.createElement('div');
+        notes.className = 'plugin-update-notes';
+        notes.textContent = plugin.release_notes;
+        details.appendChild(notes);
+    }
+
+    if (canUpdate) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'btn btn-primary plugin-install-button';
+        button.textContent = 'Update Plugin';
+        button.addEventListener('click', () => installPluginUpdate(plugin, button));
+        row.append(details, button);
+    } else {
+        const link = document.createElement('a');
+        link.className = 'btn btn-outline';
+        link.href = plugin.product_url;
+        link.target = '_blank';
+        link.rel = 'noopener';
+        link.textContent = 'View Purchase';
+        row.append(details, link);
+    }
+    return row;
+}
+
+function installPluginUpdate(plugin, button) {
+    if (!confirm('Update ' + plugin.name + ' from v' + plugin.current_version + ' to v' + plugin.version + '? A rollback backup will be created.')) {
+        return;
+    }
+    button.disabled = true;
+    button.textContent = 'Updating...';
+    showStatus('Updating ' + plugin.name + '...', 'info');
+
+    fetch('/admin/updates/install-plugin', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: '_csrf_token=' + encodeURIComponent(csrfToken)
+            + '&slug=' + encodeURIComponent(plugin.slug)
+            + '&version=' + encodeURIComponent(plugin.version)
+    })
+    .then(r => r.text().then(t => {
+        let data;
+        try { data = JSON.parse(t); } catch (e) { throw new Error('Invalid response from server'); }
+        if (!r.ok) throw new Error(data.error || 'Server returned ' + r.status);
+        return data;
+    }))
+    .then(data => {
+        if (!data.success) throw new Error(data.error || 'Plugin update failed');
+        showStatus(plugin.name + ' was updated to v' + data.version + '.', 'success');
+        setTimeout(checkForUpdates, 1000);
+    })
+    .catch(error => {
+        showStatus('Plugin update failed: ' + error.message, 'error');
+        button.disabled = false;
+        button.textContent = 'Update Plugin';
     });
 }
 
@@ -326,6 +435,8 @@ function hideAllStatus() {
     document.getElementById('updateAvailable').style.display = 'none';
     document.getElementById('upToDate').style.display = 'none';
     document.getElementById('installProgress').style.display = 'none';
+    document.getElementById('pluginUpdates').style.display = 'none';
+    document.getElementById('pluginPurchaseRequired').style.display = 'none';
 }
 
 function ucfirst(str) {
@@ -374,6 +485,45 @@ function confirmRestore(filename) {
     });
 }
 </script>
+
+<style>
+.plugin-update-list {
+    display: grid;
+}
+.plugin-update-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem 0;
+    border-top: 1px solid var(--admin-border, #e5e7eb);
+}
+.plugin-update-row:first-child {
+    border-top: 0;
+}
+.plugin-update-meta,
+.plugin-update-notes {
+    margin-top: 0.25rem;
+    color: var(--admin-text-light);
+    font-size: 0.875rem;
+}
+.plugin-update-notes {
+    max-width: 70ch;
+}
+.plugin-install-button {
+    flex: 0 0 auto;
+    min-width: 124px;
+}
+@media (max-width: 640px) {
+    .plugin-update-row {
+        align-items: stretch;
+        flex-direction: column;
+    }
+    .plugin-update-row .btn {
+        width: 100%;
+    }
+}
+</style>
 
 <?php
 function formatBytes($bytes) {

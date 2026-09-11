@@ -1,0 +1,17 @@
+.git
+.gitignore
+.env
+.env.local
+docker-compose.yml
+storage/logs/*
+storage/sessions/*
+storage/cache/*
+storage/backups/*
+storage/updates/*
+storage/updates_temp/*
+storage/security/blocked_ips.json
+storage/.installed
+*.md
+!README.md
+.claude
+node_modules

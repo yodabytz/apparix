@@ -37,6 +37,7 @@ $options = getopt('', [
     'min-php::',
     'min-edition::',
     'output-dir::',
+    'bundle-plugin::',
     'dry-run',
     'rebuild',
     'publish',
@@ -70,6 +71,7 @@ Options:
   --min-php=8.3            Minimum PHP version (default: composer requirement/current)
   --min-edition=S          Minimum edition S/P/E/D/U (default: S)
   --output-dir=path        Package output directory (default: storage/updates)
+  --bundle-plugin=slug     Include a changed built-in plugin (currently: stripe)
   --dry-run                Validate and list package details, do not write package
   --rebuild                Rebuild the package for the currently installed version
   --publish                Insert/update release row in the local releases table
@@ -126,7 +128,7 @@ $exclude = [
     'public/assets/images/products', 'public/assets/images/uploads',
     'public/assets/images/categories', 'public/assets/images/newsletter',
     'public/assets/images/branding', 'public/uploads', 'public/content',
-    'content/themes', 'tools/generate-license.php',
+    'content/themes', 'tests', 'tools/generate-license.php',
     'content/plugins',
 ];
 
@@ -138,7 +140,17 @@ foreach ($requiredDirs as $dir) {
 }
 
 $files = collectFiles($basePath, $exclude);
-$bundledPaths = ['content/plugins/printify-sync'];
+$bundledPaths = [];
+if (!empty($options['bundle-plugin'])) {
+    $requestedPlugins = array_filter(array_map('trim', explode(',', (string)$options['bundle-plugin'])));
+    $allowedBundledPlugins = ['stripe'];
+    foreach ($requestedPlugins as $pluginSlug) {
+        if (!in_array($pluginSlug, $allowedBundledPlugins, true)) {
+            fail("Plugin {$pluginSlug} is not a core-bundled plugin");
+        }
+        $bundledPaths[] = 'content/plugins/' . $pluginSlug;
+    }
+}
 foreach ($bundledPaths as $bundledPath) {
     $bundledBase = $basePath . '/' . $bundledPath;
     if (!is_dir($bundledBase)) {
@@ -214,6 +226,9 @@ try {
     @unlink($packagePath);
     if ($verbose) fwrite(STDERR, "Creating archive {$packagePath}...\n");
     createTarGzPackage($tmpRoot, 'apparix-' . $version, $packagePath);
+    if (!chmod($packagePath, 0640)) {
+        throw new RuntimeException("Unable to secure package permissions: {$packagePath}");
+    }
 
     if ($verbose) fwrite(STDERR, "Hashing package...\n");
     $hash = hash_file('sha256', $packagePath);
@@ -228,6 +243,7 @@ try {
 
     if ($publish) {
         publishRelease($basePath, $version, $releaseType, $releaseNotes, $changelog, $packageName, $hash, (int)$size, $minPhp, $minEdition);
+        publishStatusMetadata($version, $releaseType, $releaseNotes, $changelog);
         $summary['published'] = true;
     }
 
@@ -394,6 +410,41 @@ function publishRelease(string $basePath, string $version, string $releaseType, 
         $version, $parts[0], $parts[1], $parts[2], $releaseType, $releaseNotes,
         $changelog, $minPhp, $minEdition, $packageName, $hash, $size,
     ]);
+}
+
+function publishStatusMetadata(string $version, string $releaseType, string $releaseNotes, string $changelog): void
+{
+    $statusFile = $_ENV['APPARIX_STATUS_RELEASE_FILE'] ?? '/var/www/status.apparix.app/public/release.json';
+    $statusDir = dirname($statusFile);
+
+    // Customer installations do not host the central Apparix status site.
+    if (!is_dir($statusDir)) {
+        return;
+    }
+    if (!is_writable($statusDir)) {
+        throw new RuntimeException("Status metadata directory is not writable: {$statusDir}");
+    }
+
+    $payload = json_encode([
+        'version' => $version,
+        'release_type' => $releaseType,
+        'release_date' => date('Y-m-d'),
+        'release_notes' => $releaseNotes,
+        'changelog' => $changelog,
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+    if ($payload === false) {
+        throw new RuntimeException('Unable to encode status metadata');
+    }
+
+    $tempFile = $statusFile . '.tmp-' . bin2hex(random_bytes(4));
+    if (file_put_contents($tempFile, $payload . "\n", LOCK_EX) === false) {
+        throw new RuntimeException("Unable to write status metadata: {$tempFile}");
+    }
+    chmod($tempFile, 0644);
+    if (!rename($tempFile, $statusFile)) {
+        @unlink($tempFile);
+        throw new RuntimeException("Unable to publish status metadata: {$statusFile}");
+    }
 }
 
 function loadEnvFile(string $envPath): void

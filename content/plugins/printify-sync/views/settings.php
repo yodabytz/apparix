@@ -33,6 +33,7 @@
 
         <div class="toggle-list">
             <label><input type="checkbox" name="settings[send_orders]" value="1" <?php echo !empty($settings['send_orders']) ? 'checked' : ''; ?>> Queue eligible paid orders for Printify fulfillment</label>
+            <input type="hidden" name="settings[sync_order_statuses]" value="0">
             <label><input type="checkbox" name="settings[sync_order_statuses]" value="1" <?php echo !empty($settings['sync_order_statuses']) ? 'checked' : ''; ?>> Automatically update order status, tracking, and customer notifications from Printify</label>
             <input type="hidden" name="settings[sync_inventory]" value="0">
             <label><input type="checkbox" name="settings[sync_inventory]" value="1" <?php echo !empty($settings['sync_inventory']) ? 'checked' : ''; ?>> Automatically sync Printify variant availability</label>

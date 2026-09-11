@@ -5,7 +5,7 @@ namespace App\Core;
 /**
  * Review Request Email Service
  *
- * Sends review request emails to customers after delivery or 3 weeks
+ * Sends tokenized review request emails after delivery.
  */
 class ReviewEmailService
 {
@@ -28,13 +28,14 @@ class ReviewEmailService
         );
         $productImage = $image ? $siteUrl . $image['image_path'] : $b['logoUrl'];
 
-        $reviewUrl = $siteUrl . '/review/' . $request['token'];
+        $reviewUrl = $siteUrl . '/review/' . rawurlencode((string) $request['token']);
         $productUrl = $siteUrl . '/products/' . $request['product_slug'];
 
-        $subject = "How did you like your {$request['product_name']}?";
+        $subjectProduct = str_replace(["\r", "\n"], '', (string) $request['product_name']);
+        $subject = "How did you like your {$subjectProduct}?";
 
         $html = $this->buildEmailHtml([
-            'firstName' => $request['first_name'],
+            'firstName' => $request['first_name'] ?: 'there',
             'productName' => $request['product_name'],
             'productImage' => $productImage,
             'productUrl' => $productUrl,
@@ -46,6 +47,10 @@ class ReviewEmailService
         ]);
 
         $recipientEmail = $request['customer_email'] ?? $request['email'] ?? null;
+        if (!is_string($recipientEmail) || !filter_var($recipientEmail, FILTER_VALIDATE_EMAIL)) {
+            error_log('Review request skipped: invalid recipient for request ' . (int) ($request['id'] ?? 0));
+            return false;
+        }
         $sent = sendEmail($recipientEmail, $subject, $html, ['html' => true]);
 
         if ($sent) {
@@ -62,6 +67,10 @@ class ReviewEmailService
      */
     private function buildEmailHtml(array $data): string
     {
+        foreach (['firstName', 'productName', 'productImage', 'productUrl', 'reviewUrl', 'siteName', 'siteUrl'] as $key) {
+            $data[$key] = htmlspecialchars((string) $data[$key], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        }
+
         $b = $data['branding'];
         $primary = $b['primary'];
         $primaryDark = $b['primaryDark'];
@@ -185,16 +194,21 @@ HTML;
     public function processPendingRequests(int $limit = 50): int
     {
         $reviewModel = new \App\Models\Review();
+        $reviewModel->createMissingDeliveredReviewRequests(max(200, $limit));
         $requests = $reviewModel->getPendingReviewRequests($limit);
 
         $sent = 0;
         foreach ($requests as $request) {
-            if ($this->sendReviewRequest($request)) {
-                $reviewModel->markRequestSent($request['id']);
-                $sent++;
+            try {
+                if ($this->sendReviewRequest($request)) {
+                    $reviewModel->markRequestSent((int) $request['id']);
+                    $sent++;
 
-                // Small delay to avoid overwhelming mail server
-                usleep(100000); // 100ms
+                    // Small delay to avoid overwhelming mail server
+                    usleep(100000); // 100ms
+                }
+            } catch (\Throwable $e) {
+                error_log('Review request failed for request ' . (int) ($request['id'] ?? 0) . ': ' . $e->getMessage());
             }
         }
 

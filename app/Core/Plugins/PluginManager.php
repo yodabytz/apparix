@@ -117,6 +117,14 @@ class PluginManager
      */
     private function getPluginClassName(string $slug): string
     {
+        $knownNames = [
+            'paypal' => 'PayPalPlugin',
+            'authorizenet' => 'AuthorizeNetPlugin',
+        ];
+        if (isset($knownNames[$slug])) {
+            return $knownNames[$slug];
+        }
+
         // Convert slug to PascalCase and add "Plugin"
         $parts = explode('-', $slug);
         $className = implode('', array_map('ucfirst', $parts)) . 'Plugin';
@@ -194,115 +202,60 @@ class PluginManager
      */
     public function installFromZip(string $zipPath): array
     {
-        $zip = new \ZipArchive();
+        return $this->installPackage($zipPath);
+    }
 
-        if ($zip->open($zipPath) !== true) {
-            return ['success' => false, 'error' => 'Failed to open ZIP file'];
+    /**
+     * Install an authorized update for one already-installed plugin.
+     */
+    public function installUpdateFromZip(string $zipPath, string $expectedSlug, string $expectedVersion): array
+    {
+        if (!$this->pluginModel->exists($expectedSlug)) {
+            return ['success' => false, 'error' => 'Plugin is not installed on this site.'];
+        }
+        return $this->installPackage($zipPath, $expectedSlug, $expectedVersion);
+    }
+
+    private function installPackage(string $zipPath, ?string $expectedSlug = null, ?string $expectedVersion = null): array
+    {
+        $installer = new PluginPackageInstaller();
+        $installed = $installer->install($zipPath, $expectedSlug, $expectedVersion);
+        if (!$installed['success']) {
+            return $installed;
         }
 
-        // Look for plugin.json in the ZIP
-        $manifest = null;
-        $pluginDir = null;
-
-        for ($i = 0; $i < $zip->numFiles; $i++) {
-            $filename = $zip->getNameIndex($i);
-            if (basename($filename) === 'plugin.json') {
-                $manifestContent = $zip->getFromIndex($i);
-                $manifest = json_decode($manifestContent, true);
-                $pluginDir = dirname($filename);
-                break;
-            }
-        }
-
-        if (!$manifest) {
-            $zip->close();
-            return ['success' => false, 'error' => 'plugin.json not found in ZIP'];
-        }
-
-        // Validate manifest
-        if (empty($manifest['slug']) || empty($manifest['name']) || empty($manifest['version'])) {
-            $zip->close();
-            return ['success' => false, 'error' => 'Invalid plugin.json - missing required fields'];
-        }
-
+        $manifest = $installed['manifest'];
         $slug = $manifest['slug'];
-
-        // Check if plugin already exists (allow re-upload to update files)
-        $isUpdate = $this->pluginModel->exists($slug);
-
-        // Extract to plugins directory
-        $extractPath = BASE_PATH . '/content/plugins/' . $slug;
-
-        if (!is_dir($extractPath)) {
-            mkdir($extractPath, 0755, true);
-        }
-
-        // Extract files
-        for ($i = 0; $i < $zip->numFiles; $i++) {
-            $filename = $zip->getNameIndex($i);
-
-            // Skip if not in plugin directory
-            if ($pluginDir && $pluginDir !== '.' && strpos($filename, $pluginDir) !== 0) {
-                continue;
-            }
-
-            // Get relative path
-            if ($pluginDir && $pluginDir !== '.') {
-                $relativePath = substr($filename, strlen($pluginDir) + 1);
-            } else {
-                $relativePath = $filename;
-            }
-
-            if (empty($relativePath)) {
-                continue;
-            }
-
-            $targetPath = $extractPath . '/' . $relativePath;
-
-            // Create directory if needed
-            if (substr($filename, -1) === '/') {
-                if (!is_dir($targetPath)) {
-                    mkdir($targetPath, 0755, true);
+        $existing = $this->pluginModel->getBySlug($slug);
+        try {
+            if ($existing) {
+                if (!$this->pluginModel->updateManifest((int)$existing['id'], $manifest)) {
+                    throw new \RuntimeException('Failed to update plugin metadata.');
                 }
+                $pluginId = (int)$existing['id'];
             } else {
-                $targetDir = dirname($targetPath);
-                if (!is_dir($targetDir)) {
-                    mkdir($targetDir, 0755, true);
+                $pluginId = $this->pluginModel->install($manifest);
+                if (!$pluginId) {
+                    throw new \RuntimeException('Failed to register plugin in the database.');
                 }
-                file_put_contents($targetPath, $zip->getFromIndex($i));
             }
+        } catch (\Throwable $e) {
+            if (!$installer->restore($installed) && !$existing && is_dir($installed['target_path'])) {
+                $this->removeDirectory($installed['target_path']);
+            }
+            return ['success' => false, 'error' => $e->getMessage()];
         }
 
-        $zip->close();
-
-        // Security check for themes - reject PHP files
-        if (($manifest['type'] ?? '') === 'theme') {
-            $phpFiles = glob($extractPath . '/**/*.php', GLOB_BRACE);
-            if (!empty($phpFiles)) {
-                $this->removeDirectory($extractPath);
-                return ['success' => false, 'error' => 'Themes cannot contain PHP files'];
-            }
+        if (function_exists('opcache_reset')) {
+            opcache_reset();
         }
-
-        // Register in database (skip if updating existing plugin)
-        if ($isUpdate) {
-            $existingPlugin = $this->pluginModel->getBySlug($slug);
-            $pluginId = $existingPlugin['id'];
-        } else {
-            $pluginId = $this->pluginModel->install($manifest);
-
-            if (!$pluginId) {
-                $this->removeDirectory($extractPath);
-                return ['success' => false, 'error' => 'Failed to register plugin in database'];
-            }
-        }
-
         return [
             'success' => true,
             'plugin_id' => $pluginId,
             'slug' => $slug,
             'name' => $manifest['name'],
-            'updated' => $isUpdate
+            'version' => $manifest['version'],
+            'updated' => (bool)$existing,
         ];
     }
 

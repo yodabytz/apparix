@@ -229,7 +229,7 @@ class Review extends Model
     /**
      * Create review request entries for an order
      */
-    public function createReviewRequests(int $orderId): void
+    public function createReviewRequests(int $orderId): int
     {
         $db = Database::getInstance();
 
@@ -243,7 +243,7 @@ class Review extends Model
         );
 
         if (!$order || !$order['user_id']) {
-            return; // Only registered users can review
+            return 0;
         }
 
         $email = $order['user_email'] ?? $order['customer_email'] ?? null;
@@ -251,7 +251,7 @@ class Review extends Model
         // Skip if no valid email address
         if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
             error_log("Review request skipped for order {$orderId}: no valid email");
-            return;
+            return 0;
         }
 
         // Get order items
@@ -260,6 +260,7 @@ class Review extends Model
             [$orderId]
         );
 
+        $created = 0;
         foreach ($items as $item) {
             // Check if request already exists
             $existing = $db->selectOne(
@@ -270,17 +271,49 @@ class Review extends Model
             if (!$existing) {
                 $token = bin2hex(random_bytes(32));
                 $db->insert(
-                    "INSERT INTO review_requests (order_id, order_item_id, product_id, user_id, customer_email, token, status)
+                    "INSERT INTO review_requests (order_id, order_item_id, product_id, user_id, email, token, status)
                      VALUES (?, ?, ?, ?, ?, ?, 'pending')",
                     [$orderId, $item['id'], $item['product_id'], $order['user_id'], $email, $token]
                 );
+                $created++;
             }
         }
+
+        return $created;
+    }
+
+    /**
+     * Backfill requests for paid, delivered orders that do not have one yet.
+     */
+    public function createMissingDeliveredReviewRequests(int $limit = 200): int
+    {
+        $db = Database::getInstance();
+        $orders = $db->select(
+            "SELECT DISTINCT o.id
+             FROM orders o
+             JOIN order_items oi ON oi.order_id = o.id
+             LEFT JOIN review_requests rr
+               ON rr.order_id = o.id AND rr.product_id = oi.product_id
+             WHERE o.status = 'delivered'
+               AND o.payment_status = 'paid'
+               AND o.user_id IS NOT NULL
+               AND rr.id IS NULL
+             ORDER BY o.id ASC
+             LIMIT ?",
+            [$limit]
+        );
+
+        $created = 0;
+        foreach ($orders as $order) {
+            $created += $this->createReviewRequests((int) $order['id']);
+        }
+
+        return $created;
     }
 
     /**
      * Get pending review requests ready to send
-     * (order delivered OR 3 weeks since order placed)
+     * Only paid orders confirmed as delivered are eligible.
      */
     public function getPendingReviewRequests(int $limit = 50): array
     {
@@ -295,13 +328,13 @@ class Review extends Model
              FROM review_requests rr
              JOIN orders o ON rr.order_id = o.id
              JOIN products p ON rr.product_id = p.id
-             JOIN users u ON rr.user_id = u.id
+             LEFT JOIN users u ON rr.user_id = u.id
              WHERE rr.status = 'pending'
                AND rr.sent_at IS NULL
-               AND (
-                   o.status = 'delivered'
-                   OR o.created_at <= DATE_SUB(NOW(), INTERVAL 21 DAY)
-               )
+               AND rr.user_id IS NOT NULL
+               AND o.status = 'delivered'
+               AND o.payment_status = 'paid'
+             ORDER BY o.updated_at ASC, rr.id ASC
              LIMIT ?",
             [$limit]
         );
@@ -336,6 +369,10 @@ class Review extends Model
      */
     public function getRequestByToken(string $token): ?array
     {
+        if (!preg_match('/^[a-f0-9]{64}$/D', $token)) {
+            return null;
+        }
+
         $db = Database::getInstance();
         return $db->selectOne(
             "SELECT rr.*, p.name as product_name, p.slug as product_slug

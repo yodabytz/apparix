@@ -144,6 +144,54 @@ class UpdateController extends Controller
     }
 
     /**
+     * Install one purchased plugin update (AJAX).
+     */
+    public function installPlugin(): void
+    {
+        $this->requireValidCSRF();
+        $slug = trim((string)$this->post('slug', ''));
+        $version = trim((string)$this->post('version', ''));
+
+        if (!preg_match('/^[a-z0-9][a-z0-9-]{0,99}$/', $slug)
+            || !preg_match('/^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/', $version)) {
+            $this->json(['success' => false, 'error' => 'Invalid plugin update request.'], 400);
+            return;
+        }
+
+        try {
+            try {
+                $this->adminModel->logActivity(
+                    $this->admin['admin_id'],
+                    'plugin_update_attempt',
+                    'plugin',
+                    null,
+                    "Attempting to update {$slug} to v{$version}"
+                );
+            } catch (\Throwable $logError) {
+                error_log('Pre-plugin-update activity log failed: ' . $logError->getMessage());
+            }
+            $result = $this->updateService->installPluginUpdate($slug, $version);
+            try {
+                $this->adminModel->logActivity(
+                    $this->admin['admin_id'],
+                    $result['success'] ? 'plugin_update_success' : 'plugin_update_failed',
+                    'plugin',
+                    $result['plugin_id'] ?? null,
+                    $result['success']
+                        ? "Updated {$slug} to v{$version}"
+                        : "Plugin update failed for {$slug}: " . ($result['error'] ?? 'Unknown error')
+                );
+            } catch (\Throwable $logError) {
+                error_log('Post-plugin-update activity log failed: ' . $logError->getMessage());
+            }
+            $this->json($result);
+        } catch (\Throwable $e) {
+            error_log('Plugin update controller error: ' . $e->getMessage());
+            $this->json(['success' => false, 'error' => 'Plugin update failed: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
      * Get current version info (AJAX)
      */
     public function version(): void

@@ -3,28 +3,13 @@
 /**
  * Cron Job: Send Review Request Emails
  *
- * Sends review request emails to customers whose orders have been:
- * - Marked as delivered, OR
- * - Placed more than 3 weeks ago
+ * Sends tokenized review request emails for paid orders marked delivered.
  *
  * Run this daily via cron:
  * 0 10 * * * /usr/bin/php /var/www/www.apparix.app/cron/send-review-requests.php
  */
 
-// Set working directory
-chdir(dirname(__DIR__));
-
-// Load autoloader and environment
-require_once 'vendor/autoload.php';
-
-$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
-$dotenv->load();
-
-// Load core classes
-require_once 'app/Core/Database.php';
-require_once 'app/Core/Model.php';
-require_once 'app/Models/Review.php';
-require_once 'app/Core/ReviewEmailService.php';
+require __DIR__ . '/bootstrap.php';
 
 use App\Core\ReviewEmailService;
 
@@ -39,7 +24,7 @@ try {
     $endTime = date('Y-m-d H:i:s');
     echo "[{$endTime}] Completed. Sent {$sent} review request emails.\n";
 
-} catch (Exception $e) {
+} catch (\Throwable $e) {
     echo "[ERROR] " . $e->getMessage() . "\n";
     error_log("Review request cron error: " . $e->getMessage());
     exit(1);

@@ -1,0 +1,36 @@
+services:
+  app:
+    image: apparixapp/apparix:latest
+    ports:
+      - "80:80"
+    env_file: .env
+    environment:
+      - DB_HOST=db
+    volumes:
+      - storage:/var/www/html/storage
+      - uploads:/var/www/html/public/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: mariadb:10.11
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASS:?Set DB_ROOT_PASS in .env}
+      MYSQL_DATABASE: ${DB_NAME:-apparix_ecommerce}
+      MYSQL_USER: ${DB_USER:-apparix}
+      MYSQL_PASSWORD: ${DB_PASS:?Set DB_PASS in .env}
+    volumes:
+      - dbdata:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  storage:
+  uploads:
+  dbdata:

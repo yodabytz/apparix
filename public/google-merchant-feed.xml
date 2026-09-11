@@ -1,109 +1,231 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
-  <channel>
-    <title>Apparix</title>
-    <link>https://apparix.app</link>
-    <description>Authentic Irish Aran sweaters, Scottish Harris Tweed, Celtic jewelry, and unique handmade gifts.</description>
-
-    <item>
-      <g:id>42</g:id>
-      <g:title>Pure New Irish Merino Wool Throw Blanket - Made in Ireland</g:title>
-      <g:description>This Pure New Merino Wool Throw is crafted in Ireland from 100% premium Merino wool by SAOL Knitwear. Designed for exceptional warmth, softness, and durability, this throw features a refined woven texture that reflects traditional Irish craftsmanship. Naturally breathable and insulating, it is ideal for year-round comfort on sofas, chairs, or beds.</g:description>
-      <g:link>https://apparix.app/products/pure-new-irish-merino-wool-throw-blanket-made-in-ireland</g:link>
-      <g:image_link>https://apparix.app/assets/images/products/pure-new-irish-merino-wool-throw-blanket-made-in-ireland/img-694dafdabcb74.webp</g:image_link>
-      <g:price>229.95 USD</g:price>
-      <g:availability>in_stock</g:availability>
-      <g:condition>new</g:condition>
-      <g:brand>SAOL Knitwear</g:brand>
-      <g:google_product_category>Home &amp; Garden &gt; Linens &amp; Bedding &gt; Bedding &gt; Blankets &amp; Throws</g:google_product_category>
-      <g:product_type>Home &gt; Blankets &gt; Wool Throws</g:product_type>
-      <g:mpn>NT200</g:mpn>
-      <g:shipping_weight>5 lb</g:shipping_weight>
-      <g:shipping_length>14 in</g:shipping_length>
-      <g:shipping_width>11 in</g:shipping_width>
-      <g:shipping_height>4 in</g:shipping_height>
-      <g:shipping>
-        <g:country>US</g:country>
-        <g:service>Standard</g:service>
-        <g:price>0 USD</g:price>
-      </g:shipping>
-    </item>
-
-    <item>
-      <g:id>16</g:id>
-      <g:title>Harris Tweed Large Ladies Tote Bag by Glen Appin - Authentic Scottish Wool</g:title>
-      <g:description>This elegant Harris Tweed tote from Glen Appin of Scotland blends classic craftsmanship with everyday functionality. Made from 100% genuine Harris Tweed, handwoven in the Outer Hebrides using time-honored methods. The fabric offers exceptional depth of color, durability, and a timeless Scottish aesthetic. Includes fixed shoulder straps and a removable long strap for crossbody wear.</g:description>
-      <g:link>https://apparix.app/products/harris-tweed-large-ladies-tote-bag-by-glen-appin-authentic-scottish-wool</g:link>
-      <g:image_link>https://apparix.app/assets/images/products/harris-tweed-large-ladies-tote-bag-by-glen-appin-authentic-scottish-wool/img-693a2b128a73e.webp</g:image_link>
-      <g:price>185.00 USD</g:price>
-      <g:availability>in_stock</g:availability>
-      <g:condition>new</g:condition>
-      <g:brand>Glen Appin</g:brand>
-      <g:google_product_category>Apparel &amp; Accessories &gt; Handbags, Wallets &amp; Cases &gt; Handbags &gt; Tote Bags</g:google_product_category>
-      <g:product_type>Accessories &gt; Bags &gt; Tote Bags</g:product_type>
-      <g:mpn>GA-LB1028</g:mpn>
-      <g:shipping_weight>1.5 lb</g:shipping_weight>
-      <g:shipping_length>14 in</g:shipping_length>
-      <g:shipping_width>10 in</g:shipping_width>
-      <g:shipping_height>4 in</g:shipping_height>
-      <g:shipping>
-        <g:country>US</g:country>
-        <g:service>Standard</g:service>
-        <g:price>0 USD</g:price>
-      </g:shipping>
-    </item>
-
-    <item>
-      <g:id>30</g:id>
-      <g:title>Classic Irish Merino Wool Cable Knit Coat - Made in Ireland</g:title>
-      <g:description>Stay warm and stylish all winter with this Classic Aran Cable Merino Wool Coat for women. Crafted from 100% sumptuous merino wool, this longer-length knit coat features rich Aran textures, including basket, vertical rope and braided cable stitch patterns. Designed with a layered asymmetrical flap collar and modern four-button side fastening.</g:description>
-      <g:link>https://apparix.app/products/classic-irish-merino-wool-cable-knit-coat-made-in-ireland</g:link>
-      <g:image_link>https://apparix.app/assets/images/products/classic-aran-cable-merino-wool-coat-knit-long-winter-coat-for-women/img-694467292f7b3.webp</g:image_link>
-      <g:price>179.95 USD</g:price>
-      <g:availability>in_stock</g:availability>
-      <g:condition>new</g:condition>
-      <g:brand>Aran Crafts</g:brand>
-      <g:google_product_category>Apparel &amp; Accessories &gt; Clothing &gt; Outerwear &gt; Coats &amp; Jackets</g:google_product_category>
-      <g:product_type>Women &gt; Outerwear &gt; Wool Coats</g:product_type>
-      <g:gender>female</g:gender>
-      <g:age_group>adult</g:age_group>
-      <g:mpn>ML120</g:mpn>
-      <g:shipping_weight>4 lb</g:shipping_weight>
-      <g:shipping_length>15 in</g:shipping_length>
-      <g:shipping_width>12 in</g:shipping_width>
-      <g:shipping_height>5 in</g:shipping_height>
-      <g:shipping>
-        <g:country>US</g:country>
-        <g:service>Standard</g:service>
-        <g:price>0 USD</g:price>
-      </g:shipping>
-    </item>
-
-    <item>
-      <g:id>62</g:id>
-      <g:title>Aran Knit Tree of Life Wool Coat - Women's Merino Wool Cable Knit Coat</g:title>
-      <g:description>Elevate your cold-weather wardrobe with this Aran Knit Tree of Life Wool Coat, a timeless and cozy outerwear piece featuring classic cable knit texture and a symbolic Tree of Life pattern. Crafted from high-quality merino wool, this coat combines warmth, structure, and sophisticated style. Perfect for everyday wear or special outings during crisp weather.</g:description>
-      <g:link>https://apparix.app/products/aran-knit-tree-of-life-wool-coat-women-s-merino-wool-cable-knit-coat</g:link>
-      <g:image_link>https://apparix.app/assets/images/products/aran-knit-tree-of-life-wool-coat-women-s-merino-wool-cable-knit-coat/img-69515ebcf1822.webp</g:image_link>
-      <g:price>159.95 USD</g:price>
-      <g:availability>in_stock</g:availability>
-      <g:condition>new</g:condition>
-      <g:brand>Aran Crafts</g:brand>
-      <g:google_product_category>Apparel &amp; Accessories &gt; Clothing &gt; Outerwear &gt; Coats &amp; Jackets</g:google_product_category>
-      <g:product_type>Women &gt; Outerwear &gt; Wool Coats</g:product_type>
-      <g:gender>female</g:gender>
-      <g:age_group>adult</g:age_group>
-      <g:mpn>ML186</g:mpn>
-      <g:shipping_weight>4 lb</g:shipping_weight>
-      <g:shipping_length>15 in</g:shipping_length>
-      <g:shipping_width>12 in</g:shipping_width>
-      <g:shipping_height>5 in</g:shipping_height>
-      <g:shipping>
-        <g:country>US</g:country>
-        <g:service>Standard</g:service>
-        <g:price>0 USD</g:price>
-      </g:shipping>
-    </item>
-
-  </channel>
+<channel>
+<title>Apparix</title>
+<link>https://apparix.app</link>
+<description>Apparix Product Feed</description>
+<item>
+  <g:id>85</g:id>
+  <title>Apparix E-Commerce Platform</title>
+  <description>Apparix is a powerful, fully-featured e-commerce platform built for modern online stores. Includes license key activation, automatic updates, and full source code access. Core Features: ✤ Complete shopping cart and secure checkout system ✤ Native Stripe payment system integration ✤ Customer accounts with order management ✤ Product variants and configurable options ✤ Digital product download support ✤ Fully responsive design ✤ Admin dashboard with analytics ✤ Automated email notifications ✤ SEO-friendly URLs ✤ Plugin system for extensibility Free Edition – $0 ✤ Up to 50 products ✤ Up to 50 orders per month ✤ 1 admin user ✤ Core features only ✤ Apparix branding displayed Standard Edition – $99 ✤ Up to 100 products ✤ Up to 500 orders per month ✤ 1 admin user ✤ Custom theme support ✤ Coupons and discount system ✤ Newsletter integration ✤ Remove Apparix branding Professional Edition – $199 ✤ Up to 1,000 products ✤ Up to 5,000 orders per month ✤ Up to 5 admin users ✤ Includes all Standard features ✤ API access ✤ Advanced analytics ✤ Bulk product import and export Enterprise Edition – $299 ✤ Unlimited products ✤ Unlimited orders ✤ Unlimited admin users ✤ Includes all Professional features ✤ Abandoned cart recovery ✤ Multi-currency support ✤ Priority support Unlimited Edition – $499 ✤ Unlimited everything ✤ Includes all Enterprise features ✤ Use on unlimited domains ✤ Developer license included ✤ White-label rights</description>
+  <link>https://apparix.app/products/apparix-ecommerce-platform</link>
+  <g:image_link>https://apparix.app/assets/images/products/apparix-ecommerce-platform/img-699f38ce67f2d.webp</g:image_link>
+  <g:availability>in_stock</g:availability>
+  <g:price>99.00 USD</g:price>
+  <g:brand>Apparix</g:brand>
+  <g:condition>new</g:condition>
+  <g:google_product_category>Apparel &amp; Accessories</g:google_product_category>
+  <g:color>White</g:color>
+  <g:gender>unisex</g:gender>
+  <g:age_group>adult</g:age_group>
+  <g:mpn>APX-LICENSE</g:mpn>
+  <g:shipping>
+    <g:country>US</g:country>
+    <g:price>0 USD</g:price>
+  </g:shipping>
+</item>
+<item>
+  <g:id>87</g:id>
+  <title>PayPal Payment Plugin</title>
+  <description>Accept PayPal Payments in Your Apparix Store The PayPal Payment Plugin integrates PayPal Commerce Platform with your Apparix store, allowing customers to pay using PayPal, Pay Later, Venmo, and credit/debit cards. Key Features PayPal Checkout - Accept payments from millions of PayPal users worldwide Pay Later Options - Offer Pay in 4 and PayPal Credit to increase conversions Venmo Support - Accept Venmo payments (US customers only) Credit/Debit Cards - Process cards directly through PayPal Multi-Currency Support - Accept 12 major currencies (USD, EUR, GBP, CAD, AUD, JPY, CHF, NZD, MXN, BRL, SEK, NOK) Webhook Signature Verification - Secure payment confirmations with PayPal webhook signature validation Automatic Retries - Built-in retry logic with exponential backoff for reliable API calls Connection Testing - Verify your API credentials are working before going live Sandbox Mode - Test payments safely before accepting real transactions Requirements Apparix 1.0.0 or higher PHP 8.1 or higher PayPal Business Account PayPal REST API credentials (Client ID and Secret) Installation Download and extract the plugin to /content/plugins/paypal/ Activate the plugin in Admin &gt; Plugins Configure your PayPal API credentials from developer.paypal.com Set up webhooks in PayPal Developer Dashboard and add Webhook ID for security Test in sandbox mode before going live What&apos;s New in v1.1.0 Webhook signature verification for enhanced security Multi-currency support (12 currencies) Connection testing to validate API credentials Retry logic with exponential backoff Improved error handling and logging Customizable funding source options</description>
+  <link>https://apparix.app/products/paypal-payment-plugin</link>
+  <g:image_link>https://apparix.app/assets/images/products/paypal-payment-plugin/img-696ad7875c62a.webp</g:image_link>
+  <g:availability>in_stock</g:availability>
+  <g:price>49.00 USD</g:price>
+  <g:brand>Apparix</g:brand>
+  <g:condition>new</g:condition>
+  <g:google_product_category>Software &gt; Computer Software</g:google_product_category>
+  <g:color>Multicolor</g:color>
+  <g:mpn>APX-PPP</g:mpn>
+  <g:shipping>
+    <g:country>US</g:country>
+    <g:price>0 USD</g:price>
+  </g:shipping>
+</item>
+<item>
+  <g:id>88</g:id>
+  <title>Square Payment Plugin</title>
+  <description>Accept Square Payments on Your StoreThe Square Payment Plugin brings the power of Square&apos;s modern payment processing to your Apparix store. Perfect for businesses that use Square for in-person sales and want a unified payment experience.FeaturesWeb Payments SDK - Secure, PCI-compliant card processingApple Pay - One-tap checkout for Apple usersGoogle Pay - Fast checkout for Android usersCash App Pay - Accept Cash App paymentsSaved Cards - Let customers save cards for faster checkoutUnified Dashboard - View online and in-person sales in one placeAutomatic Refunds - Process refunds from your admin panelReal-time Webhooks - Instant payment confirmationsRequirementsApparix 1.0.0 or higherSquare Developer AccountPHP 8.1+InstallationUpload the plugin through your admin panel, configure your Square API credentials, and start accepting payments. The plugin supports both sandbox and production environments for easy testing.</description>
+  <link>https://apparix.app/products/square-payment-plugin</link>
+  <g:image_link>https://apparix.app/assets/images/products/square-payment-plugin/img-696ad7ffa6081.webp</g:image_link>
+  <g:availability>in_stock</g:availability>
+  <g:price>49.00 USD</g:price>
+  <g:brand>Apparix</g:brand>
+  <g:condition>new</g:condition>
+  <g:google_product_category>Software &gt; Computer Software</g:google_product_category>
+  <g:color>Multicolor</g:color>
+  <g:mpn>APX-SPP</g:mpn>
+  <g:shipping>
+    <g:country>US</g:country>
+    <g:price>0 USD</g:price>
+  </g:shipping>
+</item>
+<item>
+  <g:id>89</g:id>
+  <title>Authorize.net Payment Plugin</title>
+  <description>Accept Authorize.net Payments on Your StoreThe Authorize.net Payment Plugin integrates one of the most trusted and established payment gateways with your Apparix store. Ideal for businesses that need enterprise-grade payment processing.FeaturesAccept.js Integration - Secure client-side tokenizationCredit &amp; Debit Cards - Process all major card brandseCheck/ACH - Accept electronic bank transfersApple Pay - One-tap mobile paymentsFraud Detection - Advanced fraud screening toolsRecurring Billing - Set up subscription paymentsCustomer Profiles - Save customer payment info securelyPCI Compliant - Level 1 PCI DSS certifiedRequirementsApparix 1.0.0 or higherAuthorize.net Merchant AccountPHP 8.1+InstallationInstall the plugin via your admin panel, enter your API Login ID and Transaction Key, and you&apos;re ready to process payments. Includes sandbox mode for testing before going live.</description>
+  <link>https://apparix.app/products/authorizenet-payment-plugin</link>
+  <g:image_link>https://apparix.app/assets/images/products/authorizenet-payment-plugin/img-696ad70f1249f.webp</g:image_link>
+  <g:availability>in_stock</g:availability>
+  <g:price>49.00 USD</g:price>
+  <g:brand>Apparix</g:brand>
+  <g:condition>new</g:condition>
+  <g:google_product_category>Software &gt; Computer Software</g:google_product_category>
+  <g:color>Multicolor</g:color>
+  <g:mpn>APX-ANP</g:mpn>
+  <g:shipping>
+    <g:country>US</g:country>
+    <g:price>0 USD</g:price>
+  </g:shipping>
+</item>
+<item>
+  <g:id>90</g:id>
+  <title>Amazon Sync Plugin</title>
+  <description>Sell on Amazon from Your Apparix StoreThe Amazon Sync Plugin connects your Apparix store with Amazon Seller Central using the official Selling Partner API (SP-API), enabling you to manage your multi-channel business from one dashboard.FeaturesProduct Sync - Push products to Amazon with titles, descriptions, pricing, and imagesInventory Management - Keep stock levels synced across channels automaticallyOrder Import - Import Amazon orders into Apparix for unified order managementPrice Updates - Sync pricing changes to Amazon listings instantly21 Marketplaces - Support for US, Canada, Mexico, Brazil, UK, Germany, France, Italy, Spain, Netherlands, Sweden, Poland, Belgium, Turkey, Saudi Arabia, UAE, Egypt, India, Japan, Australia, and SingaporeSmart Rate Limiting - Automatic retry with exponential backoff to handle API limitsScheduled Sync - Configurable automatic background synchronizationSync Logging - Detailed activity logs with Amazon request IDs for troubleshootingConnection Testing - Verify your API credentials before syncingLink Existing Listings - Connect your Apparix products to existing Amazon listingsRequirementsApparix 1.0.0 or higherAmazon Seller Central Professional AccountAmazon SP-API Developer AccessPHP 8.1+InstallationUpload the plugin through your admin panel, configure your Amazon SP-API credentials (Seller ID, LWA Client ID, Client Secret, and Refresh Token), and start syncing. Full documentation included for obtaining API access.AuthenticationUses modern Login with Amazon (LWA) OAuth 2.0 authentication. No AWS IAM credentials required as of October 2023.Version 1.1.0 - Now with 21 marketplaces, modern LWA OAuth authentication, rate limiting with exponential backoff, connection testing, and link existing listings feature.</description>
+  <link>https://apparix.app/products/amazon-sync-plugin</link>
+  <g:image_link>https://apparix.app/assets/images/products/amazon-sync-plugin/img-696ad93b5f3e1.webp</g:image_link>
+  <g:availability>in_stock</g:availability>
+  <g:price>79.00 USD</g:price>
+  <g:brand>Apparix</g:brand>
+  <g:condition>new</g:condition>
+  <g:google_product_category>Software &gt; Computer Software</g:google_product_category>
+  <g:color>Multicolor</g:color>
+  <g:mpn>APX-AMZ</g:mpn>
+  <g:shipping>
+    <g:country>US</g:country>
+    <g:price>0 USD</g:price>
+  </g:shipping>
+</item>
+<item>
+  <g:id>91</g:id>
+  <title>eBay Sync Plugin</title>
+  <description>Sell on eBay from Your Apparix StoreThe eBay Sync Plugin integrates your Apparix store with eBay using the modern RESTful Inventory and Fulfillment APIs, allowing you to list products, manage inventory, and import orders from one of the world&apos;s largest marketplaces.Key Features21 Global Marketplaces - US, UK, Germany, France, Italy, Spain, Australia, Canada, Austria, Belgium, Switzerland, Netherlands, Ireland, Poland, Singapore, Malaysia, Philippines, Hong Kong, Taiwan, Japan, and eBay MotorsModern Inventory API - Uses eBay&apos;s latest RESTful APIs for reliable, efficient syncFull Product Sync - Push products with titles, descriptions, images, pricing, and conditionReal-Time Inventory - Automatically sync inventory levels when stock changesOrder Import - Pull eBay orders into Apparix with full details and line itemsConnection Testing - Verify your credentials work before going liveLink Existing Listings - Connect products to existing eBay listingsRate Limiting - Built-in protection against API throttling with exponential backoffBusiness Policies - Support for eBay fulfillment, payment, and return policiesMulti-Currency - Automatic currency detection based on marketplaceListing OptionsFixed Price - Buy It Now listingsAuctions - Traditional auction formatDuration - GTC, 30 days, 7 days, or 3 daysCondition Mapping - New, refurbished, used, and parts conditionsUp to 12 Images - Full image gallery supportRequirementsApparix 1.0.0 or highereBay Seller AccounteBay Developer Program Account (free at developer.ebay.com)OAuth refresh token from user authorizationPHP 8.1+Getting StartedCreate an app at developer.ebay.comInstall the plugin and enter your Client ID and Client SecretComplete the OAuth authorization flow to get a refresh tokenConfigure your business policies in eBay Seller HubStart syncing products!Version 1.1.0 - Now with 21 marketplaces, rate limiting, connection testing, and full sync implementations.</description>
+  <link>https://apparix.app/products/ebay-sync-plugin</link>
+  <g:image_link>https://apparix.app/assets/images/products/ebay-sync-plugin/img-696ad9c4b1732.webp</g:image_link>
+  <g:availability>in_stock</g:availability>
+  <g:price>69.00 USD</g:price>
+  <g:brand>Apparix</g:brand>
+  <g:condition>new</g:condition>
+  <g:google_product_category>Software &gt; Computer Software</g:google_product_category>
+  <g:color>Multicolor</g:color>
+  <g:mpn>APX-EBY</g:mpn>
+  <g:shipping>
+    <g:country>US</g:country>
+    <g:price>0 USD</g:price>
+  </g:shipping>
+</item>
+<item>
+  <g:id>92</g:id>
+  <title>Etsy Sync Plugin</title>
+  <description>Sell on Etsy from Your Apparix Store The Etsy Sync Plugin connects your Apparix store with your Etsy shop using the modern Open API v3, allowing you to manage your handmade business from one central location. Key Features Full Listing Sync - Create and update Etsy listings directly from Apparix Image Upload - Automatically upload product images to Etsy (up to 10 per listing) Real-Time Inventory - Keep stock levels synced across channels automatically Order Import - Pull Etsy orders into Apparix with full transaction details Connection Testing - Verify your credentials work before syncing Link Existing Listings - Connect products to existing Etsy listings Rate Limiting - Built-in protection against API throttling (10 QPS limit) Auto Token Refresh - OAuth tokens automatically refresh when expired Draft or Active - Create listings as drafts or publish immediately Tags Support - Sync product keywords as Etsy tags (up to 13) Listing Options Who Made - I did, Someone else, or A member of my shop When Made - Made to order, or specific date ranges (2020-2025, vintage, etc.) Category - Set default taxonomy ID for your products Shipping Profile - Assign your shop shipping profiles to new listings Return Policy - Assign return policies to new listings Shop Sections - Organize listings into shop sections Required OAuth Scopes listings_r, listings_w, listings_d (listing management) transactions_r (order/receipt access) shops_r, profile_r (shop information) Requirements Apparix 1.0.0 or higher Etsy Seller Account Etsy Developer App (free at etsy.com/developers) OAuth tokens from authorization flow PHP 8.1+ Getting Started Create an app at etsy.com/developers Complete the OAuth authorization flow to get tokens Install the plugin and enter your API credentials Configure your shipping profile and return policy IDs Start syncing products! Version 1.1.0 - Now with image uploads, rate limiting, connection testing, link existing listings, and full order import with line items.</description>
+  <link>https://apparix.app/products/etsy-sync-plugin</link>
+  <g:image_link>https://apparix.app/assets/images/products/etsy-sync-plugin/img-696ad8b297e82.webp</g:image_link>
+  <g:availability>in_stock</g:availability>
+  <g:price>59.00 USD</g:price>
+  <g:brand>Apparix</g:brand>
+  <g:condition>new</g:condition>
+  <g:google_product_category>Software &gt; Computer Software</g:google_product_category>
+  <g:color>Multicolor</g:color>
+  <g:mpn>APX-ESY</g:mpn>
+  <g:shipping>
+    <g:country>US</g:country>
+    <g:price>0 USD</g:price>
+  </g:shipping>
+</item>
+<item>
+  <g:id>93</g:id>
+  <title>Apparix Backup Plugin</title>
+  <description>Full Backup Solution with Cloud Storage The Apparix Backup Plugin provides comprehensive data protection with Backblaze B2 cloud storage, tiered backup levels, encrypted .env files, and health notifications. Available on all editions u2014 including the free tier. What&apos;s New in v2.0 Backblaze B2 Cloud Storage u2014 Upload backups to the cloud with 10 GB free storage. One-click upload, download, and delete from your admin panel. 3 Backup Tiers u2014 Essential (free), Standard (Professional+), and Complete (Enterprise+). Each tier adds more to your backup. Encrypted .env Backup u2014 Your .env file is backed up with AES-256-CBC encryption, protecting sensitive credentials. Health Notifications u2014 Dashboard warnings for stale backups, cloud upload failures, low disk space, and errors. Size Estimates u2014 See estimated backup size per tier before creating a backup. Backup Tiers Essential (Free)Standard (Pro+)Complete (Enterprise+) Database.env (encrypted)Themes &amp; pluginsEverything in Essential +Product imagesUser uploadsEverything in Standard +Full application codeConfig exports (JSON) Key Features Backblaze B2 Integration u2014 S3-compatible cloud storage with auto-upload and retention policies Database Streaming Export u2014 Memory-efficient chunked exports that won&apos;t overwhelm your server Auto-Upload to Cloud u2014 Backups can be automatically sent to B2 after creation Automatic Retention u2014 Separate retention policies for local and cloud backups Scheduled Backups u2014 Hourly, daily, or weekly automatic backups via cron One-Click Manual Backup u2014 Create instant backups from the admin panel Cloud Management u2014 Upload, download, and delete cloud backups from the admin panel Dashboard Alerts u2014 Backup health warnings appear right on your dashboard Backblaze B2 Free Tier Backblaze offers 10 GB free storage and 1 GB/day free downloads u2014 no credit card required. Sign up directly from the plugin settings page. Requirements Apparix 1.0.0 or higher PHP 8.1 or higher PHP ZipArchive and cURL extensions</description>
+  <link>https://apparix.app/products/apparix-backup-plugin</link>
+  <g:image_link>https://apparix.app/assets/images/products/apparix-backup-plugin/img-699c6ac2c6a99.webp</g:image_link>
+  <g:availability>in_stock</g:availability>
+  <g:price>39.00 USD</g:price>
+  <g:brand>Apparix</g:brand>
+  <g:condition>new</g:condition>
+  <g:google_product_category>Software &gt; Computer Software</g:google_product_category>
+  <g:color>Multicolor</g:color>
+  <g:mpn>APX-BAK</g:mpn>
+  <g:shipping>
+    <g:country>US</g:country>
+    <g:price>0 USD</g:price>
+  </g:shipping>
+</item>
+<item>
+  <g:id>94</g:id>
+  <title>Community Hub Plugin</title>
+  <description>Add a full-featured community forum to your Apparix store. Includes admin-managed categories, markdown posts, moderation queue, moderator roles, email notifications, anti-spam protection, edit history tracking, and user profiles.</description>
+  <link>https://apparix.app/products/community-hub-plugin</link>
+  <g:image_link>https://apparix.app/assets/images/products/community-hub-plugin/img-69a3b0747073d.webp</g:image_link>
+  <g:availability>in_stock</g:availability>
+  <g:price>39.00 USD</g:price>
+  <g:brand>Apparix</g:brand>
+  <g:condition>new</g:condition>
+  <g:google_product_category>Software &gt; Computer Software</g:google_product_category>
+  <g:color>Multicolor</g:color>
+  <g:mpn>APX-CHB</g:mpn>
+</item>
+<item>
+  <g:id>95</g:id>
+  <title>Atelier Theme</title>
+  <description>A warm, editorial beauty theme inspired by luxury boutique aesthetics. Features bold serif typography (Playfair Display), warm earth tones with salmon and brown accents, a full-width layout with generous whitespace, and a stunning hero section with background image overlay. Perfect for beauty stores, boutiques, wellness brands, and any shop that wants a refined editorial feel. Includes: • Custom color palette (warm browns, salmon, cream) • Editorial serif typography • Full-width layout with clean product grids • Hero section with warm overlay effect • Custom theme logo (Atelier wordmark) • Pill-style buttons and subtle hover effects • Dark footer and newsletter section • Scroll reveal animations • Responsive design for all devices Installation: Upload via Admin &gt; Themes &gt; Upload Theme, then click Activate. Preview This Theme →</description>
+  <link>https://apparix.app/products/atelier-theme</link>
+  <g:image_link>https://apparix.app/assets/images/products/atelier-theme-preview.jpg</g:image_link>
+  <g:availability>in_stock</g:availability>
+  <g:price>0.00 USD</g:price>
+  <g:brand>Apparix</g:brand>
+  <g:condition>new</g:condition>
+  <g:google_product_category>Apparel &amp; Accessories</g:google_product_category>
+  <g:color>Brown/Cream</g:color>
+  <g:gender>male</g:gender>
+  <g:age_group>adult</g:age_group>
+  <g:mpn>THEME-ATELIER</g:mpn>
+</item>
+<item>
+  <g:id>96</g:id>
+  <title>Summit Ridge Theme</title>
+  <description>A rugged outdoor adventure theme inspired by premium outfitter brands. Features bold condensed uppercase typography (Barlow Condensed), a dark forest and amber color palette, dark charcoal navbar, outlined hero buttons, and sharp utilitarian 3px corners throughout. Perfect for outdoor gear stores, adventure brands, camping equipment shops, and any store that wants a bold, rugged aesthetic. Includes: • Custom color palette (forest green, amber, stone, charcoal) • Bold condensed uppercase typography (Barlow Condensed) • Dark navbar with two-tone logo • Full-bleed hero with outlined CTA button • Sharp 3px border-radius — utilitarian feel • Product grid with sale badge support • Dark footer with multi-column layout • Newsletter section with forest green background • Scroll reveal animations • Responsive design for all devices Installation: Upload via Admin &gt; Themes &gt; Upload Theme, then click Activate. Preview This Theme →</description>
+  <link>https://apparix.app/products/summit-ridge-theme</link>
+  <g:image_link>https://apparix.app/assets/images/products/summit-ridge-theme/img-69a7068e9f35c.webp</g:image_link>
+  <g:availability>in_stock</g:availability>
+  <g:price>0.00 USD</g:price>
+  <g:brand>Apparix</g:brand>
+  <g:condition>new</g:condition>
+  <g:google_product_category>Apparel &amp; Accessories</g:google_product_category>
+  <g:color>Forest Green/Green/Charcoal</g:color>
+  <g:gender>male</g:gender>
+  <g:age_group>adult</g:age_group>
+  <g:mpn>THEME-SUMMITRIDGE</g:mpn>
+</item>
+<item>
+  <g:id>97</g:id>
+  <title>Maison Theme</title>
+  <description>An elegant home goods and furniture theme with refined gold accents, botanical touches, and generous whitespace. Features sophisticated serif typography (Cormorant Garamond), warm neutral tones with gold and olive accents, a centered editorial layout, and a stunning hero section with semi-transparent overlay card. Perfect for furniture stores, home decor shops, interior design brands, and any shop that wants a luxurious editorial feel. Includes: • Custom gold and olive color palette • Elegant serif typography with wide letter-spacing • Centered layout with 3-column product grids • Hero section with botanical overlay and centered brand card • Custom theme logo (Maison wordmark) • Sharp-edge buttons and refined hover effects • Gold footer and newsletter section • Scroll reveal animations • Responsive design for all devices Installation: Upload via Admin &gt; Themes &gt; Upload Theme, then click Activate. Preview This Theme →</description>
+  <link>https://apparix.app/products/maison-theme</link>
+  <g:image_link>https://apparix.app/assets/images/products/maison-theme/img-69a6648318aac.webp</g:image_link>
+  <g:availability>in_stock</g:availability>
+  <g:price>0.00 USD</g:price>
+  <g:brand>Apparix</g:brand>
+  <g:condition>new</g:condition>
+  <g:google_product_category>Apparel &amp; Accessories</g:google_product_category>
+  <g:color>Gold/Olive</g:color>
+  <g:gender>male</g:gender>
+  <g:age_group>adult</g:age_group>
+</item>
+<item>
+  <g:id>98</g:id>
+  <title>FurEver Theme</title>
+  <description>A fun, friendly pet supply store theme with a warm coral palette, playful Poppins typography, and an auto-rotating hero slider. Features category cards with dark overlays, star-rated 5-column product grids, a brand logo strip, and a coral footer. Perfect for pet stores, animal supply shops, veterinary clinics, and any store that wants a warm, inviting aesthetic. Includes: • Warm coral color palette (#E8654A) with charcoal text • Playful Poppins + Inter typography • Auto-rotating hero image slider with 3 slides • Category cards with dark overlays and hover zoom • 5-column product grid with star ratings and qty selectors • Brand logo strip section • Coral footer with 4-column layout • Newsletter signup section • Scroll reveal animations • Touch-friendly slider with swipe support • Responsive design for all devices Installation: Upload via Admin &gt; Themes &gt; Upload Theme, then click Activate. Preview This Theme →</description>
+  <link>https://apparix.app/products/furever-theme</link>
+  <g:image_link>https://apparix.app/assets/images/products/furever-theme-preview.webp</g:image_link>
+  <g:availability>in_stock</g:availability>
+  <g:price>0.00 USD</g:price>
+  <g:brand>Apparix</g:brand>
+  <g:condition>new</g:condition>
+  <g:google_product_category>Apparel &amp; Accessories</g:google_product_category>
+  <g:color>Charcoal/Coral</g:color>
+  <g:gender>male</g:gender>
+  <g:age_group>adult</g:age_group>
+  <g:mpn>THEME-FUREVER</g:mpn>
+</item>
+</channel>
 </rss>

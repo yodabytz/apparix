@@ -272,9 +272,9 @@ class Visitor extends Model
     }
 
     /**
-     * Detect clearly fake or impossible user agent strings.
-     * Bot farms use outdated Chrome versions, fabricated future versions,
-     * malformed headers, or obsolete OS+browser combos.
+     * Detect clearly fake or obsolete user agent strings.
+     * Bot farms use outdated browser versions, malformed headers, or obsolete
+     * OS and browser combinations. New browser versions must remain valid.
      */
     private function isSuspiciousUserAgent(string $ua): bool
     {
@@ -283,11 +283,11 @@ class Visitor extends Model
             return true;
         }
 
-        // Chrome version check — auto-updates make old/future versions impossible
+        // Chrome version check - auto-updates make very old versions suspicious.
         // Chrome 125 released May 2024; anyone on older is a bot or abandoned device
         if (preg_match('/Chrome\/(\d+)\./', $ua, $m)) {
             $ver = (int)$m[1];
-            if ($ver > 0 && ($ver < 125 || $ver > 140)) {
+            if ($ver > 0 && $ver < 125) {
                 return true;
             }
         }
@@ -295,7 +295,7 @@ class Visitor extends Model
         // Edge version check (same auto-update logic as Chrome)
         if (preg_match('/Edg(?:e|iOS)?\/(\d+)\./', $ua, $m)) {
             $ver = (int)$m[1];
-            if ($ver > 0 && ($ver < 125 || $ver > 140)) {
+            if ($ver > 0 && $ver < 125) {
                 return true;
             }
         }
@@ -303,7 +303,7 @@ class Visitor extends Model
         // Firefox version check — auto-updates, anything below 125 is suspicious
         if (preg_match('/Firefox\/(\d+)\./', $ua, $m)) {
             $ver = (int)$m[1];
-            if ($ver > 0 && ($ver < 125 || $ver > 140)) {
+            if ($ver > 0 && $ver < 125) {
                 return true;
             }
         }
@@ -778,7 +778,6 @@ class Visitor extends Model
               AND (
                   user_agent LIKE 'User-Agent:%'
                   OR user_agent REGEXP 'Chrome/(1([0-1][0-9]|2[0-4])|[1-9][0-9]|[1-9])\\\\.'
-                  OR user_agent REGEXP 'Chrome/(14[1-9]|1[5-9][0-9]|[2-9][0-9]{2})\\\\.'
                   OR user_agent REGEXP 'Edg/(1([0-1][0-9]|2[0-4])|[1-9][0-9]|[1-9])\\\\.'
                   OR user_agent REGEXP 'Firefox/(1([0-1][0-9]|2[0-4])|[1-9][0-9]|[1-9])\\\\.'
                   OR (user_agent REGEXP 'OS (([1-9]|1[0-3])_)' AND (user_agent LIKE '%iPhone%' OR user_agent LIKE '%iPad%'))
@@ -790,6 +789,76 @@ class Visitor extends Model
         ";
 
         return $this->db->update($sql, []);
+    }
+
+    /**
+     * Repair visits incorrectly flagged by the former browser-version ceiling.
+     * The full classifier is applied so bots with modern browser tokens remain
+     * excluded. A settings marker makes this a one-time repair.
+     */
+    public function repairModernBrowserFalsePositives(): int
+    {
+        $marker = 'visitor_browser_ceiling_repair_1_3_8';
+        $completed = $this->queryOne(
+            'SELECT setting_value FROM settings WHERE setting_key = ?',
+            [$marker]
+        );
+        if (($completed['setting_value'] ?? null) === 'complete') {
+            return 0;
+        }
+
+        $candidates = $this->query(
+            "SELECT id, ip_address, user_agent
+             FROM {$this->table}
+             WHERE is_bot = 1
+               AND created_at >= DATE_SUB(NOW(), INTERVAL 90 DAY)
+               AND (
+                   user_agent REGEXP 'Chrome/(14[1-9]|1[5-9][0-9]|[2-9][0-9]{2})\\\\.'
+                   OR user_agent REGEXP 'Edg(e|iOS)?/(14[1-9]|1[5-9][0-9]|[2-9][0-9]{2})\\\\.'
+                   OR user_agent REGEXP 'Firefox/(14[1-9]|1[5-9][0-9]|[2-9][0-9]{2})\\\\.'
+               )"
+        );
+
+        $humanIds = [];
+        foreach ($candidates as $candidate) {
+            if (!$this->isBot($candidate['user_agent'] ?? '', $candidate['ip_address'] ?? '')) {
+                $humanIds[] = (int)$candidate['id'];
+            }
+        }
+
+        $ownsTransaction = !$this->db->inTransaction();
+        if ($ownsTransaction) {
+            $this->db->beginTransaction();
+        }
+
+        try {
+            foreach (array_chunk($humanIds, 250) as $ids) {
+                $placeholders = implode(',', array_fill(0, count($ids), '?'));
+                $this->db->update(
+                    "UPDATE {$this->table} SET is_bot = 0 WHERE id IN ({$placeholders})",
+                    $ids
+                );
+            }
+
+            $this->db->update(
+                "INSERT INTO settings
+                    (setting_key, setting_value, setting_type, category, is_public)
+                 VALUES (?, 'complete', 'string', 'store', 0)
+                 ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)",
+                [$marker]
+            );
+
+            if ($ownsTransaction) {
+                $this->db->commit();
+            }
+        } catch (\Throwable $e) {
+            if ($ownsTransaction && $this->db->inTransaction()) {
+                $this->db->rollback();
+            }
+            throw $e;
+        }
+
+        return count($humanIds);
     }
 
     /**

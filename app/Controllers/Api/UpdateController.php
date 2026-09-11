@@ -5,6 +5,7 @@ namespace App\Controllers\Api;
 use App\Core\Controller;
 use App\Core\Database;
 use App\Core\License;
+use App\Core\PluginUpdateCatalog;
 
 /**
  * API Controller for software update system
@@ -48,6 +49,7 @@ class UpdateController extends Controller
         $currentVersion = trim($input['current_version'] ?? '');
         $domain = trim($input['domain'] ?? '');
         $phpVersion = trim($input['php_version'] ?? PHP_VERSION);
+        $installedPlugins = $this->normalizeInstalledPlugins($input['plugins'] ?? []);
 
         // Validate required fields
         if (empty($licenseKey) || empty($currentVersion) || empty($domain)) {
@@ -79,6 +81,8 @@ class UpdateController extends Controller
             }
         }
 
+        $pluginUpdates = (new PluginUpdateCatalog($this->db))->updatesFor($installedPlugins, $licenseInfo);
+
         // Get the next sequential version (step-by-step updates)
         $nextRelease = $this->getNextRelease($currentVersion, $licenseInfo['edition'], $phpVersion);
 
@@ -87,7 +91,9 @@ class UpdateController extends Controller
                 'success' => true,
                 'update_available' => false,
                 'current_version' => $currentVersion,
-                'message' => 'No updates available'
+                'plugin_updates' => $pluginUpdates['available'],
+                'plugin_purchase_required' => $pluginUpdates['purchase_required'],
+                'message' => empty($pluginUpdates['available']) ? 'No updates available' : 'Plugin updates are available'
             ]);
             return;
         }
@@ -98,7 +104,9 @@ class UpdateController extends Controller
             'current_version' => $currentVersion,
             'latest_version' => $nextRelease['version'],
             'edition' => $licenseInfo['edition'],
-            'edition_name' => $this->getEditionName($licenseInfo['edition'])
+            'edition_name' => $this->getEditionName($licenseInfo['edition']),
+            'plugin_updates' => $pluginUpdates['available'],
+            'plugin_purchase_required' => $pluginUpdates['purchase_required']
         ];
 
         $response['update'] = [
@@ -266,6 +274,105 @@ class UpdateController extends Controller
     }
 
     /**
+     * Download an authorized plugin update package.
+     */
+    public function pluginDownload(): void
+    {
+        $input = json_decode(file_get_contents('php://input'), true) ?? [];
+        $licenseKey = trim((string)($input['license_key'] ?? ''));
+        $domain = trim((string)($input['domain'] ?? ''));
+        $slug = trim((string)($input['plugin_slug'] ?? ''));
+        $targetVersion = trim((string)($input['target_version'] ?? ''));
+        $currentVersion = trim((string)($input['current_version'] ?? ''));
+
+        if ($licenseKey === '' || $domain === '' || !preg_match('/^[a-z0-9][a-z0-9-]{0,99}$/', $slug)
+            || !preg_match('/^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/', $targetVersion)) {
+            $this->jsonResponse(['success' => false, 'error' => 'Invalid plugin update request'], 400);
+            return;
+        }
+
+        $license = $this->validateLicenseKey($licenseKey);
+        if (!$license['valid']) {
+            $this->jsonResponse(['success' => false, 'error' => $license['error']], 401);
+            return;
+        }
+        if ($license['domain'] !== '*' && !$this->domainMatches($domain, $license['domain'], $license['domain_hash'] ?? null)) {
+            $this->jsonResponse(['success' => false, 'error' => 'License not valid for this domain'], 403);
+            return;
+        }
+
+        $catalog = new PluginUpdateCatalog($this->db);
+        $release = $catalog->release($slug, $targetVersion);
+        if (!$release) {
+            $this->jsonResponse(['success' => false, 'error' => 'Plugin update not found'], 404);
+            return;
+        }
+        if (!$catalog->canAccess($release, $license)) {
+            $this->jsonResponse(['success' => false, 'error' => 'This license does not own the requested plugin'], 403);
+            return;
+        }
+        if ($currentVersion !== '' && version_compare($targetVersion, $currentVersion, '<=')) {
+            $this->jsonResponse(['success' => false, 'error' => 'Requested plugin version is not newer'], 409);
+            return;
+        }
+
+        $this->logPluginUpdate($licenseKey, $domain, $slug, $currentVersion, $targetVersion, 'downloaded');
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+        header('Content-Type: application/zip');
+        header('Content-Disposition: attachment; filename="' . $slug . '-' . $targetVersion . '.zip"');
+        header('Content-Length: ' . $release['file_size']);
+        header('X-File-Hash: ' . $release['file_hash']);
+        header('X-Plugin-Slug: ' . $slug);
+        header('X-Plugin-Version: ' . $targetVersion);
+        header('Cache-Control: no-store');
+        readfile($release['package_path']);
+        exit;
+    }
+
+    /**
+     * Record the result reported by a customer installation.
+     */
+    public function pluginReport(): void
+    {
+        $input = json_decode(file_get_contents('php://input'), true) ?? [];
+        $licenseKey = trim((string)($input['license_key'] ?? ''));
+        $domain = trim((string)($input['domain'] ?? ''));
+        $slug = trim((string)($input['plugin_slug'] ?? ''));
+        $fromVersion = trim((string)($input['from_version'] ?? ''));
+        $toVersion = trim((string)($input['to_version'] ?? ''));
+        $status = trim((string)($input['status'] ?? 'failed'));
+        $error = trim((string)($input['error_message'] ?? ''));
+
+        $license = $this->validateLicenseKey($licenseKey);
+        if (!$license['valid']) {
+            $this->jsonResponse(['success' => false, 'error' => 'Invalid license key'], 401);
+            return;
+        }
+        if ($license['domain'] !== '*' && !$this->domainMatches($domain, $license['domain'], $license['domain_hash'] ?? null)) {
+            $this->jsonResponse(['success' => false, 'error' => 'License not valid for this domain'], 403);
+            return;
+        }
+        if (!preg_match('/^[a-z0-9][a-z0-9-]{0,99}$/', $slug)
+            || !in_array($status, ['installed', 'failed'], true)
+            || !preg_match('/^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/', $toVersion)) {
+            $this->jsonResponse(['success' => false, 'error' => 'Invalid plugin update report'], 400);
+            return;
+        }
+
+        $catalog = new PluginUpdateCatalog($this->db);
+        $release = $catalog->release($slug, $toVersion);
+        if (!$release || !$catalog->canAccess($release, $license)) {
+            $this->jsonResponse(['success' => false, 'error' => 'Plugin update is not authorized'], 403);
+            return;
+        }
+
+        $this->logPluginUpdate($licenseKey, $domain, $slug, $fromVersion, $toVersion, $status, $error);
+        $this->jsonResponse(['success' => true]);
+    }
+
+    /**
      * Get version info (public endpoint)
      * GET /api/updates/version
      */
@@ -297,10 +404,12 @@ class UpdateController extends Controller
     {
         // First check if it's a purchased license in our database
         $dbLicense = $this->db->selectOne(
-            "SELECT ol.*, o.customer_email
+            "SELECT ol.*, o.customer_email, o.user_id
              FROM order_licenses ol
              JOIN orders o ON ol.order_id = o.id
-             WHERE ol.license_key = ? AND ol.is_active = 1",
+             JOIN products p ON ol.product_id = p.id
+             WHERE ol.license_key = ? AND ol.is_active = 1
+               AND (p.sku = 'APX-LICENSE' OR p.slug = 'apparix-ecommerce-platform')",
             [$key]
         );
 
@@ -310,9 +419,25 @@ class UpdateController extends Controller
                 'edition' => $dbLicense['edition_code'],
                 'domain' => $dbLicense['domain'],
                 'domain_hash' => null,
-                'source' => 'database'
+                'source' => 'database',
+                'license_key' => $key,
+                'email' => $dbLicense['customer_email'] ?? null,
+                'user_id' => $dbLicense['user_id'] ?? null,
             ];
         }
+
+        $nonPlatformLicense = $this->db->selectOne(
+            "SELECT id FROM order_licenses WHERE license_key = ? LIMIT 1",
+            [$key]
+        );
+        if ($nonPlatformLicense) {
+            return ['valid' => false, 'error' => 'License key is not an Apparix platform license'];
+        }
+
+        $storeLicense = $this->db->selectOne(
+            "SELECT email, license_key, edition, domain FROM license_purchases WHERE license_key = ?",
+            [$key]
+        );
 
         // Otherwise validate using the License class (for manually generated keys)
         $result = License::validateKeyForApi($key);
@@ -329,8 +454,62 @@ class UpdateController extends Controller
             'edition' => $result['edition'],
             'domain' => $result['is_wildcard'] ? '*' : null,
             'domain_hash' => $result['domain_hash'],
-            'source' => 'generated'
+            'source' => $storeLicense ? 'license_store' : 'generated',
+            'license_key' => $key,
+            'email' => $storeLicense['email'] ?? null,
+            'user_id' => null,
         ];
+    }
+
+    private function normalizeInstalledPlugins(mixed $plugins): array
+    {
+        if (!is_array($plugins)) {
+            return [];
+        }
+        $normalized = [];
+        foreach (array_slice($plugins, 0, 100) as $plugin) {
+            if (!is_array($plugin)) {
+                continue;
+            }
+            $slug = trim((string)($plugin['slug'] ?? ''));
+            $version = trim((string)($plugin['version'] ?? ''));
+            if (!preg_match('/^[a-z0-9][a-z0-9-]{0,99}$/', $slug)
+                || !preg_match('/^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/', $version)) {
+                continue;
+            }
+            $normalized[$slug] = ['slug' => $slug, 'version' => $version];
+        }
+        return array_values($normalized);
+    }
+
+    private function logPluginUpdate(
+        string $licenseKey,
+        string $domain,
+        string $slug,
+        string $fromVersion,
+        string $toVersion,
+        string $status,
+        string $error = ''
+    ): void {
+        try {
+            $this->db->insert(
+                "INSERT INTO plugin_update_logs
+                    (license_key_hash, domain, plugin_slug, from_version, to_version, status, error_message, ip_address)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                [
+                    hash('sha256', $licenseKey),
+                    substr($domain, 0, 255),
+                    $slug,
+                    $fromVersion ?: null,
+                    $toVersion,
+                    $status,
+                    $error === '' ? null : substr($error, 0, 1000),
+                    $_SERVER['REMOTE_ADDR'] ?? null,
+                ]
+            );
+        } catch (\Throwable $e) {
+            error_log('Plugin update log failed: ' . $e->getMessage());
+        }
     }
 
     /**

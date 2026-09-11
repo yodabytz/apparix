@@ -7,7 +7,11 @@
 
     <div class="profile-header">
         <div class="profile-avatar">
-            <span class="avatar-letter avatar-letter-large"><?php echo strtoupper(substr($profile['first_name'], 0, 1)); ?></span>
+            <?php if (!empty($profile['avatar_path'])): ?>
+                <img src="<?php echo escape($profile['avatar_path']); ?>" alt="" class="avatar-image" style="width:80px;height:80px;border-radius:50%;object-fit:cover;">
+            <?php else: ?>
+                <span class="avatar-letter avatar-letter-large"><?php echo strtoupper(substr($profile['first_name'], 0, 1)); ?></span>
+            <?php endif; ?>
         </div>
         <div class="profile-info">
             <h1 class="profile-name"><?php echo escape($profile['first_name'] . ' ' . $profile['last_name']); ?></h1>

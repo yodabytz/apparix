@@ -44,6 +44,12 @@ class VisitorController extends Controller
      */
     public function index(): void
     {
+        try {
+            $this->visitorModel->repairModernBrowserFalsePositives();
+        } catch (\Throwable $e) {
+            error_log('Visitor classification repair failed: ' . $e->getMessage());
+        }
+
         $period = $_GET['period'] ?? 'month';
         $validPeriods = ['today', 'yesterday', 'week', 'month', 'all'];
         if (!in_array($period, $validPeriods)) {

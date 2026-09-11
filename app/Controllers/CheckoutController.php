@@ -906,12 +906,12 @@ class CheckoutController extends Controller
                 error_log("Order notification failed: " . $e->getMessage());
             }
 
-            // Create review request entries for this order (only for registered users)
+            // Create review requests for both accounts and checkout guest users.
             if ($userId) {
                 try {
                     $reviewModel = new \App\Models\Review();
                     $reviewModel->createReviewRequests($orderId);
-                } catch (\Exception $e) {
+                } catch (\Throwable $e) {
                     error_log("Review request creation failed: " . $e->getMessage());
                 }
             }

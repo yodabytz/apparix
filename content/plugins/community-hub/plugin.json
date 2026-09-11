@@ -7,5 +7,10 @@
     "author": "Apparix",
     "price": "25.00",
     "requires": "1.0.0",
-    "hooks": ["navbar_menu_items", "admin_sidebar_menu", "page_head"]
+    "hooks": [
+        "navbar_menu_items",
+        "admin_sidebar_menu",
+        "page_head"
+    ],
+    "icon": "community-hub-icon.svg"
 }

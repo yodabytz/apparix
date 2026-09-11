@@ -8,6 +8,7 @@ header('Expires: Thu, 01 Jan 1970 00:00:00 GMT');
 // Get pending orders count for badge
 $pendingOrdersCount = 0;
 $updateAvailable = null;
+$updateAvailableCount = 0;
 if (isset($admin)) {
     $orderModel = new \App\Models\Order();
     $pendingOrdersCount = $orderModel->countOrders('pending') + $orderModel->countOrders('processing');
@@ -18,7 +19,9 @@ if (isset($admin)) {
         $updateCheck = $updateService->checkForUpdatesCached();
         if ($updateCheck && !empty($updateCheck['update_available'])) {
             $updateAvailable = $updateCheck['update']['version'] ?? $updateCheck['latest_version'] ?? null;
+            $updateAvailableCount++;
         }
+        $updateAvailableCount += count($updateCheck['plugin_updates'] ?? []);
     } catch (\Exception $e) {
         // Silently fail - don't break admin for update check errors
     }
@@ -187,7 +190,7 @@ if (isset($admin)) {
             </a>
             <?php endif; ?>
             <a href="/admin/updates" class="nav-item <?php echo strpos($_SERVER['REQUEST_URI'], '/admin/updates') === 0 ? 'active' : ''; ?>">
-                <span class="nav-icon">&#128259;</span> Updates<?php if ($updateAvailable): ?><span class="order-badge" title="v<?php echo escape($updateAvailable); ?> available">1</span><?php endif; ?>
+                <span class="nav-icon">&#128259;</span> Updates<?php if ($updateAvailableCount > 0): ?><span class="order-badge" title="<?php echo $updateAvailableCount; ?> update<?php echo $updateAvailableCount === 1 ? '' : 's'; ?> available"><?php echo $updateAvailableCount; ?></span><?php endif; ?>
             </a>
             <?php if (isset($admin['role']) && $admin['role'] === 'super_admin'): ?>
             <a href="/admin/users" class="nav-item <?php echo strpos($_SERVER['REQUEST_URI'], '/admin/users') === 0 ? 'active' : ''; ?>">

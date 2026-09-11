@@ -585,7 +585,7 @@ class ForumController extends Controller
     {
         $id = (int)($_GET['id'] ?? 0);
         $user = Database::getInstance()->selectOne(
-            "SELECT id, first_name, last_name, created_at FROM users WHERE id = ?",
+            "SELECT id, first_name, last_name, avatar_path, created_at FROM users WHERE id = ?",
             [$id]
         );
 
@@ -603,6 +603,7 @@ class ForumController extends Controller
         $profile = [
             'first_name' => $user['first_name'],
             'last_name' => $user['last_name'],
+            'avatar_path' => $user['avatar_path'] ?? null,
             'display_name' => trim($user['first_name'] . ' ' . $user['last_name']) ?: 'Community Member',
             'created_at' => $user['created_at'],
             'topic_count' => $topicCount,

@@ -429,6 +429,8 @@ $router->get('/api/updates/version', 'Api\\UpdateController', 'version');
 $router->post('/api/updates/check', 'Api\\UpdateController', 'check');
 $router->post('/api/updates/download', 'Api\\UpdateController', 'download');
 $router->post('/api/updates/report', 'Api\\UpdateController', 'report');
+$router->post('/api/plugin-updates/download', 'Api\\UpdateController', 'pluginDownload');
+$router->post('/api/plugin-updates/report', 'Api\\UpdateController', 'pluginReport');
 
 // Sitemap & Robots
 $router->get('/sitemap.xml', 'SitemapController', 'index');
@@ -649,6 +651,7 @@ if (strpos(appUrl(), 'apparix.app') !== false) {
 $router->get('/admin/updates', 'Admin\\UpdateController', 'index');
 $router->post('/admin/updates/check', 'Admin\\UpdateController', 'check');
 $router->post('/admin/updates/install', 'Admin\\UpdateController', 'install');
+$router->post('/admin/updates/install-plugin', 'Admin\\UpdateController', 'installPlugin');
 $router->get('/admin/updates/version', 'Admin\\UpdateController', 'version');
 $router->post('/admin/updates/cleanup-backups', 'Admin\\UpdateController', 'cleanupBackups');
 $router->get('/admin/updates/download', 'Admin\\UpdateController', 'download');

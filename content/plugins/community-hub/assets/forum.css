@@ -266,6 +266,14 @@
     font-size: 18px;
     flex-shrink: 0;
     text-transform: uppercase;
+    overflow: hidden;
+}
+.post-avatar .avatar-image,
+.profile-avatar .avatar-image {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
 }
 .post-content {
     flex: 1;

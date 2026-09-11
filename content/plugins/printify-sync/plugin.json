@@ -2,7 +2,7 @@
     "slug": "printify-sync",
     "name": "Printify Sync",
     "description": "Sync selected products, automatic inventory, live shipping, fulfillment, tracking, and order statuses with Printify.",
-    "version": "1.0.8",
+    "version": "1.0.9",
     "author": "Apparix",
     "author_url": "https://apparix.app",
     "type": "marketplace",
@@ -17,7 +17,7 @@
         "default_variant_id": "",
         "publish_after_create": false,
         "send_orders": true,
-        "sync_order_statuses": false,
+        "sync_order_statuses": true,
         "sync_inventory": true,
         "inventory_sync_interval_hours": 1,
         "sync_price": true

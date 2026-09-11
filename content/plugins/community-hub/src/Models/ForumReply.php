@@ -13,7 +13,7 @@ class ForumReply extends Model
     {
         $offset = ($page - 1) * $perPage;
         return Database::getInstance()->select(
-            "SELECT r.*, u.first_name, u.last_name, u.created_at as user_joined,
+            "SELECT r.*, u.first_name, u.last_name, u.avatar_path, u.created_at as user_joined,
                     (SELECT COUNT(*) FROM {$this->table} eh WHERE eh.topic_id = r.topic_id AND eh.user_id = r.user_id) as user_post_count,
                     (SELECT COUNT(*) FROM forum_edit_history WHERE post_type = 'reply' AND post_id = r.id) as edit_count
              FROM {$this->table} r

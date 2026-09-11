@@ -48,7 +48,11 @@
         <div class="post-sidebar">
             <div class="post-avatar">
                 <?php $topicAuthor = trim(($topic['first_name'] ?? '') . ' ' . ($topic['last_name'] ?? '')) ?: 'Anonymous'; ?>
-                <span class="avatar-letter"><?php echo strtoupper(substr($topicAuthor, 0, 1)); ?></span>
+                <?php if (!empty($topic['avatar_path'])): ?>
+                    <img src="<?php echo escape($topic['avatar_path']); ?>" alt="" class="avatar-image">
+                <?php else: ?>
+                    <span class="avatar-letter"><?php echo strtoupper(substr($topicAuthor, 0, 1)); ?></span>
+                <?php endif; ?>
             </div>
             <div class="post-author-info">
                 <a href="/community/user/<?php echo (int)$topic['user_id']; ?>" class="post-author-name"><?php echo escape($topicAuthor); ?></a>
@@ -85,7 +89,11 @@
                     <div class="post-sidebar">
                         <div class="post-avatar">
                             <?php $replyAuthor = trim(($reply['first_name'] ?? '') . ' ' . ($reply['last_name'] ?? '')) ?: 'Anonymous'; ?>
-                            <span class="avatar-letter"><?php echo strtoupper(substr($replyAuthor, 0, 1)); ?></span>
+                            <?php if (!empty($reply['avatar_path'])): ?>
+                                <img src="<?php echo escape($reply['avatar_path']); ?>" alt="" class="avatar-image">
+                            <?php else: ?>
+                                <span class="avatar-letter"><?php echo strtoupper(substr($replyAuthor, 0, 1)); ?></span>
+                            <?php endif; ?>
                         </div>
                         <div class="post-author-info">
                             <a href="/community/user/<?php echo (int)$reply['user_id']; ?>" class="post-author-name"><?php echo escape($replyAuthor); ?></a>

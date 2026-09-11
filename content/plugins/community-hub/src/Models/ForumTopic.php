@@ -13,7 +13,7 @@ class ForumTopic extends Model
     {
         $offset = ($page - 1) * $perPage;
         return Database::getInstance()->select(
-            "SELECT t.*, u.first_name, u.last_name,
+            "SELECT t.*, u.first_name, u.last_name, u.avatar_path,
                     lu.first_name as last_reply_first_name, lu.last_name as last_reply_last_name
              FROM {$this->table} t
              LEFT JOIN users u ON t.user_id = u.id
@@ -37,7 +37,7 @@ class ForumTopic extends Model
     public function findBySlug(string $slug): ?array
     {
         return Database::getInstance()->selectOne(
-            "SELECT t.*, u.first_name, u.last_name, u.created_at as user_joined,
+            "SELECT t.*, u.first_name, u.last_name, u.avatar_path, u.created_at as user_joined,
                     c.name as category_name, c.slug as category_slug
              FROM {$this->table} t
              LEFT JOIN users u ON t.user_id = u.id
