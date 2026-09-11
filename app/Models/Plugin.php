@@ -71,7 +71,7 @@ class Plugin extends Model
         return $this->db->selectOne(
             "SELECT * FROM {$this->table} WHERE slug = ?",
             [$slug]
-        );
+        ) ?: null;
     }
 
     /**
