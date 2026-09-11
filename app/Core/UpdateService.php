@@ -1238,8 +1238,8 @@ class UpdateService
         }
 
         if (!preg_match('/^X-File-Hash:\s*([a-f0-9]{64})\s*$/mi', $headers, $hashMatch)
-            || !preg_match('/^X-Plugin-Slug:\s*([^\r\n]+)$/mi', $headers, $slugMatch)
-            || !preg_match('/^X-Plugin-Version:\s*([^\r\n]+)$/mi', $headers, $versionMatch)
+            || !preg_match('/^X-Plugin-Slug:[\t ]*([^\r\n]+)\r?$/mi', $headers, $slugMatch)
+            || !preg_match('/^X-Plugin-Version:[\t ]*([^\r\n]+)\r?$/mi', $headers, $versionMatch)
             || !hash_equals($slug, trim($slugMatch[1]))
             || !hash_equals($targetVersion, trim($versionMatch[1]))) {
             return ['success' => false, 'error' => 'Plugin download metadata validation failed.'];
