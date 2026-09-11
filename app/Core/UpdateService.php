@@ -531,6 +531,7 @@ class UpdateService
 
             // Customer-installed themes
             'content/themes',
+            'content/.plugin-updates',
             'public/content',
 
             // Composer dependencies (customer may have different versions)

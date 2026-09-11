@@ -43,8 +43,9 @@ class PluginPackageInstaller
             }
 
             $pluginsDir = BASE_PATH . '/content/plugins';
-            $workDir = BASE_PATH . '/storage/plugin_updates';
-            $backupsDir = BASE_PATH . '/storage/plugin_backups';
+            // Atomic renames must remain on the content mount, including in Docker.
+            $workDir = BASE_PATH . '/content/.plugin-updates';
+            $backupsDir = $workDir . '/backups';
             foreach ([$pluginsDir, $workDir, $backupsDir] as $dir) {
                 if (!is_dir($dir) && !@mkdir($dir, 0755, true)) {
                     return $this->fail('Unable to create a plugin update directory.');
@@ -326,7 +327,7 @@ class PluginPackageInstaller
 
     private function pruneBackups(string $slug, int $keep): void
     {
-        $backups = glob(BASE_PATH . '/storage/plugin_backups/' . $slug . '-*', GLOB_ONLYDIR) ?: [];
+        $backups = glob(BASE_PATH . '/content/.plugin-updates/backups/' . $slug . '-*', GLOB_ONLYDIR) ?: [];
         usort($backups, static fn(string $a, string $b): int => filemtime($b) <=> filemtime($a));
         foreach (array_slice($backups, $keep) as $backup) {
             $this->removeDirectory($backup);

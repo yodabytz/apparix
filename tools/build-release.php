@@ -130,7 +130,7 @@ $exclude = [
     'public/assets/images/categories', 'public/assets/images/newsletter',
     'public/assets/images/branding', 'public/uploads', 'public/content',
     'content/themes', 'tests', 'tools/generate-license.php',
-    'content/plugins',
+    'content/plugins', 'content/.plugin-updates',
 ];
 
 $requiredDirs = ['app', 'public', 'database/migrations'];
