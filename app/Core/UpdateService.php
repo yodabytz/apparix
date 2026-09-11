@@ -195,7 +195,7 @@ class UpdateService
             }
             flock($lock, LOCK_UN);
             fclose($lock);
-            @unlink($lockPath);
+            // Keep the lock file so concurrent requests always lock the same inode.
         }
     }
 

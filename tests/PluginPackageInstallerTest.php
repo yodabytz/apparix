@@ -79,6 +79,17 @@ try {
     $wrongSlug = $installer->install($wrongSlugZip, 'installer-test', '1.1.0');
     assertTest($wrongSlug['success'] === false, 'Mismatched plugin slug was accepted.');
 
+    $invalidZip = $root . '/invalid-php.zip';
+    makePackage($invalidZip, 'installer-test', '1.1.0');
+    $zip = new ZipArchive();
+    $zip->open($invalidZip);
+    $zip->addFromString('installer-test/broken.php', "<?php function broken( {");
+    $zip->close();
+    $invalid = $installer->install($invalidZip, 'installer-test', '1.1.0');
+    assertTest($invalid['success'] === false, 'Invalid PHP package was accepted.');
+    $unchanged = json_decode(file_get_contents($root . '/content/plugins/installer-test/plugin.json'), true);
+    assertTest($unchanged['version'] === '1.0.0', 'Invalid package changed the installed plugin.');
+
     echo "PluginPackageInstaller tests passed.\n";
 } finally {
     removeTestDirectory($root);

@@ -125,6 +125,7 @@ $exclude = [
     'node_modules', 'vendor', 'storage/.installed', 'storage/logs',
     'storage/sessions', 'storage/uploads', 'storage/downloads', 'storage/updates',
     'storage/updates_temp', 'storage/backups', 'storage/cache', 'storage/security',
+    'storage/plugin_updates', 'storage/plugin_backups',
     'public/assets/images/products', 'public/assets/images/uploads',
     'public/assets/images/categories', 'public/assets/images/newsletter',
     'public/assets/images/branding', 'public/uploads', 'public/content',

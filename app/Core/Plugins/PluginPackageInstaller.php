@@ -258,8 +258,6 @@ class PluginPackageInstaller
         }
 
         $phpCount = 0;
-        $lintAvailable = function_exists('exec')
-            && !in_array('exec', array_map('trim', explode(',', ini_get('disable_functions') ?: '')), true);
         $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($path, \FilesystemIterator::SKIP_DOTS));
         foreach ($iterator as $file) {
             if (!$file->isFile() || strtolower($file->getExtension()) !== 'php') {
@@ -269,18 +267,15 @@ class PluginPackageInstaller
             if ($file->getSize() < 1) {
                 return $this->fail('Plugin package contains invalid PHP: ' . $file->getFilename());
             }
-            if ($lintAvailable) {
-                $output = [];
-                $exitCode = 0;
-                exec(escapeshellarg(PHP_BINARY) . ' -l ' . escapeshellarg($file->getPathname()) . ' 2>&1', $output, $exitCode);
-                if ($exitCode !== 0) {
-                    return $this->fail('Plugin package contains invalid PHP: ' . $file->getFilename());
-                }
-            } else {
-                $sample = file_get_contents($file->getPathname(), false, null, 0, min(4096, $file->getSize()));
-                if (!is_string($sample) || !str_contains($sample, '<?php') || preg_match('/[\x00-\x08\x0B\x0C\x0E-\x1F]/', $sample)) {
-                    return $this->fail('Plugin package contains invalid PHP: ' . $file->getFilename());
-                }
+            // Parse without executing plugin code; this also works under PHP-FPM.
+            $source = file_get_contents($file->getPathname());
+            if (!is_string($source)) {
+                return $this->fail('Unable to read staged PHP: ' . $file->getFilename());
+            }
+            try {
+                token_get_all($source, TOKEN_PARSE);
+            } catch (\ParseError $e) {
+                return $this->fail('Plugin package contains invalid PHP: ' . $file->getFilename());
             }
         }
         return $phpCount > 0 ? ['success' => true] : $this->fail('Plugin package does not contain a PHP plugin class.');

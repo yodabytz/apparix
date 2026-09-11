@@ -2,8 +2,8 @@
 
 ## Purchased plugin updates
 
-Status: Implemented; awaiting release
-Release: Bundle with the next planned Apparix update.
+Status: Implemented in 1.4.0
+Release: Apparix 1.4.0.
 
 ### Implementation
 
